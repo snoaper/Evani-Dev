@@ -1,0 +1,43 @@
+{
+  "chase": {
+    "eye": [
+      0.0,
+      3.0,
+      -7.0
+    ],
+    "fov_deg": 62.0,
+    "source": "kit.kart_racer.cam_distance 7, cam_height 3, cam_look_ahead 4, cam_fov 62",
+    "target": [
+      0.0,
+      1.0,
+      4.0
+    ]
+  },
+  "files": {
+    "chase.png": "sha256:d5a64954fc0fa7f0042aebe0e9e5ac23dd7d25d4dd99f6604203a0eb402d63ef",
+    "front.png": "sha256:737b8a4922e94ac97cd125ed0c03d0a561bc383d7cf47f470e8d42087007927e",
+    "mesh.glb": "sha256:76b2249fc96b39e3ac5969f6481fb81966814203921ae9e06f2101be1ed4279a",
+    "side.png": "sha256:f6359f61f6eb088b622060e3a42ac84e3a3aed9e6bc566f730485ccf6fbabe3d",
+    "top.png": "sha256:a64b7b123eda9982921e80f3ac448b28423cb27da7a789cc2e2cc284c5e114b7"
+  },
+  "frame_centre": [
+    0.0,
+    1.53,
+    -0.052666
+  ],
+  "frame_m": 3.4,
+  "id": "kart_05_zuzu",
+  "instances": 27,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": [
+    "nose fairing size x 1.05 -> 0.7, size z 0.85 -> 1.0, pitch 0.22 -> 0.35 (pointed wedge)",
+    "side pods rotated 0.25 rad about y, outward at the rear",
+    "exhausts size y 0.42 -> 0.7, pitch (pi/2 - 0.2) -> (pi/2 - 0.6) (taller, more upright)"
+  ],
+  "size_m": {
+    "height": 1.263782,
+    "length": 3.225332,
+    "width": 2.21
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

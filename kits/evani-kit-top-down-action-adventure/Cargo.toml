@@ -1,0 +1,29 @@
+[package]
+name = "evani-kit-top-down-action-adventure"
+description = "Evani.Dev top-down action-adventure kit: rooms and doors, sword and bolt, keys and locks, simple enemy AI, a boss"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+# The `touch` feature is the on-screen controls layer (README "Touch controls"):
+# it only sets the actions the keys already drive.
+evani-core = { workspace = true, features = ["touch"] }
+# A 2D kit: sprites only, so evani-render's `forward` (3D) stays off.
+# pixel-art: the canvas backing store follows the exact device-pixel box.
+# sprite-art: the kit's indexed pixel art goes in as named frames
+# (`tda.<name>`), so a look can replace any of them by name.
+evani-render = { workspace = true, features = ["pixel-art", "sprite-art"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[features]
+# 2D lights (catalog effect `lights2d`): the kit pushes torch, magic and bolt
+# lights each frame. Off, nothing light-related is compiled in.
+lights2d = ["evani-render/lights2d"]
+
+[lints]
+workspace = true

@@ -1,0 +1,34 @@
+# Mossgate Keep: the top-down action-adventure demo's module manifest.
+# `cargo xtask build top-down-action-adventure` turns this into Cargo features
+# of the evani-top-down-action-adventure crate; anything not listed is not built.
+name = "top-down-action-adventure"
+kit = "top-down-action-adventure"      # crate kits/evani-kit-top-down-action-adventure
+look = "pixelhd"       # crate looks/evani-look-pixelhd
+effects = ["lights2d"] # normal-mapped torch, magic and bolt lights (High and Ultra tiers)
+
+[modules]
+physics = "simple"   # the catalog's physics for this genre; the kit does not read physics.*
+net = false          # single player
+xr = false
+live = true          # dev only; `--ship` builds always drop it
+
+[review]
+# The HUD is drawn in the canvas on the art grid; `canvas` checks the HUD sprites.
+hud = ["canvas"]
+internal_resolution = "480x270"
+world_edge = false   # a 2D top-down view: no 3D ground plane or horizon
+video = "start"
+# The signature moments are target/moments.md (gate_hall, sword_hit,
+# locked_door, bolt_wand, hurt, boss, dawn_shard). Scripted capture moments
+# (the kit's CaptureMoments) come with the combined test pass, then list them here.
+moments = []
+try = [
+  "Press Space (or tap A) on the title. Walk with WASD or the arrow keys; swing the sword with Space.",
+  "Beat the slimes in the gate hall and walk east into the cellar. Take the wand from the room north of it (K or tap B throws a bolt).",
+  "In the room south of the cellar, step on the glowing floor switch to open its gate, then take the key and the heart container.",
+  "Use a key on the locked door east of the cellar; cross the antechamber, use a second key, then beat the Warden and take the Dawn Shard for YOU WIN. Lose all hearts for GAME OVER.",
+]
+
+# A playground for the Evani.app library: it supports free roam (docs/PLAYGROUNDS.md).
+[playground]
+free_roam = true

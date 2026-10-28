@@ -1,0 +1,21 @@
+[package]
+name = "evani-look-pixelhd"
+description = "Evani.Dev HD pixel look: crisp pixel sprites on a 480x270 grid, hue-shifted full-colour ramps, sub-pixel camera smoothing params, soft light accents and an optional hook for 2D normal-mapped lights"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+# The game builds the bloom effect (its `bloom` feature turns this on): only
+# then does the look tune `fx.bloom.*`, so a game without bloom logs nothing.
+bloom = []
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

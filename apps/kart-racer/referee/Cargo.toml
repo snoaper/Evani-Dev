@@ -1,0 +1,27 @@
+[package]
+name = "evani-kart-racer-referee"
+description = "Sugarpeak Rally's headless multiplayer referee: the race rules alone (no graphics, no clock, no imports), exporting the neutral evani-referee/1 ABI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[lib]
+# cdylib: referee.wasm for a host's server; rlib: tests and host glue
+# (bridges/<host>/) link the referee as a library.
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# The `evani_ref_*` exports. Host glue that wraps the referee in its own ABI
+# turns this off so its module exports only its own calls.
+default = ["abi"]
+abi = []
+
+[dependencies]
+evani-net = { workspace = true, features = ["referee"] }
+# The race rules only: `render` off, so no graphics, sound or browser code.
+evani-kit-kart-racer = { path = "../../../kits/evani-kit-kart-racer", default-features = false, features = ["net"] }
+
+[lints]
+workspace = true

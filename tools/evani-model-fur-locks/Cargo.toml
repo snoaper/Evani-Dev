@@ -1,0 +1,30 @@
+[package]
+name = "evani-model-fur-locks"
+description = "Evani.Model build-time tool: procedural fur locks. Clumped, drooping ribbon locks of hair grown along a flow field over the fur regions of a compiled model, longer per region and twice as long where they meet gear, baked into the .glb as one solid named `fur_locks` under a 14,000-triangle cap (development only, never in a game download)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Strict features: with none on, the crate only carries its parameter
+# registry (`kit.fur_locks.*`) and error type. The generator, the bake and
+# the command line need `locks`. Games never depend on this crate: the
+# locks reach a game only as triangles inside its .glb (0 runtime bytes).
+[features]
+default = []
+# The lock generator (`FurSurface`, `fur_locks`, `FurLocks`) and the bake.
+locks = []
+
+# Same dependency rule as evani-model: serde_json only, plus Evani.Model.
+[dependencies]
+evani-model.workspace = true
+serde_json.workspace = true
+
+[[bin]]
+name = "fur-locks"
+path = "src/main.rs"
+required-features = ["locks"]
+
+[lints]
+workspace = true

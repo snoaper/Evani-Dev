@@ -1,0 +1,35 @@
+[package]
+name = "evani-kit-match-3"
+description = "Evani.Dev match-3 kit: swap validation, cascades, special pieces, level goals and move limits, boards with no starting matches; touch and mouse"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+# Live review captures: when the live module holds the sim clock, the
+# title's attract board is replayed to that time so captures and bench runs
+# are deterministic. The app's `live` feature turns it on; shipped games
+# never have it.
+showcase = ["evani-core/capture"]
+
+[dependencies]
+evani-core.workspace = true
+# sprite-art: the kit asks the look for its piece art by name (`piece.cherry`
+# and so on) and falls back to the built-in shapes (S3-13c). Only this kit's
+# games get the sprite-art code; others are unchanged.
+evani-render = { workspace = true, features = ["sprite-art"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Done-when 4: the kit also runs with another look (no cartoon2d look needed).
+evani-look-basic.workspace = true
+# The geocheck scene dump (examples/geocheck_dump.rs) and the review dump
+# (src/review.rs, a test) draw with the demo's look.
+evani-look-cartoon2d.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+# The model viewer's module manifest (docs/EVANI_MODEL_TAB.md 4.1). Dev only:
+# it is never a game, has no [playground] and `cargo xtask publish` refuses it.
+name = "model-view"
+kit = "model-view"   # crate kits/evani-kit-model-view
+look = "toon"        # the kart racer's look, so models look as in that game
+effects = ["outline", "shadows"]
+
+[modules]
+models = true        # tier files are decoded by evani-gltf
+live = true          # the tab's view.* commands; dev only, `--ship` drops it

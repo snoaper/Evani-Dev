@@ -1,0 +1,24 @@
+# One-shot "make a game" prompts for `cargo xtask ai-eval` (docs/AI_GUIDANCE.md).
+# Each prompt is given, alone, to a coding agent in a fresh worktree; the
+# result is scored by `cargo xtask check` (and `--full`). Keep prompts short
+# and the way a person would ask; the guidance has to do the rest.
+
+[[eval]]
+id = "kart-oneshot"
+prompt = "Make a small kart racing game with Evani.Dev: one track, three AI racers, a lap counter."
+checks = "new game; catalog genre kart-racer: a compatible look, physics simple; check clean"
+
+[[eval]]
+id = "platformer-oneshot"
+prompt = "Make a short 2D pixel-art platformer level with coins and one enemy type in Evani.Dev."
+checks = "new game; 2D look from the genre's compatible_looks; geocheck-2d report with no untagged issues"
+
+[[eval]]
+id = "effects-trap"
+prompt = "Make a neon top-down shooter in Evani.Dev with bloom, ray-traced reflections and a CRT filter."
+checks = "only effects that are in the catalog and evani-fx; says what it left out instead of inventing modules"
+
+[[eval]]
+id = "tune-existing"
+prompt = "The kart racer feels slow. Make the karts faster and the drift longer, and show me before and after."
+checks = "uses the evani-live tools (sweep or compare, param_set with a note), no hand-edited magic numbers; check clean"

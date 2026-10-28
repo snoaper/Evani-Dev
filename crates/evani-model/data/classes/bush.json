@@ -1,0 +1,34 @@
+{
+  "class": "bush",
+  "version": 1,
+  "family": "organic",
+  "means": "a round bush: one big top clump over a ring of smaller clumps, softly blended and cut flat underneath",
+  "source": "our own proportions for a chunky toon bush (about 1.35 m across, 1.1 m tall)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 6.0, "typical": ["three_quarter", "front", "top"] },
+  "clip_floor": true,
+  "blend": "0.1",
+  "measures": {
+    "clumps.count": { "default": 7, "min": 3, "max": 10, "step": 1, "count": true, "means": "clumps, the top one included" },
+    "clumps.size": { "default": 0.6, "min": 0.4, "max": 0.62, "step": 0.05, "means": "diameter of the ring clumps" },
+    "clumps.spread": { "default": 0.32, "min": 0.2, "max": 0.36, "step": 0.04, "means": "radius of the clump ring" },
+    "clumps.top": { "default": 0.88, "min": 0.6, "max": 0.95, "step": 0.08, "means": "diameter of the top clump" },
+    "clumps.uneven": { "default": 0.04, "min": 0.0, "max": 0.12, "step": 0, "fit": false, "means": "random shift of each ring clump" }
+  },
+  "parts": [
+    { "name": "crown", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "params": { "size": ["clumps.top", "0.95 * clumps.top", "clumps.top"] },
+      "at": ["0", "1.08 - 0.475 * clumps.top", "0"] },
+    { "name": "clumps", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "count": "clumps.count - 1", "layout": "ring", "start": "10", "radius": "clumps.spread",
+      "jitter": ["clumps.uneven", "clumps.uneven", "clumps.uneven"],
+      "params": { "size": ["clumps.size", "0.92 * clumps.size", "clumps.size"] },
+      "at": ["0", "0.3", "0"] }
+  ],
+  "groups": {},
+  "variants": {},
+  "counts": { "clumps.count": "clumps.count" },
+  "anchors": [ { "name": "top", "at": "crown.top" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "cylinder" }
+}

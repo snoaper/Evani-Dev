@@ -1,0 +1,21 @@
+[package]
+name = "model-bench-ref"
+description = "Evani.Model benchmark references (dev tool, never in a game download): captures our kart racer's karts and draws reference masks"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Reading our own kit's code is allowed (tests/model_bench/README.md): this
+# dev-only tool may link the kit and the renderer's built-in meshes; nothing
+# in crates/evani-model links them.
+[dependencies]
+evani-model.workspace = true
+evani-kit-kart-racer.workspace = true
+evani-render = { workspace = true, features = ["meshes"] }
+evani-look-toon.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

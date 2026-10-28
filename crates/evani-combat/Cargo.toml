@@ -1,0 +1,19 @@
+[package]
+name = "evani-combat"
+description = "Evani.Dev combat module (opt-in): hitscan against real triangles and body hitboxes, guns with recoil and spread, health and armour, bouncing grenades, rockets, blasts with falloff and line of sight, graph routes, and a bot brain; built on evani-physics `collide`, with live `combat.*` parameters"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# A crate a kit depends on (like the `collide` feature of evani-physics),
+# never in a game's download unless that kit lists it. Plain f32 maths in a
+# fixed order, deterministic sin/cos/atan2 from `collide::trig`, and the
+# engine's seeded Pcg32: a fight replays bit for bit on native and wasm.
+[dependencies]
+evani-core.workspace = true
+evani-physics = { workspace = true, features = ["collide"] }
+
+[lints]
+workspace = true

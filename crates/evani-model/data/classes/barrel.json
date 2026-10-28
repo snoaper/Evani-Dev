@@ -1,0 +1,72 @@
+{
+  "class": "barrel",
+  "version": 1,
+  "family": "props",
+  "means": "a stave barrel: a bulging turned body with stave grooves, a recessed lid and metal hoops",
+  "source": "our own proportions for a chunky toon barrel (about 1.05 m tall); the bulge is a parabola r(y) = R + b (1 - u^2)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 5.0, "typical": ["three_quarter", "front", "top"] },
+  "measures": {
+    "body.radius": { "default": 0.32, "min": 0.24, "max": 0.36, "step": 0.03, "means": "radius at the top and bottom rims" },
+    "body.height": { "default": 1.05, "min": 0.8, "max": 1.15, "step": 0.08, "means": "barrel height" },
+    "body.bulge": { "default": 0.04, "min": 0.0, "max": 0.1, "step": 0.015, "means": "extra radius at the middle" },
+    "body.staves": { "default": 12, "min": 6, "max": 24, "step": 1, "count": true, "means": "number of staves (grooves between them)" },
+    "hoops.count": { "default": 3, "min": 2, "max": 3, "step": 1, "count": true, "means": "number of hoops (top, bottom and an optional middle one)" },
+    "hoops.width": { "default": 0.06, "min": 0.04, "max": 0.09, "step": 0.01, "means": "hoop band width" },
+    "hoops.proud": { "default": 0.014, "min": 0.008, "max": 0.024, "step": 0.004, "means": "how far the hoops stand out" },
+    "lid.inset": { "default": 0.04, "min": 0.02, "max": 0.08, "step": 0.01, "means": "depth of the lid below the rim" },
+    "lid.rim": { "default": 0.035, "min": 0.025, "max": 0.05, "step": 0.005, "means": "width of the rim round the lid" }
+  },
+  "parts": [
+    { "name": "body", "role": "body", "solid": "body", "gen": "lathe",
+      "params": { "profile": [
+        "body.radius", "0",
+        "body.radius + 0.4375 * body.bulge", "0.125 * body.height",
+        "body.radius + 0.75 * body.bulge", "0.25 * body.height",
+        "body.radius + 0.9375 * body.bulge", "0.375 * body.height",
+        "body.radius + body.bulge", "0.5 * body.height",
+        "body.radius + 0.9375 * body.bulge", "0.625 * body.height",
+        "body.radius + 0.75 * body.bulge", "0.75 * body.height",
+        "body.radius + 0.4375 * body.bulge", "0.875 * body.height",
+        "body.radius", "body.height",
+        "body.radius - lid.rim", "body.height",
+        "body.radius - lid.rim", "body.height - lid.inset"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "staves_low", "role": "detail", "solid": "body", "gen": "tube", "op": "cut", "group": "body",
+      "count": "body.staves", "layout": "ring", "radius": "0",
+      "params": { "radius": "0.008", "points": [
+        "0", "0.21 * body.height", "body.radius + 0.65 * body.bulge",
+        "0", "0.33 * body.height", "body.radius + 0.87 * body.bulge",
+        "0", "0.45 * body.height", "body.radius + 0.975 * body.bulge"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "staves_high", "role": "detail", "solid": "body", "gen": "tube", "op": "cut", "group": "body",
+      "count": "body.staves", "layout": "ring", "radius": "0",
+      "params": { "radius": "0.008", "points": [
+        "0", "0.55 * body.height", "body.radius + 0.975 * body.bulge",
+        "0", "0.67 * body.height", "body.radius + 0.87 * body.bulge",
+        "0", "0.79 * body.height", "body.radius + 0.65 * body.bulge"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "lid", "role": "trim", "solid": "body", "gen": "cylinder",
+      "params": { "radius": "body.radius - lid.rim - 0.012", "length": "0.03", "axis": "y", "bevel": "0.008" },
+      "at": ["0", "body.height - lid.inset + 0.005", "0"] },
+    { "name": "hoop_low", "role": "trim", "solid": "body", "gen": "cylinder", "group": "hoops",
+      "params": { "radius": "body.radius + 0.54 * body.bulge + hoops.proud", "length": "hoops.width", "axis": "y", "bevel": "0.006" },
+      "at": ["0", "0.16 * body.height", "0"] },
+    { "name": "hoop_high", "role": "trim", "solid": "body", "gen": "cylinder", "group": "hoops",
+      "params": { "radius": "body.radius + 0.54 * body.bulge + hoops.proud", "length": "hoops.width", "axis": "y", "bevel": "0.006" },
+      "at": ["0", "0.84 * body.height", "0"] },
+    { "name": "hoop_mid", "role": "trim", "solid": "body", "gen": "cylinder", "group": "hoops",
+      "count": "hoops.count - 2",
+      "params": { "radius": "body.radius + body.bulge + hoops.proud", "length": "hoops.width", "axis": "y", "bevel": "0.006" },
+      "at": ["0", "0.5 * body.height", "0"] }
+  ],
+  "groups": { "hoops": ["hoop_low", "hoop_high", "hoop_mid"] },
+  "variants": {},
+  "counts": { "body.staves": "body.staves", "hoops.count": "hoops.count" },
+  "anchors": [ { "name": "top", "at": "lid.top" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "cylinder" }
+}

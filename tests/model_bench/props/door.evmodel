@@ -1,0 +1,21 @@
+# Benchmark B, hard-surface prop 7 of 10: a plank door in its frame.
+make: door
+style: toon_chunky
+parts:
+  frame: { thick }
+  leaf: { planks: 5, braces: z }
+  handle: { shape: ring }
+  hinges: { count: 2, chunky }
+relief:
+  leaf.faces: planks(straight, width 20cm, depth 3mm)
+  hinges.outer: rivets(row, size 1.2cm, pitch 6cm)
+must:
+  fit_box: [0.2, 1.3, 2.3] m
+  stands: ground
+  swing_clear: { part: leaf, about: frame.hinge, angle: 100 deg, at_least: 5mm }
+  anchor: { name: handle, at: handle.centre }
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 8k }
+match: { front: ../ref/door/front.png, side: ../ref/door/side.png }
+explore: auto
+return: 3
+seed: 107

@@ -1,0 +1,166 @@
+[package]
+name = "evani-sandbox"
+description = "Evani.Dev sandbox: test game with a minimal debug panel (tier switch, effect toggles, overlay)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Module switches. `cargo xtask build sandbox` reads evani.toml and turns it
+# into exactly these features (with --no-default-features), so a module the
+# game doesn't list is an absent optional dependency: zero bytes.
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = [
+    "bloom", "vignette", "shadows", "physics-simple", "net", "xr",
+    "models", # proof-model:line (the textured model proof; new-game drops it)
+    "live",
+]
+fx = ["dep:evani-fx"]
+bloom = ["fx", "evani-fx/bloom"]
+vignette = ["fx", "evani-fx/vignette"]
+shadows = ["fx", "evani-fx/shadows"]
+fog = ["fx", "evani-fx/fog"]
+decals = ["fx", "evani-fx/decals"]
+grade = ["fx", "evani-fx/grade"]
+physics-simple = ["dep:evani-physics", "evani-physics/simple"]
+physics-rigid = ["dep:evani-physics", "evani-physics/rigid"]
+net = ["dep:evani-net"]
+xr = ["dep:evani-xr"]
+# Stage 3 modules (evani.toml `models`, `anim`, `ui`). `models` pulls in the
+# model reader (evani-gltf) and the model pipeline (evani-render/models); `anim` adds
+# the animation runtime (evani-anim), `ui` the box layout (evani-ui).
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models", "evani-live?/models"]
+anim = ["models", "dep:evani-anim", "evani-render/skinning"]
+# The S3-9 GPU skinning proof (proof_skin.rs: the rig fixture, compiled in).
+skin-proof = ["anim"]
+# `ui` turns on sharp MSDF text in the canvas (`[ui] fonts` in evani.toml);
+# the box layout crate (evani-ui, S3-13b) comes with it.
+ui = ["evani-render/msdf", "dep:evani-ui"]
+# The S3-13a text proof panel instead of the S3-13b HUD panel (needs `ui`).
+text-proof = ["ui"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture"]
+# The S3-10 surface-relief proof (`trunk build --features relief`; never in
+# evani.toml, so the default and ship builds are unchanged): the shared
+# relief fixture drawn with the toon look's micro-detail patterns.
+relief = ["models", "toon", "evani-render/relief", "evani-look-toon/relief"]
+# The toon look layered over the basic one, without relief: the size base
+# the relief proof is measured against.
+toon = ["dep:evani-look-toon"]
+# The S6-5 pseudo-3D road proof (proof_road.rs: a seeded track of bends,
+# hills and roadside scenery driven at a fixed speed; `trunk build
+# --features pseudo3d-proof`). Never in evani.toml, so default and ship
+# builds are unchanged.
+pseudo3d-proof = ["evani-render/pseudo3d"]
+# The S5-R5b lit surface proof (`trunk build --features lit-proof`): the
+# engine's lit surface pass on models with the stylizedpbr film preset
+# layered over the basic look. Never in evani.toml, so default and ship
+# builds are unchanged.
+lit-proof = ["models", "evani-render/look-surface", "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film"]
+# The S7-3 importance test (`cargo test -p evani-sandbox --features importance`):
+# turns on evani-render's dev-only measuring. Never in evani.toml or `default`,
+# and the ship guard fails a build that carries its `evani-importance` marker.
+importance = ["models", "evani-render/importance"]
+# The static-collision proof (`trunk build --features collide-proof`;
+# proof_collide.rs): a capsule walking a small triangle level with the
+# evani-physics `collide` mover. Never in evani.toml, so default and ship
+# builds are unchanged.
+collide-proof = ["dep:evani-physics", "evani-physics/collide"]
+# The combat proof (`trunk build --features combat-proof`; proof_combat.rs):
+# a bot rounds a wall and shoots a target with evani-combat on the collide
+# world. Never in evani.toml, so default and ship builds are unchanged.
+combat-proof = ["dep:evani-combat", "dep:evani-physics", "evani-physics/collide"]
+# The ChimpDuty intake proofs (proof_limits.rs, `?rl=near|fog|haze|pcss|warm`):
+# `render-limits-before` builds the scenes on today's engine, and
+# `render-limits-proof` the same scenes with the new engine features, for
+# before and after pictures. Never in evani.toml, so default and ship builds
+# are unchanged.
+render-limits-before = ["models", "fog", "evani-render/pcss", "evani-render/kit-material"]
+render-limits-proof = [
+    "render-limits-before", "evani-fx/camera-range", "evani-fx/look-effects",
+    "evani-render/hdr-color", "evani-render/fog-color", "evani-render/view-model-models",
+    "evani-render/pcss-stable", "evani-render/prewarm",
+]
+# The procedural materials proof (`trunk build --features material-proof`):
+# evani-material-proc's boxes with baked AO and its Preetham sky dome under
+# the photoreal look's daylight preset (proof_material.rs). Never in
+# evani.toml or `default`, so the default and ship builds are unchanged.
+material-proof = ["dep:evani-material-proc", "evani-material-proc/sky", "dep:evani-look-photoreal"]
+# The destruction module (evani-destruct: Hexagon's destruction mechanics,
+# docs/DESTRUCTION.md) and its proof scene (`trunk build --features
+# destruct-proof`: proof_destruct.rs, a deck broken by a seeded barrage).
+# Never in evani.toml or `default`, so default and ship builds are unchanged.
+destruct = ["dep:evani-destruct"]
+destruct-proof = ["destruct"]
+# The layered materials proof (`trunk build --features layers-proof`;
+# proof_layers.rs): a velvet curtain, a clear-coated ball, a brushed disc and
+# a soap-film ball, each from a glTF KHR_materials_* extension, under a low
+# sun. `layers-before` is the same scene on the lit pass as it was, for the
+# before picture. Never in evani.toml or `default`, so default and ship
+# builds are unchanged.
+layers-before = ["lit-proof"]
+layers-proof = ["layers-before", "evani-render/material-layers", "dep:evani-material-layers"]
+# The character materials proof (`trunk build --features char-proof`;
+# proof_character.rs): a close-up head (tests/fixtures/models/char-head.glb,
+# compiled in) with wet eyes, soft skin, a hair cap and a fur collar, through
+# the film look's lit surface pass. Never in evani.toml, so the default and
+# ship builds are unchanged.
+char-proof = ["models", "lit-proof", "evani-render/char-materials"]
+# The nature materials proof (`trunk build --features nature-proof`):
+# evani-material-nature's water, glass, foliage, grass, thin back-light and
+# lamp in a small garden under a low sun (proof_nature.rs). Never in
+# evani.toml or `default`, so the default and ship builds are unchanged.
+nature-proof = ["dep:evani-material-nature"]
+# The same with the camera circling the pool (frame order proof: a module
+# value drawn a frame late shows on the water). Never in evani.toml.
+nature-orbit = ["nature-proof"]
+# The playground surfaces proof (`trunk build --features playmat-proof`;
+# proof_playmat.rs): evani-material-proc's relief surfaces (brick, cobble,
+# tiles, planks; wet, puddle and moss layers) under the photoreal look's low
+# daylight sun, with `?pm=before` for the plain surfaces. Never in
+# evani.toml or `default`, so default and ship builds are unchanged; not
+# with `material-proof` (both install evani-material-proc).
+playmat-proof = ["dep:evani-material-proc", "evani-material-proc/sky", "evani-material-proc/relief", "dep:evani-look-photoreal"]
+# The same with the weather-mask debug views (`&dbg=1|2|3`).
+playmat-debug = ["playmat-proof", "evani-material-proc/relief-debug"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-kit-example.workspace = true
+evani-look-basic.workspace = true
+evani-fx = { workspace = true, optional = true }
+evani-physics = { workspace = true, optional = true }
+evani-net = { workspace = true, optional = true }
+evani-xr = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-ui = { workspace = true, optional = true }
+evani-look-toon = { workspace = true, optional = true }
+evani-anim = { workspace = true, optional = true }
+evani-look-stylizedpbr = { workspace = true, optional = true }
+evani-combat = { workspace = true, optional = true }
+evani-material-proc = { workspace = true, optional = true }
+evani-look-photoreal = { workspace = true, optional = true }
+evani-destruct = { workspace = true, optional = true }
+evani-material-layers = { workspace = true, optional = true }
+evani-material-nature = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlSelectElement",
+    "HtmlInputElement",
+    "HtmlOptionElement",
+    "Node",
+    "Event",
+    "EventTarget",
+] }
+
+[lints]
+workspace = true

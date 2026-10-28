@@ -1,0 +1,44 @@
+{
+  "chase": {
+    "eye": [
+      0.0,
+      3.0,
+      -7.0
+    ],
+    "fov_deg": 62.0,
+    "source": "kit.kart_racer.cam_distance 7, cam_height 3, cam_look_ahead 4, cam_fov 62",
+    "target": [
+      0.0,
+      1.0,
+      4.0
+    ]
+  },
+  "files": {
+    "chase.png": "sha256:8badb817fb532dac02d8212a6f0e36034dc12ed639a75c1c96a6dd4418a99bd9",
+    "front.png": "sha256:38292b2058d4789f759a965c3479bf72736de9a158e30b798af2e22024990080",
+    "mesh.glb": "sha256:cc4ba561c220cf914f35142e376f2259e25bde1ae9b879cb95bbb3b990f13cf7",
+    "side.png": "sha256:7eabaa33e7b92c64077a5c61e57248c123a99f0553dea859233fda5cb9db1768",
+    "top.png": "sha256:df510cf78cca5356f418c90fac1c36d610b025d0eb8d7abd99399513e5ee2874"
+  },
+  "frame_centre": [
+    0.0,
+    1.62,
+    0.10716
+  ],
+  "frame_m": 3.6,
+  "id": "kart_03_taffy",
+  "instances": 27,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": [
+    "tub centre y 0.36 -> 0.3, size z 2.3 -> 2.6",
+    "nose fairing centre z 0.92 -> 1.12, size z 0.85 -> 1.15, pitch 0.22 -> 0.12",
+    "front bumper centre z 1.42 -> 1.62",
+    "rear wing size x 1.6 -> 1.9, centre y 1.2 -> 1.3; struts size y 0.42 -> 0.54"
+  ],
+  "size_m": {
+    "height": 1.363782,
+    "length": 3.305681,
+    "width": 2.21
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

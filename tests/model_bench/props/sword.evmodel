@@ -1,0 +1,21 @@
+# Benchmark B, hard-surface prop 9 of 10: a chunky toon sword, standing point down.
+make: sword
+style: toon_chunky
+parts:
+  blade: { broad, tip: rounded_point, fuller: shallow }
+  guard: { shape: bar, curled_ends }
+  grip: { wrapped }
+  pommel: { shape: ball, large }
+relief:
+  grip.outer: stitching(cross, pitch 1.5cm, depth 1mm)
+  blade.edges: wear(scratches, depth 0.5mm, density 0.2)
+must:
+  fit_box: [0.1, 0.36, 1.2] m
+  symmetric: x
+  anchor: { name: grip, diameter: 3.5cm }
+  min_thickness: 6mm
+  tri_budget: { low: 200, medium: 600, high: 1.5k, ultra: 4k }
+match: { front: ../ref/sword/front.png, side: ../ref/sword/side.png }
+explore: auto
+return: 3
+seed: 109

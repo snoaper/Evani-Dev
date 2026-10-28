@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Dev bench</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0d0f14; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <!-- Same Trunk setup as the sandbox (see its index.html for the wasm-opt flags).
+       Open it by hand to run every tier in this window; ?tier=low runs one,
+       ?warmup=N and ?frames=N change the run length. -->
+  <link data-trunk rel="rust" data-bin="evani-bench" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+  <!-- The model phase's model: the sandbox's proof model and its texture
+       sets (one copy in the repository), served as models/. -->
+  <link data-trunk rel="copy-dir" href="../sandbox/assets/models">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+</body>
+</html>

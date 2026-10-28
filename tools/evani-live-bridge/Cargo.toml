@@ -1,0 +1,41 @@
+[package]
+name = "evani-live-bridge"
+description = "Evani.Dev live server: serves the game, routes live commands between controllers and the page, MCP server for AI agents (native dev tool, never in a game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only; never part of a game download. Dependencies are kept
+# here (not in [workspace.dependencies]) because nothing else uses them.
+# Each one has a one-line reason in DECISIONS.md.
+[dependencies]
+tokio = { version = "=1.53.3", features = ["rt-multi-thread", "macros", "net", "process", "time", "sync", "signal", "fs", "io-std", "io-util"] }
+axum = { version = "=0.8.9", default-features = false, features = ["http1", "tokio", "ws", "query"] }
+tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["connect", "handshake"] }
+futures-util = { version = "=0.3.34", default-features = false, features = ["sink", "std"] }
+rmcp = { version = "=3.5.1", default-features = false, features = ["server", "transport-io"] }
+getrandom = "=0.4.3"
+serde_json.workspace = true
+evani-live.workspace = true
+# The look guard (docs/LIVE_API.md 14): stats, limits, approvals, audit log.
+evani-lookguard = { path = "../evani-lookguard" }
+# The `evani_check` tool: the same check gate as `cargo xtask check`.
+evani-guide = { path = "../evani-guide" }
+# Drop-to-convert (S3-14): the content hash that names a job's folder, and
+# the zip reader's deflate. Both already in the tree at these pins.
+sha2 = { version = "=0.10.9", default-features = false }
+flate2.workspace = true
+
+[dev-dependencies]
+# The public TEST key signs approvals in the bridge tests.
+evani-lookguard = { path = "../evani-lookguard", features = ["test-signer"] }
+
+# Live code swapping: a kill-on-close job object, so the dx child and its
+# compilers never outlive the bridge (already in the lockfile via tokio).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_System_JobObjects"] }
+
+[lints]
+workspace = true

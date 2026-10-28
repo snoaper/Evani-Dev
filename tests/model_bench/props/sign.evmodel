@@ -1,0 +1,19 @@
+# Benchmark B, hard-surface prop 3 of 10: a trackside signboard on two posts.
+make: sign
+style: toon_chunky
+parts:
+  board: { shape: rounded_rect, thick, tilted: slight }
+  posts: { count: 2, chunky }
+  feet: { shape: block }
+relief:
+  board.faces: planks(straight, width 15cm, depth 2mm)
+  posts.all: wood_grain(scale 1)
+must:
+  fit_box: [0.3, 1.6, 2.2] m
+  stands: ground
+  symmetric: x
+  tri_budget: { low: 300, medium: 800, high: 2k, ultra: 5k }
+match: { front: ../ref/sign/front.png, side: ../ref/sign/side.png }
+explore: auto
+return: 3
+seed: 103

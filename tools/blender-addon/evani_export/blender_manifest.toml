@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "evani_export"
+version = "0.1.0"
+name = "Export to Evani.dev"
+tagline = "Send your model to Evani.dev with one button"
+maintainer = "Chris Pearson (Evani.dev)"
+type = "add-on"
+
+website = "https://evani.app"
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Evani.Dev"]
+
+tags = ["Import-Export"]
+
+[permissions]
+files = "Writes converted models into your Evani.dev folder"
+network = "Optional: sends the model to the game on this computer"

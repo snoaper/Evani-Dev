@@ -1,0 +1,6 @@
+{
+  "fx.bloom.intensity": 0.3,
+  "fx.bloom.knee": 0.2,
+  "fx.bloom.mips": 4,
+  "fx.bloom.threshold": 1.5
+}

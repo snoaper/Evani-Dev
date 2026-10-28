@@ -1,0 +1,21 @@
+[package]
+name = "evani-model-tool"
+description = "Evani.Model command line and stdio MCP server (development only, never in a game download)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[[bin]]
+name = "evani-model"
+path = "src/main.rs"
+
+# The MCP server is a small hand-written JSON-RPC loop over stdio on
+# serde_json (decision D2's alternative): no new crate enters Cargo.lock.
+[dependencies]
+evani-model.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

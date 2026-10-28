@@ -1,0 +1,62 @@
+{
+  "class": "lamp_post",
+  "version": 1,
+  "family": "props",
+  "means": "a street lamp: a stepped base, a tapering pole, an arm that curls forward and a bell lamp hanging from its end",
+  "source": "our own proportions for a chunky toon lamp post (about 4.3 m tall); the arm is a quarter arc plus a straight",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 9.0, "typical": ["side", "three_quarter", "front"] },
+  "measures": {
+    "base.width": { "default": 0.48, "min": 0.36, "max": 0.56, "step": 0.04, "means": "base block width" },
+    "pole.height": { "default": 3.7, "min": 3.0, "max": 4.0, "step": 0.2, "means": "height of the pole top" },
+    "pole.radius": { "default": 0.075, "min": 0.05, "max": 0.1, "step": 0.01, "means": "pole radius at the bottom" },
+    "pole.taper": { "default": 0.0, "min": 0.0, "max": 0.5, "step": 0.2, "means": "how much thinner the pole gets at the top" },
+    "arm.length": { "default": 0.9, "min": 0.6, "max": 1.0, "step": 0.08, "means": "arm length along its curve" },
+    "arm.curl": { "default": 0.32, "min": 0.12, "max": 0.4, "step": 0.04, "means": "radius of the arm's curl" },
+    "arm.radius": { "default": 0.04, "min": 0.03, "max": 0.055, "step": 0.005, "means": "arm thickness (radius)" },
+    "lamp.scale": { "default": 1.0, "min": 0.8, "max": 1.3, "step": 0.12, "means": "lamp size" }
+  },
+  "parts": [
+    { "name": "base_low", "role": "body", "solid": "body", "gen": "rounded_box", "group": "base",
+      "params": { "size": ["base.width", "0.2", "base.width"], "bevel": "0.04" },
+      "at": ["0", "0.1", "0"] },
+    { "name": "base_high", "role": "body", "solid": "body", "gen": "rounded_box", "group": "base",
+      "params": { "size": ["0.7 * base.width", "0.27", "0.7 * base.width"], "bevel": "0.04" },
+      "at": ["0", "0.325", "0"] },
+    { "name": "pole", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "pole.radius", "radius_end": "pole.radius * (1 - pole.taper)", "points": ["0", "0.4", "0", "0", "pole.height", "0"] },
+      "at": ["0", "0", "0"] },
+    { "name": "arm", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "arm.radius", "points": [
+        "0", "pole.height", "0",
+        "0", "pole.height + arm.curl * 0.2588", "arm.curl * 0.0341",
+        "0", "pole.height + arm.curl * 0.5", "arm.curl * 0.134",
+        "0", "pole.height + arm.curl * 0.7071", "arm.curl * 0.2929",
+        "0", "pole.height + arm.curl * 0.866", "arm.curl * 0.5",
+        "0", "pole.height + arm.curl * 0.9659", "arm.curl * 0.7412",
+        "0", "pole.height + arm.curl", "arm.curl",
+        "0", "pole.height + arm.curl", "arm.curl + max(0.05, arm.length - 1.5708 * arm.curl)"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "lamp", "role": "body", "solid": "body", "gen": "lathe",
+      "params": { "profile": [
+        "0.05 * lamp.scale", "0.02",
+        "0.08 * lamp.scale", "-0.02",
+        "0.13 * lamp.scale", "-0.1 * lamp.scale",
+        "0.17 * lamp.scale", "-0.22 * lamp.scale",
+        "0.18 * lamp.scale", "-0.27 * lamp.scale",
+        "0.12 * lamp.scale", "-0.29 * lamp.scale"
+      ] },
+      "at": ["0", "pole.height + arm.curl", "arm.curl + max(0.05, arm.length - 1.5708 * arm.curl)"] }
+  ],
+  "groups": { "base": ["base_low", "base_high"] },
+  "variants": {
+    "base.shape": { "stepped": {} },
+    "arm.shape": { "curl": {}, "straight": { "set": { "arm.curl": 0.12 } } },
+    "lamp.shape": { "bell": {} }
+  },
+  "counts": {},
+  "anchors": [ { "name": "light", "at": "lamp.bottom" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "box" }
+}

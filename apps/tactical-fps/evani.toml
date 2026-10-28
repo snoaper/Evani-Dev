@@ -1,0 +1,45 @@
+# The tactical-fps's module manifest. `cargo xtask build tactical-fps` turns this into
+# Cargo features of the evani-tactical-fps crate; anything not listed is not built.
+name = "tactical-fps"
+kit = "tactical-fps"      # crate kits/evani-kit-tactical-fps
+look = "photoreal"  # crate looks/evani-look-photoreal (HEXAGON_PLAN section 5, question 2)
+# HEXAGON_PLAN 4.2: bloom and shadows where the tier budget allows, fog from
+# High. The look grades and vignettes inside its own tonemap slot, so the
+# Ultra-only `grade` and `vignette` effects stay out to keep the download light.
+effects = ["bloom", "shadows", "fog"]   # each is an evani-fx feature; [] = no fx module
+
+[modules]
+physics = "simple"   # "simple" | "rigid" | "none"
+net = true
+xr = true
+live = true          # dev only; `--ship` builds always drop it
+# Stage 3, off until a game needs them (README "evani.toml"): models = true for
+# .glb models, anim = true for skinned/animated ones (implies models), ui = true for
+# fonts and menus. `cargo xtask check` errors when assets need a module you didn't list.
+# models = true
+# anim = true
+# ui = true
+
+
+# What a reviewer should try in the demo (`cargo xtask review` puts it on the card).
+[review]
+try = [
+  "Start a match (click or Space), then click once more. The pointer should lock to the game; move the mouse to look round the grey concrete fortress under an overcast sky.",
+  "Walk up to a wall with your nose against it. Your weapon should stay bottom right and never sink into the wall. Fire (left click): it kicks and flashes at the muzzle.",
+  "Shoot a concrete cover block or a floor: round holes should open that you can see through, with a darker broken rim, and sunlight should fall through them.",
+  "Press Escape, switch tabs or click outside the window. The pointer should be free at once; click back in to carry on.",
+  "Narrow the window to a phone shape. Drag on the right half of the screen to look round; the move stick and the Fire, Jump and Gun buttons should all work.",
+]
+# The review captures: three signature moments, each on its own tier (Low
+# shows the shadow discs, Medium the shadow map). Each moment moves the
+# orbit clock, so the page screenshots after them show three different angles.
+moments = ["overview@ultra", "quarter_turn@low", "far_side@medium"]
+# The DOM HUD the review checks in every capture (index.html).
+hud = ["#tactical-fps-hud"]
+# The run video starts at the first signature moment.
+video = "overview"
+
+# A playground for the Evani.app library: it must support free roam
+# (docs/PLAYGROUNDS.md). Remove this table if the game isn't for the library.
+[playground]
+free_roam = true

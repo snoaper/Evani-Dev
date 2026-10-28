@@ -1,0 +1,15 @@
+# Benchmark B, stylized organic 6 of 10: a sugar-coated gumdrop.
+make: gumdrop
+style: toon_chunky
+parts:
+  body: { shape: dome, squat, soft }
+relief:
+  body.outer: hammered(depth 2mm, scale 0.5)
+must:
+  fit_box: [1.0, 1.0, 0.9] m
+  stands: ground
+  tri_budget: { low: 200, medium: 600, high: 1.5k, ultra: 5k }
+match: { front: ../ref/gumdrop/front.png, side: ../ref/gumdrop/side.png }
+explore: auto
+return: 3
+seed: 306

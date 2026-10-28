@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Model view</title>
+  <!-- The page behind Evani.App's Model tab (docs/EVANI_MODEL_TAB.md 4.1). Dev only:
+       it is never published. The model is drawn by the engine's own renderer. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #c9ced6; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; cursor: grab; }
+    #evani-canvas:active { cursor: grabbing; }
+    .box { position: fixed; z-index: 900; color: #1d2330; background: rgba(255, 255, 255, 0.82);
+           border-radius: 10px; font: 500 13px/1.35 "Segoe UI", system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
+    #note { right: 12px; bottom: 12px; padding: 4px 10px; opacity: 0.8; }
+    #panel { left: 12px; top: 12px; padding: 8px 10px; max-width: min(520px, calc(100vw - 48px)); }
+    #panel:has(#shown:empty) { display: none; }
+    #panel .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    #panel .row:empty { display: none; }
+    #panel button { font: inherit; border: 1px solid #9aa3b2; background: #fff; color: #1d2330; border-radius: 8px;
+                    padding: 4px 10px; cursor: pointer; min-height: 32px; display: flex; flex-direction: column; align-items: flex-start; }
+    #panel button span { font-size: 11px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+    #panel button.on { background: #2d3a52; color: #fff; border-color: #2d3a52; }
+    #fallback { inset: 0; margin: auto; width: min(520px, calc(100vw - 48px)); height: fit-content; padding: 18px 22px; display: none; }
+    #fallback.on { display: block; }
+    #fallback h2 { margin: 0 0 8px; font-size: 18px; }
+    #fallback p { margin: 6px 0; }
+    #fallback code { background: #eef0f4; padding: 1px 5px; border-radius: 4px; }
+  </style>
+  <!-- Trunk builds the evani-model-view binary; the flags match the other apps. -->
+  <link data-trunk rel="rust" data-bin="evani-model-view" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+  <!-- The wasm fills these (src/web.rs): what is shown, a button per tier with its
+       triangle count, and a button per model when there is more than one. -->
+  <div id="panel" class="box">
+    <div id="shown"></div>
+    <div id="tiers" class="row"></div>
+    <div id="models" class="row"></div>
+  </div>
+  <div id="note" class="box">Preview shading</div>
+  <div id="fallback" class="box">
+    <h2>No model to show yet</h2>
+    <p id="fallback-line"></p>
+    <p>This page is the view inside Evani.App's Model tab. Without the tab, start it with
+      <code>cargo xtask live --game apps/model-view --port 8097 --models</code>.</p>
+  </div>
+</body>
+</html>

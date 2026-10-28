@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "fallback": "stock",
+  "recipes": {
+    "stock": {
+      "chassis": { "model": "proof-kart", "paint": { "body": "kart" } }
+    },
+    "crate-back": {
+      "chassis": { "model": "proof-kart", "paint": { "body": "kart" } },
+      "spoiler": { "model": "proof-crate", "anchor": "item_slot", "colour": "kart_deep" }
+    },
+    "twin-pipes": {
+      "chassis": { "model": "proof-kart", "paint": { "body": "kart" } },
+      "decals": [
+        { "model": "proof-barrel", "anchor": "exhaust.l", "colour": "steel" },
+        { "model": "proof-barrel", "anchor": "exhaust.r", "colour": "steel" }
+      ]
+    },
+    "long-nose": {
+      "chassis": { "model": "proof-kart", "paint": { "body": "kart_light" } },
+      "nose": { "model": "proof-barrel", "anchor": "steer_pivot", "colour": "kart" }
+    },
+    "hot-rod": {
+      "chassis": { "model": "proof-kart", "paint": { "body": "kart" } },
+      "spoiler": { "model": "proof-crate", "anchor": "item_slot", "colour": "suit" },
+      "nose": { "model": "proof-barrel", "anchor": "steer_pivot", "colour": "kart_light" },
+      "decals": [
+        { "model": "proof-barrel", "anchor": "exhaust.l", "colour": "steel" },
+        { "model": "proof-barrel", "anchor": "exhaust.r", "colour": "steel" }
+      ]
+    }
+  },
+  "karts": {
+    "Pip": "stock",
+    "Mo": "crate-back",
+    "Taffy": "twin-pipes",
+    "Bramble": "long-nose",
+    "Zuzu": "hot-rod",
+    "Nib": "stock",
+    "Clover": "long-nose",
+    "Rumble": "hot-rod"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "class": "sign",
+  "version": 1,
+  "family": "props",
+  "means": "a trackside signboard on two posts with block feet; the board leans back a little",
+  "source": "our own proportions for a chunky toon signboard (about 2.1 m tall)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 7.0, "typical": ["front", "three_quarter", "side"] },
+  "measures": {
+    "board.width": { "default": 1.4, "min": 1.0, "max": 1.5, "step": 0.1, "means": "board width" },
+    "board.height": { "default": 0.8, "min": 0.5, "max": 0.9, "step": 0.08, "means": "board height" },
+    "board.thick": { "default": 0.06, "min": 0.04, "max": 0.1, "step": 0.012, "means": "board thickness" },
+    "board.top": { "default": 2.05, "min": 1.6, "max": 2.1, "step": 0.1, "means": "height of the board's top edge" },
+    "board.tilt": { "default": 0.0, "min": 0.0, "max": 20.0, "step": 3.0, "means": "how far the board leans back, degrees" },
+    "board.roundness": { "default": 1.0, "min": 0.3, "max": 2.0, "step": 0.4, "means": "corner rounding of the board" },
+    "posts.count": { "default": 2, "min": 2, "max": 2, "step": 0, "count": true, "means": "posts (a mirrored pair)" },
+    "posts.size": { "default": 0.1, "min": 0.07, "max": 0.14, "step": 0.012, "means": "post thickness" },
+    "posts.spacing": { "default": 1.0, "min": 0.6, "max": 1.2, "step": 0.1, "means": "distance between the posts" },
+    "feet.size": { "default": 0.2, "min": 0.14, "max": 0.24, "step": 0.02, "means": "foot block width" }
+  },
+  "parts": [
+    { "name": "board", "role": "body", "solid": "body", "gen": "rounded_box",
+      "params": { "size": ["board.width", "board.height", "board.thick"], "bevel": "0.12 * board.roundness * board.height / 0.8" },
+      "rot": ["0", "-board.tilt", "0"],
+      "at": ["0", "board.top - board.height / 2 * cos(board.tilt)", "board.height / 2 * sin(board.tilt) * 0.5"] },
+    { "name": "posts", "role": "body", "solid": "body", "gen": "rounded_box", "mirror": "x",
+      "params": { "size": ["posts.size", "board.top - 0.06", "posts.size"], "bevel": "0.25 * posts.size" },
+      "at": ["posts.spacing / 2", "(board.top - 0.06) / 2", "-board.thick / 2 - posts.size / 2 + 0.02"] },
+    { "name": "feet", "role": "body", "solid": "body", "gen": "rounded_box", "mirror": "x",
+      "params": { "size": ["feet.size", "0.08", "feet.size * 1.2"], "bevel": "0.025" },
+      "at": ["posts.spacing / 2", "0.04", "-board.thick / 2 - posts.size / 2 + 0.02"] }
+  ],
+  "groups": {},
+  "variants": {
+    "board.shape": {
+      "rounded_rect": {},
+      "rect": { "set": { "board.roundness": 0.3 } }
+    },
+    "feet.shape": {
+      "block": {},
+      "none": { "set": { "feet.size": 0.14 } }
+    }
+  },
+  "counts": { "posts.count": "posts.count" },
+  "anchors": [ { "name": "face", "at": "board.front" } ],
+  "clip_floor": true,
+  "musts": { "connected": true, "stands": "ground", "symmetric": "x" },
+  "collision": { "footprint": "box" }
+}

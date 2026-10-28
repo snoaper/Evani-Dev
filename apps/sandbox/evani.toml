@@ -1,0 +1,45 @@
+# The sandbox's module manifest. `cargo xtask build sandbox` turns this into
+# Cargo features of the evani-sandbox crate; anything not listed is not built.
+name = "sandbox"
+kit = "example"      # crate kits/evani-kit-example
+look = "basic"       # crate looks/evani-look-basic
+effects = ["bloom", "vignette", "shadows"]   # each is an evani-fx feature; [] = no fx module
+
+[modules]
+physics = "simple"   # "simple" | "rigid" | "none"
+net = true
+xr = true
+live = true          # dev only; `--ship` builds always drop it
+# Stage 3, off until a game needs them (README "evani.toml"): models = true for
+# .glb models, anim = true for skinned/animated ones (implies models), ui = true for
+# fonts and menus. `cargo xtask check` errors when assets need a module you didn't list.
+# models = true
+models = true  # proof-model:line, the proof-figure model (assets/models, S3-3); new-game drops it
+# anim = true
+# ui = true
+
+# proof-model:begin (the S3-13a text proof; new-game drops it)
+# The fonts a `ui` game bakes (cargo xtask fonts; README "Text"). The sandbox
+# keeps `ui` off, so they ship only in the S3-13a proof build (`trunk build
+# --features ui` plus `cargo xtask fonts sandbox --dist <dist>`).
+[ui]
+fonts = [{ file = "engine/atkinson-hyperlegible/AtkinsonHyperlegible-Regular.ttf", charsets = ["latin"], name = "ui" }]
+# proof-model:end
+
+# What a reviewer should try in the demo (`cargo xtask review` puts it on the card).
+[review]
+try = [
+  "Watch the camera orbit the grid of spinning bevelled cubes and ringed orbs. Each should rest on the ground with a shadow under it, and the glowing ones should bloom.",
+  "Narrow the window to a phone shape. The whole grid should still fit across, with the panel bottom left.",
+  "Switch the tier in the debug panel from Low to Ultra and back. The overlay's frame time should stay smooth.",
+  "Untick bloom, then vignette, in the panel. The glow and then the dark corners should go.",
+  "Hold Space (or pad A). The spinners should turn faster while it is held.",
+]
+# The review captures: three signature moments, each on its own tier (Low
+# shows the shadow discs, Medium the shadow map). Each moment moves the
+# orbit clock, so the page screenshots after them show three different angles.
+moments = ["overview@ultra", "quarter_turn@low", "far_side@medium"]
+# The DOM HUD the review checks in every capture (index.html).
+hud = ["#sandbox-hud"]
+# The run video starts at the first signature moment.
+video = "overview"

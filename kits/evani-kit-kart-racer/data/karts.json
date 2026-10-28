@@ -1,0 +1,12 @@
+{
+  "karts": [
+    { "name": "Pip",    "color": [1.000, 0.078, 0.366], "suit": [0.92, 0.92, 0.98], "skill": 0.75, "lane_bias": 0.8,  "aggression": 0.6 },
+    { "name": "Mo",     "color": [0.023, 0.198, 1.000], "suit": [1.00, 0.66, 0.00], "skill": 0.65, "lane_bias": -0.8, "aggression": 0.5 },
+    { "name": "Taffy",  "color": [1.000, 0.658, 0.000], "suit": [0.36, 0.05, 1.00], "skill": 0.85, "lane_bias": 1.5,  "aggression": 0.7 },
+    { "name": "Bramble","color": [0.000, 0.479, 0.147], "suit": [1.00, 0.86, 0.36], "skill": 0.70, "lane_bias": -1.2, "aggression": 0.5 },
+    { "name": "Zuzu",   "color": [0.361, 0.045, 1.000], "suit": [0.26, 0.69, 0.00], "skill": 0.60, "lane_bias": 0.6,  "aggression": 0.9 },
+    { "name": "Nib",    "color": [0.000, 0.578, 0.745], "suit": [1.00, 0.20, 0.01], "skill": 0.50, "lane_bias": -0.5, "aggression": 0.3 },
+    { "name": "Clover", "color": [0.258, 0.694, 0.000], "suit": [0.02, 0.20, 1.00], "skill": 0.40, "lane_bias": 2.0,  "aggression": 0.6 },
+    { "name": "Rumble", "color": [1.000, 0.195, 0.010], "suit": [0.10, 0.07, 0.24], "skill": 0.30, "lane_bias": -1.8, "aggression": 0.8 }
+  ]
+}

@@ -1,0 +1,16 @@
+# Benchmark B, stylized organic 2 of 10: a chunky faceted boulder.
+make: rock
+style: toon_chunky
+parts:
+  body: { lumpy: medium, faceted, flat_bottom }
+relief:
+  body.all: stone(rubble, size 15cm, depth 1cm)
+  body.cavities: cracks(depth 4mm, density 0.3)
+must:
+  fit_box: [1.6, 1.2, 0.9] m
+  stands: ground
+  tri_budget: { low: 300, medium: 800, high: 2.5k, ultra: 8k }
+match: { front: ../ref/rock/front.png, side: ../ref/rock/side.png }
+explore: auto
+return: 3
+seed: 302

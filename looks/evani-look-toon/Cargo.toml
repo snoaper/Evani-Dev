@@ -1,0 +1,26 @@
+[package]
+name = "evani-look-toon"
+description = "Evani.Dev toon look: banded toon ramp, candy palette, filmic tonemap, distance haze; asks for ink outlines and bloom"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+# Micro-detail patterns for models with surface relief (S3-10): the body of
+# the renderer's `micro_detail` slot. Turned on, with evani-render's
+# `relief`, only by games whose models carry `extras.evani.relief`.
+relief = []
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate every slot body as real WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

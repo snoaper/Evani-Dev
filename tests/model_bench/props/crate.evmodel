@@ -1,0 +1,19 @@
+# Benchmark B, hard-surface prop 1 of 10: a wooden supply crate.
+make: crate
+style: toon_chunky
+parts:
+  body: { boxy, slightly_rounded }
+  slats: { count: 3, chunky }
+  corner_braces: { thick }
+relief:
+  slats.faces: wood_grain(scale 1)
+  body.edges: wear(chips, depth 2mm, density 0.3)
+must:
+  fit_box: [1.0, 1.0, 1.0] m
+  stands: ground
+  symmetric: x
+  tri_budget: { low: 300, medium: 800, high: 2k, ultra: 6k }
+match: { front: ../ref/crate/front.png, side: ../ref/crate/side.png }
+explore: auto
+return: 3
+seed: 101

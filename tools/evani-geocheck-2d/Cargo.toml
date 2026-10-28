@@ -1,0 +1,19 @@
+[package]
+name = "evani-geocheck-2d"
+description = "Evani.Dev 2D geometry integrity checker: overlaps, grounding, autotile seams, pixel integrity, camera framing, bot level checks and popup text on a JSON scene dump; writes report.md, report.json and highlighted crops"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only; never part of a game download. Engine-independent:
+# a kit's dump harness writes the JSON scene, this crate only reads it.
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+png = "=0.18.1"
+
+[lints]
+workspace = true

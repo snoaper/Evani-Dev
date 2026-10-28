@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Dev sandbox</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0d0f14; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    /* The sandbox HUD: the game's name and its one control, bottom left
+       (the debug overlay and panel use the top corners). */
+    #sandbox-hud { position: fixed; left: 12px; bottom: 12px; z-index: 900; padding: 6px 10px;
+      font: 600 15px/1.35 system-ui, sans-serif; color: #f9f6f1; background: rgba(13, 15, 20, 0.6);
+      border-radius: 6px; pointer-events: none; }
+    #sandbox-hud small { display: block; font-weight: 400; font-size: 13px; color: #a0c4ed; }
+  </style>
+  <!-- Trunk builds the evani-sandbox binary; wasm-opt -Oz runs in release.
+       The --enable flags match the wasm features rustc turns on by default
+       for wasm32-unknown-unknown (bulk memory, sign-ext, multivalue...);
+       without them Trunk's wasm-opt rejects the module. --low-memory-unused:
+       Rust puts its 1 MB stack first in memory, so the first 1 KB is never
+       read or written; wasm-opt folds address offsets (DECISIONS, size trims). -->
+  <link data-trunk rel="rust" data-bin="evani-sandbox" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+  <!-- proof-model:begin The proof model (evani.toml models = true): the GLB,
+       its core images and its per-device KTX2 sets, fetched at run time;
+       new-game drops this block. -->
+  <link data-trunk rel="copy-dir" href="assets/models">
+  <!-- proof-model:end -->
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+  <div id="sandbox-hud">Evani.Dev sandbox<small>Hold Space (or pad A) to spin faster</small></div>
+</body>
+</html>

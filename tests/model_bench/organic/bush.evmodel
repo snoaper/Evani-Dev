@@ -1,0 +1,15 @@
+# Benchmark B, stylized organic 9 of 10: a round clumpy bush.
+make: bush
+style: toon_chunky
+parts:
+  clumps: { count: 7, round, uneven: medium, flat_bottom }
+relief:
+  clumps.outer: scales(round, size 6cm, depth 5mm)
+must:
+  fit_box: [1.6, 1.4, 1.2] m
+  stands: ground
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 9k }
+match: { front: ../ref/bush/front.png, side: ../ref/bush/side.png }
+explore: auto
+return: 3
+seed: 309

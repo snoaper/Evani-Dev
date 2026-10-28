@@ -1,0 +1,33 @@
+[package]
+name = "evani-lookguard"
+description = "Evani.Dev look guard: look statistics, per-look limits, the signed approval record and the approval rules (native dev tool, never in a game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only; never part of a game download. A look crate uses it
+# only as a *build*-dependency (verify-only, `default-features = false`), so
+# it runs on the build machine and never reaches the wasm. Each dependency
+# has a one-line reason in DECISIONS.md.
+[features]
+default = ["full"]
+# Stats, limits, approvals and the audit log (the bridge and xtask). Without
+# it only the record check is built (sha2 + ed25519), for look build scripts.
+full = ["dep:flate2", "dep:getrandom"]
+# The well-known TEST key and a signer for it. Tests only; never trusted.
+test-signer = []
+
+[dependencies]
+sha2 = { version = "=0.10.9", default-features = false }
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+serde_json.workspace = true
+flate2 = { workspace = true, optional = true }
+getrandom = { version = "=0.4.3", optional = true }
+
+[dev-dependencies]
+evani-live.workspace = true
+
+[lints]
+workspace = true

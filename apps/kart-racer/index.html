@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sugarpeak Rally</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #9fd8ff; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    #ui { position: fixed; inset: 0; z-index: 900; pointer-events: none; color: #fff;
+          font: 600 16px/1.3 "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+          --ink: #2b1240; --pink: #ff5fa8; --mint: #4fe0b6; --lilac: #b58cff; --sun: #ffd23f; }
+    #ui .ink { text-shadow: 2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink), 0 4px 0 var(--ink); }
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+              justify-content: center; gap: 14px; pointer-events: auto; text-align: center; }
+    .screen.on { display: flex; }
+    .dim { background: rgba(43, 18, 64, 0.55); }
+    h1 { margin: 0; font-size: clamp(40px, 8vw, 96px); letter-spacing: 2px; color: var(--sun); transform: rotate(-3deg); }
+    h2 { margin: 0; font-size: clamp(30px, 5vw, 60px); color: var(--sun); }
+    .sub { margin: 0; font-size: 20px; }
+    .menu { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
+    button { font: inherit; font-size: 22px; padding: 10px 24px; border-radius: 14px; cursor: pointer; min-height: 44px; box-sizing: border-box;
+             border: 3px solid var(--ink); background: var(--mint); color: var(--ink); box-shadow: 0 5px 0 var(--ink); }
+    button:hover, button:focus-visible { background: var(--sun); outline: none; }
+    button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+    button.alt { background: var(--lilac); }
+    .keys { font-size: max(12px, 1.5vmin); background: rgba(43, 18, 64, 0.6); padding: 8px 14px; border-radius: 10px; margin: 0; }
+    .panel { background: rgba(43, 18, 64, 0.88); border: 3px solid var(--ink); border-radius: 18px; padding: 18px 24px;
+             max-height: 86vh; overflow: auto; text-align: left; min-width: 320px; }
+    .panel h3 { margin: 12px 0 6px; color: var(--sun); font-size: 18px; }
+    .panel label { display: flex; gap: 8px; align-items: center; margin: 4px 0; font-size: max(12px, 1.5vmin); }
+    .panel select, .panel input[type=range] { font: inherit; font-size: max(12px, 1.5vmin); }
+    .binds { border-collapse: collapse; font-size: max(12px, 1.5vmin); }
+    .binds td { padding: 3px 8px; }
+    .binds button { font-size: max(12px, 1.5vmin); padding: 3px 10px; box-shadow: 0 3px 0 var(--ink); min-width: 120px; }
+    .note { font-size: max(12px, 1.5vmin); opacity: 0.85; margin: 6px 0 0; }
+    /* Rows are in their kart's colour (set inline); a local player's is tinted and bold.
+       40 px rows and 64 px buttons at 1080p, 22 px rows and 44 px buttons on a phone. */
+    #res-table { border-collapse: collapse; font-size: 22px; font-weight: 700; background: rgba(43, 18, 64, 0.7); border-radius: 12px;
+                 text-shadow: 1px 1px 0 var(--ink); }
+    #res-table td { padding: 5px 14px; text-align: left; height: 30px; font-variant-numeric: tabular-nums; }
+    #res-table tr.me { font-weight: 900; }
+    #results .menu button { min-height: 64px; }
+    /* The podium scene fills the left of the screen; the results sit beside it (right 42 %), or
+       under it on a tall screen. The panel is solid enough to read, never over the podium. */
+    #results.screen { inset: 0 0 0 58%; justify-content: center; overflow: auto; box-sizing: border-box; padding: 8px 12px;
+                       border-left: 3px solid var(--ink); background: rgba(43, 18, 64, 0.9); }
+    #results.screen.on { display: flex; }
+    @media (max-aspect-ratio: 6/5) {
+      #results.screen { inset: 52% 0 0 0; border-left: 0; border-top: 3px solid var(--ink); }
+    }
+    /* A short screen (a phone held sideways): everything compact, still 12 px text and 44 px buttons. */
+    @media (max-height: 480px) {
+      .screen { gap: 6px; }
+      h1 { font-size: 40px; }
+      h2 { font-size: 26px; }
+      .sub { font-size: 14px; }
+      button { font-size: 18px; padding: 4px 20px; }
+      .menu { gap: 8px; min-width: 220px; }
+      #res-table { font-size: 14px; }
+      #res-table td { padding: 1px 12px; height: 20px; }
+      #results .menu { flex-direction: row; min-width: 0; }
+      #results .menu button { min-height: 44px; }
+    }
+  </style>
+  <!-- The race HUD's own stylesheet: a saved edit swaps into the running game (docs/LIVE_API.md 14). -->
+  <link data-trunk rel="inline" type="css" href="hud.css">
+  <link data-trunk rel="copy-dir" href="assets/models">
+  <!-- Trunk builds the evani-kart-racer binary; wasm-opt -Oz runs in release.
+       The --enable flags match the wasm features rustc turns on by default
+       for wasm32-unknown-unknown; without them Trunk's wasm-opt rejects the module. -->
+  <link data-trunk rel="rust" data-bin="evani-kart-racer" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+  <!-- The game's light DOM UI. The wasm fills the HUDs and settings and
+       shows one screen at a time; buttons say what they do in data-cmd. -->
+  <div id="ui">
+    <div id="hud0" class="hud"></div>
+    <div id="hud1" class="hud"></div>
+    <div id="title" class="screen">
+      <h1 class="ink">Sugarpeak Rally</h1>
+      <p class="sub ink">Sugarpeak Loop &middot; 3 laps &middot; 8 karts</p>
+      <div class="menu">
+        <button data-cmd="start1">1 Player</button>
+        <button data-cmd="start2">2 Players</button>
+        <button data-cmd="settings" class="alt">Settings</button>
+      </div>
+      <p class="keys">Player 1: W A S D to drive, Left Shift to drift, E for items &middot; Player 2: arrow keys, Right Shift, Enter<br>
+        Hold drift through a corner, let go for a boost. Esc pauses. Gamepads work too.</p>
+    </div>
+    <div id="pause" class="screen dim">
+      <h2 class="ink">Paused</h2>
+      <div class="menu">
+        <button data-cmd="resume">Resume</button>
+        <button data-cmd="restart">Restart race</button>
+        <button data-cmd="settings" class="alt">Settings</button>
+        <button data-cmd="title" class="alt">Quit to title</button>
+      </div>
+    </div>
+    <div id="results" class="screen dim">
+      <h2 id="res-head" class="ink"></h2>
+      <p id="res-sub" class="sub ink"></p>
+      <table id="res-table"></table>
+      <div class="menu">
+        <button data-cmd="restart">Race again</button>
+        <button data-cmd="title" class="alt">Title screen</button>
+      </div>
+    </div>
+    <div id="settings" class="screen dim">
+      <div class="panel" id="settings-body"></div>
+      <button data-cmd="close-settings">Back</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Benchmark B, hard-surface prop 5 of 10: one picket fence section.
+make: fence
+style: toon_chunky
+parts:
+  posts: { count: 2, chunky, cap: rounded }
+  rails: { count: 2 }
+  pickets: { count: 7, tips: pointed, uneven: slight }
+relief:
+  pickets.faces: wood_grain(scale 1)
+  rails.edges: wear(chips, depth 1mm, density 0.2)
+must:
+  fit_box: [0.15, 2.4, 1.1] m
+  stands: ground
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 8k }
+match: { front: ../ref/fence/front.png, side: ../ref/fence/side.png }
+explore: auto
+return: 3
+seed: 105

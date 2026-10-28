@@ -1,0 +1,5 @@
+{
+  "look": "toon",
+  "source": "looks/evani-look-toon TOON_RAMP_BODY (our own look): three hard bands; tools/model-bench-ref fails if the look's constants and these drift apart",
+  "ramp": { "band_low": 0.02, "band_high": 0.45, "softness": 0.025, "base": 0.25, "mid": 0.35, "top": 0.4 }
+}

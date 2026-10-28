@@ -1,0 +1,7 @@
+[alias]
+# `cargo xtask build sandbox`, `cargo xtask sizes`
+xtask = "run --quiet --package evani-xtask --"
+
+[target.wasm32-unknown-unknown]
+# web-sys gates the WebGPU (Gpu*) bindings behind this cfg.
+rustflags = ["--cfg=web_sys_unstable_apis"]

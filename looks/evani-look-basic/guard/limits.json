@@ -1,0 +1,123 @@
+{
+  "band": {
+    "bloom": [
+      0.20064,
+      0.248676
+    ],
+    "clipped": [
+      0.028021,
+      0.051443
+    ],
+    "colorfulness": [
+      56.42455,
+      64.222886
+    ],
+    "crushed": [
+      -0.01,
+      0.01
+    ],
+    "log_avg": [
+      0.314402,
+      0.342821
+    ],
+    "luma_range": [
+      0.238824,
+      0.282745
+    ],
+    "luma_std": [
+      0.078046,
+      0.100003
+    ],
+    "mean_luma": [
+      0.584764,
+      0.631075
+    ],
+    "saturation": [
+      0.304692,
+      0.344795
+    ]
+  },
+  "band_widen": {
+    "floors": {
+      "bloom": 0.02,
+      "clipped": 0.005,
+      "colorfulness": 3.0,
+      "crushed": 0.01,
+      "log_avg": 0.01,
+      "luma_range": 0.02,
+      "luma_std": 0.01,
+      "mean_luma": 0.02,
+      "saturation": 0.02
+    },
+    "fraction": 0.1
+  },
+  "baseline": {
+    "mid": {
+      "bloom": 0.22064,
+      "clipped": 0.046443,
+      "colorfulness": 61.222886,
+      "crushed": 0.0,
+      "log_avg": 0.332821,
+      "luma_range": 0.262745,
+      "luma_std": 0.088046,
+      "mean_luma": 0.611075,
+      "saturation": 0.324692
+    },
+    "start": {
+      "bloom": 0.228676,
+      "clipped": 0.033021,
+      "colorfulness": 59.42455,
+      "crushed": 0.0,
+      "log_avg": 0.324402,
+      "luma_range": 0.258824,
+      "luma_std": 0.090003,
+      "mean_luma": 0.604764,
+      "saturation": 0.324795
+    }
+  },
+  "format": "evani-look-limits/1",
+  "look": "evani-look-basic",
+  "stat_version": 1,
+  "tolerances": {
+    "bloom": {
+      "mode": "abs",
+      "value": 0.05
+    },
+    "clipped": {
+      "mode": "up",
+      "value": 0.01
+    },
+    "colorfulness": {
+      "mode": "abs",
+      "value": 10.0
+    },
+    "crushed": {
+      "mode": "up",
+      "value": 0.02
+    },
+    "log_avg": {
+      "min": 0.005,
+      "mode": "rel",
+      "value": 0.2
+    },
+    "luma_range": {
+      "min": 0.02,
+      "mode": "rel",
+      "value": 0.15
+    },
+    "luma_std": {
+      "min": 0.01,
+      "mode": "rel",
+      "value": 0.15
+    },
+    "mean_luma": {
+      "mode": "abs",
+      "value": 0.04
+    },
+    "saturation": {
+      "min": 0.02,
+      "mode": "rel",
+      "value": 0.15
+    }
+  }
+}

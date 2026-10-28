@@ -1,0 +1,20 @@
+[package]
+name = "evani-look-basic"
+description = "Evani.Dev basic look: proves the LookPlugin interface (palette, materials, tonemap slot, post settings, params, generator)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate the tonemap slot body as real WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

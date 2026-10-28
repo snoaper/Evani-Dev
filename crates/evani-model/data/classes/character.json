@@ -1,0 +1,183 @@
+{
+  "class": "character",
+  "version": 1,
+  "family": "organic",
+  "means": "a full adult character standing in a T-pose, facing +z: a layered body (head, neck, torso, pelvis, arms, legs, feet), garments grown over it (a long fringed coat open at the front, a belt with a buckle, boots with folded cuffs, a neck scarf), hair, beard and a wide-brimmed hat; colour regions and a skeleton with skin weights",
+  "source": "our own adult proportions in metres (about 1.9 m with the hat), measured for the frontier marshal intent; the reference picture is used for proportions only",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 5, "typical": ["front", "three_quarter", "side"] },
+  "clip_floor": true,
+  "blend": "0.03",
+  "blend_layers": { "body": "0.03", "garment": "0.006", "accessory": "0.003" },
+  "regions": {
+    "skin": "#c69071",
+    "hair": "#231a14",
+    "leather": "#7b5233",
+    "belt": "#3b261a",
+    "cloth_dark": "#2b2a2c",
+    "shirt": "#4a4038",
+    "bandana": "#5f7286",
+    "felt": "#3c2a1e",
+    "metal": "#a39878",
+    "boot": "#6a4428"
+  },
+  "measures": {
+    "coat.thickness": { "default": 0.02, "min": 0.01, "max": 0.04, "step": 0.005, "fit": false, "means": "how far the coat stands off the body" },
+    "fringe.count": { "default": 13, "min": 0, "max": 20, "step": 1, "count": true, "fit": false, "means": "fringe strands under each arm" },
+    "fringe.length": { "default": 0.2, "min": 0.1, "max": 0.3, "step": 0.02, "fit": false, "means": "fringe strand length" },
+    "hat.brim": { "default": 0.205, "min": 0.16, "max": 0.26, "step": 0.01, "fit": false, "means": "hat brim radius" }
+  },
+  "parts": [
+    { "name": "head", "role": "body", "solid": "body", "layer": "body", "region": "skin", "bone": "head", "gen": "ellipsoid", "params": { "size": ["0.18", "0.25", "0.21"] }, "at": ["0", "1.70", "0"] },
+    { "name": "nose", "role": "body", "solid": "body", "layer": "body", "region": "skin", "bone": "head", "gen": "ellipsoid", "params": { "size": ["0.035", "0.05", "0.045"] }, "at": ["0", "1.69", "0.10"] },
+    { "name": "neck", "role": "body", "solid": "body", "layer": "body", "region": "skin", "bone": "neck", "gen": "tube", "params": { "radius": "0.055", "points": ["0", "1.50", "0", "0", "1.62", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "torso", "role": "body", "solid": "body", "layer": "body", "region": "shirt", "bone": ["spine", "chest"], "gen": "rounded_box", "params": { "size": ["0.34", "0.46", "0.22"], "bevel": "0.1" }, "at": ["0", "1.30", "0"] },
+    { "name": "pelvis", "role": "body", "solid": "body", "layer": "body", "region": "cloth_dark", "bone": "hips", "gen": "ellipsoid", "params": { "size": ["0.34", "0.30", "0.22"] }, "at": ["0", "1.0", "0"] },
+    { "name": "upper_arm", "role": "body", "solid": "body", "layer": "body", "region": "shirt", "bone": ["clavicle_{side}", "upperarm_{side}"], "gen": "tube", "mirror": "x", "params": { "radius": "0.06", "radius_end": "0.05", "points": ["0.12", "1.45", "0", "0.47", "1.45", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "forearm", "role": "body", "solid": "body", "layer": "body", "region": "shirt", "bone": "forearm_{side}", "gen": "tube", "mirror": "x", "params": { "radius": "0.05", "radius_end": "0.04", "points": ["0.47", "1.45", "0", "0.72", "1.45", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "hand", "role": "body", "solid": "body", "layer": "body", "region": "skin", "bone": "hand_{side}", "gen": "rounded_box", "mirror": "x", "params": { "size": ["0.15", "0.04", "0.085"], "bevel": "0.018" }, "at": ["0.795", "1.45", "0"] },
+    { "name": "thumb", "role": "body", "solid": "body", "layer": "body", "region": "skin", "bone": "hand_{side}", "gen": "tube", "mirror": "x", "params": { "radius": "0.016", "points": ["0.75", "1.455", "0.03", "0.79", "1.46", "0.07"] }, "at": ["0", "0", "0"] },
+    { "name": "thigh", "role": "body", "solid": "body", "layer": "body", "region": "cloth_dark", "bone": "thigh_{side}", "gen": "tube", "mirror": "x", "params": { "radius": "0.10", "radius_end": "0.09", "points": ["0.10", "0.93", "0", "0.145", "0.50", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "trouser_puff", "role": "body", "solid": "body", "layer": "body", "region": "cloth_dark", "bone": ["thigh_{side}", "shin_{side}"], "gen": "ellipsoid", "mirror": "x", "params": { "size": ["0.19", "0.2", "0.19"] }, "at": ["0.152", "0.66", "0"] },
+    { "name": "shin", "role": "body", "solid": "body", "layer": "body", "region": "cloth_dark", "bone": "shin_{side}", "gen": "tube", "mirror": "x", "params": { "radius": "0.078", "radius_end": "0.06", "points": ["0.143", "0.57", "0", "0.19", "0.10", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "foot", "role": "body", "solid": "body", "layer": "body", "region": "boot", "bone": ["foot_{side}", "toe_{side}"], "gen": "rounded_box", "mirror": "x", "params": { "size": ["0.10", "0.09", "0.28"], "bevel": "0.035" }, "at": ["0.19", "0.045", "0.05"] },
+
+    { "name": "coat", "role": "body", "solid": "body", "layer": "garment", "region": "leather", "gen": "layer",
+      "over": ["torso", "pelvis", "upper_arm", "forearm"],
+      "params": { "thickness": "coat.thickness", "fill": "0.025" },
+      "keep": [
+        { "n": ["0", "-1", "0"], "at": ["0", "0.79", "0"] },
+        { "n": ["0", "1", "0"], "at": ["0", "1.57", "0"] },
+        { "n": ["1", "0", "0"], "at": ["0.71", "0", "0"], "mirror": "x" }
+      ],
+      "drape": { "below": "1.0", "ease": "0.02", "flare": "0.12" },
+      "checks": { "shoulder": ["0.17", "1.52", "0"], "armpit": ["0.17", "1.33", "0"], "elbow": ["0.47", "1.51", "0"] },
+      "cuts": [
+        [
+          { "n": ["1", "-0.2", "0"], "at": ["0.02", "1.12", "0"], "mirror": "x" },
+          { "n": ["0", "-1", "0"], "at": ["0", "1.10", "0"] },
+          { "n": ["0", "0", "-1"], "at": ["0", "0", "0"] }
+        ],
+        [
+          { "n": ["1", "0.15", "0"], "at": ["0.02", "1.10", "0"], "mirror": "x" },
+          { "n": ["0", "1", "0"], "at": ["0", "1.12", "0"] },
+          { "n": ["0", "0", "-1"], "at": ["0", "0", "0"] }
+        ]
+      ] },
+    { "name": "lapels", "role": "body", "solid": "body", "layer": "garment", "region": "leather", "gen": "layer",
+      "over": ["torso"],
+      "params": { "thickness": "coat.thickness + 0.01", "fill": "0.01" },
+      "keep": [
+        { "n": ["0", "-1", "0"], "at": ["0", "1.13", "0"] },
+        { "n": ["0", "1", "0"], "at": ["0", "1.56", "0"] },
+        { "n": ["0", "0", "-1"], "at": ["0", "0", "0.03"] },
+        { "n": ["1", "-0.2", "0"], "at": ["0.065", "1.12", "0"], "mirror": "x" }
+      ],
+      "cuts": [
+        [
+          { "n": ["1", "-0.2", "0"], "at": ["0.02", "1.12", "0"], "mirror": "x" },
+          { "n": ["0", "0", "-1"], "at": ["0", "0", "0"] }
+        ]
+      ] },
+    { "name": "belt", "role": "body", "solid": "body", "layer": "garment", "region": "belt", "gen": "layer",
+      "over": ["torso", "pelvis"],
+      "params": { "thickness": "coat.thickness + 0.012", "fill": "0.03" },
+      "keep": [
+        { "n": ["0", "-1", "0"], "at": ["0", "1.10", "0"] },
+        { "n": ["0", "1", "0"], "at": ["0", "1.14", "0"] }
+      ] },
+    { "name": "boots", "role": "body", "solid": "body", "layer": "garment", "region": "boot", "gen": "layer",
+      "over": ["shin", "foot"],
+      "params": { "thickness": "0.012", "fill": "0.02" },
+      "keep": [{ "n": ["0", "1", "0"], "at": ["0", "0.53", "0"] }] },
+    { "name": "cuff", "role": "body", "solid": "body", "layer": "garment", "region": "boot", "gen": "layer",
+      "over": ["shin"],
+      "params": { "thickness": "0.03" },
+      "keep": [
+        { "n": ["0", "-1", "0"], "at": ["0", "0.46", "0"] },
+        { "n": ["0", "1", "0"], "at": ["0", "0.53", "0"] }
+      ] },
+    { "name": "bandana", "role": "body", "solid": "body", "layer": "garment", "region": "bandana", "gen": "layer",
+      "over": ["neck"],
+      "params": { "thickness": "0.03" },
+      "keep": [
+        { "n": ["0", "-1", "0"], "at": ["0", "1.49", "0"] },
+        { "n": ["0", "1", "0"], "at": ["0", "1.59", "0"] }
+      ] },
+    { "name": "bib", "role": "body", "solid": "body", "layer": "garment", "region": "bandana", "gen": "layer",
+      "over": ["torso", "neck"],
+      "params": { "thickness": "0.025", "fill": "0.01" },
+      "keep": [
+        { "n": ["0", "1", "0"], "at": ["0", "1.55", "0"] },
+        { "n": ["0", "0", "-1"], "at": ["0", "0", "0.03"] },
+        { "n": ["1", "-0.55", "0"], "at": ["0", "1.36", "0"], "mirror": "x" }
+      ] },
+    { "name": "hair", "role": "body", "solid": "body", "layer": "garment", "region": "hair", "bone": "head", "gen": "blended_body", "mirror": "x",
+      "params": { "blend": "0.025", "blobs": [
+        "0", "1.738", "-0.04", "0.104", "0.104", "0.09", "0",
+        "0", "1.60", "-0.08", "0.125", "0.14", "0.07", "0",
+        "0.10", "1.595", "-0.03", "0.05", "0.15", "0.08", "0",
+        "0", "1.50", "-0.10", "0.11", "0.06", "0.05", "0"
+      ] }, "at": ["0", "0", "0"] },
+    { "name": "beard", "role": "body", "solid": "body", "layer": "garment", "region": "hair", "bone": "head", "gen": "blended_body", "mirror": "x",
+      "params": { "blend": "0.02", "blobs": [
+        "0", "1.60", "0.055", "0.082", "0.05", "0.052", "0",
+        "0", "1.58", "0.085", "0.045", "0.035", "0.035", "0",
+        "0.075", "1.625", "0.02", "0.022", "0.055", "0.06", "0",
+        "0", "1.648", "0.106", "0.034", "1.640", "0.099", "0.012"
+      ] }, "at": ["0", "0", "0"] },
+
+    { "name": "eye", "role": "detail", "solid": "body", "layer": "accessory", "region": "hair", "bone": "head", "gen": "ellipsoid", "mirror": "x", "params": { "size": ["0.026", "0.014", "0.016"] }, "at": ["0.04", "1.712", "0.092"] },
+    { "name": "brow", "role": "detail", "solid": "body", "layer": "accessory", "region": "hair", "bone": "head", "gen": "ellipsoid", "mirror": "x", "params": { "size": ["0.05", "0.012", "0.022"] }, "at": ["0.042", "1.729", "0.09"] },
+    { "name": "knot", "role": "body", "solid": "body", "layer": "accessory", "region": "bandana", "bone": "chest", "gen": "ellipsoid", "params": { "size": ["0.07", "0.06", "0.05"] }, "at": ["0", "1.46", "0.11"] },
+    { "name": "buckle", "role": "body", "solid": "body", "layer": "accessory", "region": "metal", "bone": ["hips", "spine"], "gen": "rounded_box", "params": { "size": ["0.07", "0.06", "0.02"], "bevel": "0.006" }, "at": ["0", "0", "0"],
+      "relations": [{ "kind": "attached_at", "to": "belt.front", "self": "back", "offset": ["0", "0", "-0.004"] }] },
+    { "name": "hat_crown", "role": "body", "solid": "body", "layer": "accessory", "region": "felt", "bone": "head", "gen": "lathe",
+      "params": { "profile": ["0", "0", "0.1", "0", "0.1", "0.09", "0.085", "0.125", "0.05", "0.13", "0", "0.115"] }, "at": ["0", "1.765", "0"] },
+    { "name": "hat_brim", "role": "body", "solid": "body", "layer": "accessory", "region": "felt", "bone": "head", "gen": "lathe",
+      "params": { "profile": [
+        "0", "-max(0.006, min_feature / 2)",
+        "0.15", "-max(0.006, min_feature / 2)",
+        "hat.brim - 0.015", "-0.012 - max(0.006, min_feature / 2)",
+        "hat.brim", "-0.03 - max(0.006, min_feature / 2)",
+        "hat.brim", "-0.03 + max(0.006, min_feature / 2)",
+        "hat.brim - 0.015", "-0.012 + max(0.006, min_feature / 2)",
+        "0.15", "max(0.006, min_feature / 2)",
+        "0", "max(0.006, min_feature / 2)"
+      ] }, "at": ["0", "1.765", "0"] },
+    { "name": "fringe", "role": "detail", "solid": "body", "layer": "garment", "region": "leather", "bone": ["upperarm_{side}", "forearm_{side}"], "gen": "tube", "mirror": "x",
+      "count": "fringe.count", "spread": "0.0325", "jitter": ["0", "0.015", "0"],
+      "params": { "radius": "0.006", "points": ["0", "0", "0", "0", "-fringe.length", "0"] }, "at": ["0.465", "1.40", "0"] }
+  ],
+  "groups": {},
+  "variants": {},
+  "counts": {},
+  "skeleton": [
+    { "name": "root", "at": ["0", "0", "0"], "radius": "0.1" },
+    { "name": "hips", "parent": "root", "at": ["0", "0.95", "0"], "radius": "0.12" },
+    { "name": "spine", "parent": "hips", "at": ["0", "1.10", "0"], "radius": "0.12" },
+    { "name": "chest", "parent": "spine", "at": ["0", "1.28", "0"], "radius": "0.12" },
+    { "name": "neck", "parent": "chest", "at": ["0", "1.50", "0"], "radius": "0.05" },
+    { "name": "head", "parent": "neck", "at": ["0", "1.60", "0"], "radius": "0.06" },
+    { "name": "clavicle_{side}", "parent": "chest", "mirror": "x", "at": ["0.04", "1.45", "0"], "radius": "0.06" },
+    { "name": "upperarm_{side}", "parent": "clavicle_{side}", "mirror": "x", "at": ["0.18", "1.45", "0"], "radius": "0.07" },
+    { "name": "forearm_{side}", "parent": "upperarm_{side}", "mirror": "x", "at": ["0.47", "1.45", "0"], "radius": "0.06" },
+    { "name": "hand_{side}", "parent": "forearm_{side}", "mirror": "x", "at": ["0.72", "1.45", "0"], "radius": "0.05" },
+    { "name": "thigh_{side}", "parent": "hips", "mirror": "x", "at": ["0.10", "0.93", "0"], "radius": "0.09" },
+    { "name": "shin_{side}", "parent": "thigh_{side}", "mirror": "x", "at": ["0.145", "0.50", "0"], "radius": "0.07" },
+    { "name": "foot_{side}", "parent": "shin_{side}", "mirror": "x", "at": ["0.19", "0.09", "0"], "radius": "0.06" },
+    { "name": "toe_{side}", "parent": "foot_{side}", "mirror": "x", "at": ["0.19", "0.03", "0.15"], "radius": "0.04" }
+  ],
+  "anchors": [
+    { "name": "hand_l", "joint": "hand_l", "offset": ["0.08", "0", "0"], "n": ["1", "0", "0"] },
+    { "name": "hand_r", "joint": "hand_r", "offset": ["-0.08", "0", "0"], "n": ["-1", "0", "0"] },
+    { "name": "seat", "joint": "hips", "offset": ["0", "-0.12", "0"], "n": ["0", "-1", "0"] },
+    { "name": "head_look", "joint": "head", "offset": ["0", "0.12", "0.1"], "n": ["0", "0", "1"] },
+    { "name": "head_top", "joint": "head", "offset": ["0", "0.295", "0"], "n": ["0", "1", "0"] },
+    { "name": "foot_l", "joint": "foot_l", "offset": ["0", "-0.09", "0"], "n": ["0", "-1", "0"] },
+    { "name": "foot_r", "joint": "foot_r", "offset": ["0", "-0.09", "0"], "n": ["0", "-1", "0"] }
+  ],
+  "tri_budget": { "low": 3000, "medium": 8000, "high": 20000, "ultra": 60000 },
+  "musts": { "connected": true, "stands": "ground", "symmetric": "x" },
+  "collision": { "footprint": "capsule" }
+}

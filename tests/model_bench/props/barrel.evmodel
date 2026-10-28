@@ -1,0 +1,18 @@
+# Benchmark B, hard-surface prop 2 of 10: a stave barrel with metal hoops.
+make: barrel
+style: toon_chunky
+parts:
+  body: { bulge: medium, staves: 12 }
+  hoops: { count: 3, thick }
+  lid: { inset: slight }
+relief:
+  body.outer: planks(straight, width 9cm, depth 3mm)
+  hoops.outer: rivets(row, size 1cm, pitch 12cm)
+must:
+  fit_box: [0.9, 0.9, 1.2] m
+  stands: ground
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 8k }
+match: { front: ../ref/barrel/front.png, side: ../ref/barrel/side.png }
+explore: auto
+return: 3
+seed: 102

@@ -1,0 +1,32 @@
+[package]
+name = "evani-kit-model-view"
+description = "Evani.Dev model viewer kit (dev only): shows Evani.Model's tier files through the engine's 3D path, turntable, orbit, tier switch and hot swap for the Evani.Model tab"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+# The tab's `view.*` commands and `view_*` events (docs/EVANI_MODEL_TAB.md 5.2,
+# 5.4) through evani-live's app-command hook. The app turns it on with its
+# `live` module; without it the page still shows the model its address names.
+live = ["dep:evani-live"]
+# The model reader. The app turns it on with its `models` module; without it
+# every tier file is refused with `no_models_module`.
+models = ["dep:evani-gltf"]
+
+[dependencies]
+evani-core.workspace = true
+# Models are drawn as custom meshes (one per region colour) on the 3D path.
+evani-render = { workspace = true, features = ["forward", "meshes"] }
+# Our own glTF reader (S3-2): the tier files are decoded with it.
+evani-gltf = { workspace = true, optional = true }
+serde_json.workspace = true
+evani-live = { workspace = true, optional = true }
+
+[dev-dependencies]
+evani-look-toon.workspace = true
+
+[lints]
+workspace = true

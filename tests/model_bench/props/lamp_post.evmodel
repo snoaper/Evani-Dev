@@ -1,0 +1,20 @@
+# Benchmark B, hard-surface prop 4 of 10: a curved-arm lamp post.
+make: lamp_post
+style: toon_chunky
+parts:
+  base: { shape: stepped, wide }
+  pole: { tapered, tall }
+  arm: { shape: curl, length: 0.9 m }
+  lamp: { shape: bell, chunky }
+relief:
+  pole.outer: panel_lines(along, width 4mm, depth 2mm, pitch 60cm)
+  base.top: rivets(row, size 1.5cm, pitch 10cm)
+must:
+  fit_box: [1.2, 0.7, 4.5] m
+  stands: ground
+  anchor: { name: light, at: lamp.bottom }
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 8k }
+match: { front: ../ref/lamp_post/front.png, side: ../ref/lamp_post/side.png }
+explore: auto
+return: 3
+seed: 104

@@ -1,0 +1,48 @@
+[package]
+name = "evani-convert"
+description = "Evani.Dev model converter (`cargo xtask convert`): per-tier LOD files, ASTC and BC7 texture sets, manifest and reports. Drives pinned external programs (gltfpack, glTF-Transform, KTX-Software); native dev tool, never in a game download."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only: no game depends on it (a test in evani-guide's
+# checks scans every game manifest for engine-only dependencies). The
+# external programs are run as separate processes, never linked
+# (STAGE3_PLAN decisions 1 and 2).
+[dependencies]
+serde_json.workspace = true
+# Report sizes: gzip and brotli of every output file (both already in the
+# tree for `cargo xtask size-report`).
+flate2.workspace = true
+brotli.workspace = true
+# Input hashes in the report (already in the tree for xtask and the guide).
+sha2 = { version = "=0.10.9", default-features = false }
+# The pinned tools (`extools`) and the playground package cap.
+evani-guide = { path = "../evani-guide" }
+# Read every converted file back with the engine's own reader. `anim-source`
+# (native only, never in a game; evani-gltf's test
+# anim_source_is_off_in_game_builds guards that) reads the glTF animations
+# the clip baker (S3-7) turns into the compact clip block.
+evani-gltf = { workspace = true, features = ["anim-source"] }
+# Mesh findings (`meshcheck`) for the report; the PNG writer for test fixtures.
+evani-model.workspace = true
+# The asset manifest's content hash (FNV-1a, the engine's own).
+evani-core.workspace = true
+# The quality gate's SSIMULACRA2 score (STAGE3_PLAN S3-6, decision 3):
+# BSD-2-Clause, plain Rust, no default features (no image loading, no rayon).
+ssimulacra2 = { version = "=0.5.1", default-features = false }
+# Look matching (S3-12): the toon look's own palette for `--snap-palette`, one
+# source and no copy (an in-repo crate, not a new outside dependency).
+evani-look-toon.workspace = true
+# Layered materials: the KHR sheen / clear coat / anisotropy / iridescence
+# reader and the extras record the engine reads back (one source).
+evani-material-layers.workspace = true
+
+[dev-dependencies]
+# S3-8 cross-check: the game decoder reads the baked clips like the reference reader.
+evani-anim.workspace = true
+
+[lints]
+workspace = true

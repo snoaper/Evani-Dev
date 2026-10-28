@@ -1,0 +1,24 @@
+# Benchmark B, vehicle 4 of 10: Sugarpeak Rally rival kart (Bramble: rugged and boxy, wide pods, small wing).
+# Reference: the base kart with this rival's shape overrides (manifest.json),
+# made by the reference tool; if Chris picks option A (decision D4) the
+# reference is the base kart for all eight.
+make: kart
+like: bench/kart_01_pip
+style: toon_chunky
+parts:
+  chassis: { boxy, chunky }
+  side_pods: { size: large, boxy }
+  wing: { small }
+  bumper: { type: bar, thick }
+relief:
+  tyres.outer: tread(block, depth 8mm, pitch 7cm)
+  chassis.edges: wear(dents, depth 2mm, density 0.3)
+must:
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_04_bramble/side.png, front: ../ref/kart_04_bramble/front.png, top: ../ref/kart_04_bramble/top.png, chase: ../ref/kart_04_bramble/chase.png, mesh: ../ref/kart_04_bramble/mesh.glb }
+explore: auto
+return: 3
+seed: 204

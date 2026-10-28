@@ -1,0 +1,20 @@
+[package]
+name = "evani-look-cartoon2d"
+description = "Evani.Dev cartoon 2D look: bold ink outlines, two-tone cel colours baked into sprites, squash and stretch; candy palettes, flat tonemap, board tile texture"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate the slot body as real WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

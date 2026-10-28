@@ -1,0 +1,84 @@
+[package]
+name = "evani-live"
+description = "Evani.Dev live control API (dev builds only; never in a shipped game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+# Live code swapping (docs/LIVE_API.md 10): on in every dev build, since a
+# game's `live` feature is the only way in. Shipped builds never link
+# evani-live, so they never carry it (xtask's ship scan checks).
+default = ["hotpatch"]
+hotpatch = ["evani-core/hotpatch", "dep:subsecond", "dep:wasm-bindgen-futures"]
+# Drop-to-convert (docs/LIVE_API.md 16): `model.load` and `model.compare`
+# hot-load a converted model into a split before/after view, and the page
+# gets the drop zone, the "Convert a model" button, the slider, the tier
+# switch and the report panel. A game's `models` feature turns it on with
+# `evani-live?/models`, so only dev builds of model games carry it.
+models = ["evani-render/models", "evani-render/hooks", "dep:wasm-bindgen-futures"]
+
+[dependencies]
+evani-core = { workspace = true, features = ["capture", "focus"] }
+serde_json.workspace = true
+# The geometry debug view (`debug.geometry`): the renderer's draw list and
+# the geocheck library's pure checks (no CLI, no kit adapters).
+evani-render.workspace = true
+evani-geocheck = { path = "../../tools/evani-geocheck", default-features = false }
+# Dioxus subsecond (MIT OR Apache-2.0): applies code patches (`hotpatch`).
+subsecond = { version = "=0.7.10", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+wasm-bindgen-futures = { workspace = true, optional = true }
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "Location",
+    "Node",
+    "WebSocket",
+    "MessageEvent",
+    "CloseEvent",
+    "Event",
+    "MouseEvent",
+    "PointerEvent",
+    "WheelEvent",
+    "console",
+    # Page hot-replace (page_patch.rs, LIVE_API.md 14).
+    "HtmlTemplateElement",
+    "DocumentFragment",
+    "NodeList",
+    # Live code swapping (hotpatch.rs, LIVE_API.md 10).
+    "Response",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+    "HtmlElement",
+    "CssStyleDeclaration",
+    "Storage",
+    # Drop-to-convert (convert_ui.rs, LIVE_API.md 16): the drop zone reads a
+    # dropped file's name and bytes and posts them to the bridge.
+    "DataTransfer",
+    "DragEvent",
+    "File",
+    "FileList",
+    "HtmlInputElement",
+    "RequestInit",
+] }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# Native tests only: inflate our PNG and deflate output to check them.
+flate2.workspace = true
+evani-kit-example.workspace = true
+evani-look-basic.workspace = true
+evani-render.workspace = true
+evani-fx = { workspace = true, features = ["bloom", "vignette"] }
+# Native tests only: a fake renderer parses spliced slot WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }

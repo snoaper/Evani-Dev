@@ -1,0 +1,31 @@
+[package]
+name = "evani-material-nature"
+description = "Evani.Dev nature and see-through materials: back-lit foliage and grass, thin translucency (ears, leaves, paper, lampshades, wax), water with code-made waves, Fresnel, depth fade and shoreline foam, and thin glass, drawn as one depth-reading post pass over analytic surfaces picked from glTF material extensions, an `evani_kind` tag or kit data"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# An opt-in module: a game lists it as an optional dependency behind its own
+# feature, and only then is any of it in the download. It uses evani-render's
+# public post-effect interface and shader slots, so the engine, evani-fx and
+# every existing WGSL file are untouched.
+[features]
+default = []
+# Follow evani-render's per-frame near/far planes (evani-fx has the same
+# switch) when a game turns them on; without it the engine's fixed planes.
+camera-range = ["evani-render/camera-range"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward"] }
+# glTF material extensions and `evani_kind` tags are read from the .glb's
+# JSON chunk (evani-gltf keeps extras but drops extensions).
+serde_json.workspace = true
+
+[dev-dependencies]
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

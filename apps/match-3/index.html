@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#a46fc0">
+  <title>Puff's Sweet Grid</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #a46fc0; overflow: hidden; overscroll-behavior: none;
+                 -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
+    #ui { position: fixed; inset: 0; z-index: 900; pointer-events: none; color: #fff;
+          font: 700 16px/1.25 "Trebuchet MS", "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif;
+          --ink: #1c0f2b; --pink: #ff5fa8; --mint: #4fe0b6; --lilac: #b58cff; --sun: #ffd23f; --cream: #fff4e2; }
+    .ink { text-shadow: 2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
+           0 2px 0 var(--ink), 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 -2px 0 var(--ink), 0 5px 0 var(--ink); }
+    button { font: inherit; font-size: clamp(17px, 2.6vmin, 26px); padding: 0.45em 1.2em; border-radius: 16px; cursor: pointer;
+             border: 3px solid var(--ink); background: var(--mint); color: var(--ink); box-shadow: 0 5px 0 var(--ink);
+             pointer-events: auto; touch-action: manipulation; }
+    button:hover, button:focus-visible { background: var(--sun); outline: none; }
+    button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+    button.alt { background: var(--lilac); }
+
+    /* HUD: placed by the game in the panel beside (landscape) or above (portrait) the board. */
+    #hud { position: absolute; }
+    .hud-body { display: none; position: absolute; inset: 0; box-sizing: border-box; padding: calc(var(--u) * 0.5);
+                background: rgba(255, 244, 226, 0.94); border: 4px solid var(--ink); border-radius: calc(var(--u) * 0.9);
+                box-shadow: 6px 8px 0 rgba(28, 15, 43, 0.35); color: var(--ink);
+                flex-direction: column; gap: calc(var(--u) * 0.4); align-items: stretch; }
+    .hud-body.on { display: flex; }
+    .hud-body.result .pause { visibility: hidden; }
+    .hud-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #level-name { font-size: max(10px, calc(var(--u) * 0.62)); opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pause { position: relative; font-size: calc(var(--u) * 0.7); padding: 0.15em 0.6em; border-radius: 12px; background: var(--lilac); box-shadow: 0 3px 0 var(--ink); }
+    /* The tap target is at least 48 x 48 CSS px (a fingertip), however small the drawn button:
+       52 px measured inside the border, so the 48 px square's edges are covered too. */
+    .pause::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(52px, 100%); height: max(52px, 100%);
+                     transform: translate(-50%, -50%); }
+    .box { background: #fff; border: 3px solid var(--ink); border-radius: calc(var(--u) * 0.55); padding: calc(var(--u) * 0.3) calc(var(--u) * 0.45);
+           box-shadow: inset 0 -5px 0 rgba(28, 15, 43, 0.12); text-align: center; }
+    .lbl { font-size: max(10px, calc(var(--u) * 0.55)); text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+    .moves { font-size: calc(var(--u) * 2.3); line-height: 1; color: var(--sun); }
+    .score { font-size: calc(var(--u) * 1.15); line-height: 1.1; }
+    /* Side margins keep the last (largest, lit) star mark inside the score box. */
+    .bar { position: relative; height: calc(var(--u) * 0.55); margin: calc(var(--u) * 0.45) calc(var(--u) * 0.35) calc(var(--u) * 0.2);
+           background: #e9dcef; border: 3px solid var(--ink); border-radius: 99px; }
+    .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; width: 0;
+            background: linear-gradient(#ffe37a, #ffb81f); transition: width 0.25s ease-out; }
+    /* A mark is centred on its threshold by `transform`; its pop animates `scale`
+       (a separate property), so the pop never undoes the centring. */
+    .mark { position: absolute; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: calc(var(--u) * 0.95);
+            line-height: 1; color: #d8c7e2; text-shadow: 0 0 2px var(--ink), 0 0 2px var(--ink), 0 2px 0 var(--ink); }
+    /* Lit: bigger, sun yellow with a thick ink outline and a warm highlight, so the
+       earned marks stand out even on a full bar. */
+    .mark.lit { --k: max(1.5px, calc(var(--u) * 0.075)); color: #ffd84a; scale: 1.18; animation: markpop 0.35s ease-out;
+                text-shadow: var(--k) 0 0 var(--ink), calc(-1 * var(--k)) 0 0 var(--ink), 0 var(--k) 0 var(--ink), 0 calc(-1 * var(--k)) 0 var(--ink),
+                             var(--k) var(--k) 0 var(--ink), calc(-1 * var(--k)) var(--k) 0 var(--ink), var(--k) calc(-1 * var(--k)) 0 var(--ink),
+                             calc(-1 * var(--k)) calc(-1 * var(--k)) 0 var(--ink), 0 calc(var(--k) * 2) 0 var(--ink), 0 0 calc(var(--u) * 0.3) rgba(255, 246, 200, 0.95); }
+    @keyframes markpop { from { scale: 1.8; } to { scale: 1.18; } }
+    .stars { font-size: calc(var(--u) * 0.8); color: var(--sun); letter-spacing: 2px; text-shadow: 0 2px 0 var(--ink); display: none; }
+    .goals { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 0.35); justify-content: center; }
+    .goal { display: flex; align-items: center; gap: calc(var(--u) * 0.2); background: #fff; border: 3px solid var(--ink);
+            border-radius: calc(var(--u) * 0.5); padding: calc(var(--u) * 0.15) calc(var(--u) * 0.4) calc(var(--u) * 0.15) calc(var(--u) * 0.2);
+            font-size: calc(var(--u) * 0.9); box-shadow: inset 0 -4px 0 rgba(28, 15, 43, 0.12); }
+    .goal svg { width: calc(var(--u) * 1.3); height: calc(var(--u) * 1.3); overflow: visible; }
+    .goal.done { background: #c9f7df; }
+    .goal.done span { color: #11905a; }
+    /* Landscape: any room the panel has spare (no banner showing) is spread between the rows,
+       not left as an empty strip at the bottom. */
+    .hud-body.on:not(.portrait) { justify-content: space-between; }
+    /* The ink outline in the HUD scales with its unit (2 px and a 5 px drop at a 30 px unit),
+       so small text on a phone does not look doubled. */
+    #hud .ink { --o: calc(var(--u) * 0.07); --d: calc(var(--u) * 0.17);
+                text-shadow: var(--o) var(--o) 0 var(--ink), calc(-1 * var(--o)) var(--o) 0 var(--ink), var(--o) calc(-1 * var(--o)) 0 var(--ink),
+                             calc(-1 * var(--o)) calc(-1 * var(--o)) 0 var(--ink), 0 var(--o) 0 var(--ink), var(--o) 0 0 var(--ink),
+                             calc(-1 * var(--o)) 0 0 var(--ink), 0 calc(-1 * var(--o)) 0 var(--ink),
+                             /* the drop as one solid block under the outline, not a second copy of the text */
+                             var(--o) calc(var(--d) * 0.6) 0 var(--ink), 0 calc(var(--d) * 0.6) 0 var(--ink), calc(-1 * var(--o)) calc(var(--d) * 0.6) 0 var(--ink),
+                             var(--o) var(--d) 0 var(--ink), 0 var(--d) 0 var(--ink), calc(-1 * var(--o)) var(--d) 0 var(--ink); }
+    .banner { display: none; text-align: center; font-size: calc(var(--u) * 0.95); color: var(--sun); }
+    .banner.on { display: block; animation: pulse 0.8s ease-in-out infinite alternate; }
+    .banner.warn { color: #ff6b8b; }
+    /* Portrait: one compact row block above the board. */
+    .hud-body.portrait { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; gap: calc(var(--u) * 0.25) calc(var(--u) * 0.4);
+                         padding: calc(var(--u) * 0.3) calc(var(--u) * 0.45); align-content: start; }
+    .hud-body.portrait .hud-top { grid-column: 1 / 3; }
+    .hud-body.portrait .moves-box { display: flex; flex-direction: column; justify-content: center; padding: calc(var(--u) * 0.1) calc(var(--u) * 0.5); }
+    .hud-body.portrait .moves { font-size: calc(var(--u) * 1.5); }
+    .hud-body.portrait .goals { grid-column: 1 / 3; }
+    .hud-body.portrait .score-box { padding: calc(var(--u) * 0.15) calc(var(--u) * 0.4); }
+    .hud-body.portrait .score { font-size: calc(var(--u) * 0.85); }
+    .hud-body.portrait .score-box .lbl { font-size: max(10px, calc(var(--u) * 0.45)); line-height: 1; }
+    .hud-body.portrait .goals { justify-content: flex-start; }
+    .hud-body.portrait .goal { font-size: calc(var(--u) * 0.75); }
+    .hud-body.portrait .goal svg { width: calc(var(--u) * 1.05); height: calc(var(--u) * 1.05); }
+    .hud-body.portrait .pause { font-size: max(17px, calc(var(--u) * 0.85)); padding: 0.2em 0.8em; }
+    .hud-body.portrait .banner { position: absolute; left: 0; right: 0; bottom: calc(var(--u) * -1.6); }
+
+    /* Floating score and combo callouts (positioned and sized by the game, kit hud::float_font;
+       the font sizes below are only the fallback). */
+    #floats { position: absolute; inset: 0; overflow: hidden; }
+    .float { position: absolute; left: 0; top: 0; display: none; white-space: nowrap; will-change: transform, opacity; }
+    .float.on { display: block; }
+    /* A solid ink outline all round (not a soft shadow), so a score reads over a white flash too. */
+    .float.score { font-size: clamp(18px, 3vmin, 34px); color: #fff; --k: max(2px, 0.09em);
+                   text-shadow: var(--k) 0 0 var(--ink), calc(-1 * var(--k)) 0 0 var(--ink), 0 var(--k) 0 var(--ink), 0 calc(-1 * var(--k)) 0 var(--ink),
+                                var(--k) var(--k) 0 var(--ink), calc(-1 * var(--k)) var(--k) 0 var(--ink), var(--k) calc(-1 * var(--k)) 0 var(--ink),
+                                calc(-1 * var(--k)) calc(-1 * var(--k)) 0 var(--ink), 0 calc(var(--k) * 2) 0 var(--ink); }
+    .float.callout { font-size: clamp(22px, 5vmin, 54px); color: var(--sun); transform-origin: center; }
+    .float.callout.big { color: var(--pink); font-size: clamp(26px, 6vmin, 64px); }
+
+    /* Screens. */
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+              justify-content: center; gap: 14px; pointer-events: auto; text-align: center; padding: 16px; box-sizing: border-box; }
+    .screen.on { display: flex; }
+    .dim { background: rgba(28, 15, 43, 0.6); }
+    /* The title keeps the attract board clear: its logo and menu sit in the box the game
+       places (kit-independent app code `ui::title_box`) in the panel column above Puff
+       (landscape) or the strip above the board (portrait), sized from the title unit --t. */
+    #title { pointer-events: none; padding: 0; }
+    .title-box { position: absolute; display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+                 gap: calc(var(--t) * 0.5); box-sizing: border-box; padding: calc(var(--t) * 0.4); pointer-events: auto; }
+    .title-box h1 { font-size: max(24px, calc(var(--t) * 2)); margin-bottom: max(6px, calc(var(--t) * 0.4)); }
+    .title-box h1 small { margin-top: 0.35em; }
+    .title-box .menu { min-width: 0; gap: calc(var(--t) * 0.4); }
+    .title-box .menu button { font-size: max(15px, calc(var(--t) * 0.75)); }
+    .menu-row { display: contents; }
+    .title-box .keys { font-size: max(12px, calc(var(--t) * 0.5)); max-width: none; display: none; }
+    .title-box.hint .keys { display: block; }
+    /* Portrait: the logo on one line, Play full width, Levels and Settings side by side. */
+    .title-box.portrait { gap: calc(var(--t) * 0.35); padding: calc(var(--t) * 0.3) calc(var(--t) * 0.4); }
+    .title-box.portrait h1 { font-size: max(22px, calc(var(--t) * 1.6)); transform: rotate(-2deg); margin-bottom: max(4px, calc(var(--t) * 0.2)); }
+    .title-box.portrait h1 br { display: none; }
+    .title-box.portrait h1 small { margin-top: 0.4em; }
+    .title-box.portrait .menu { gap: calc(var(--t) * 0.35); }
+    .title-box.portrait .menu button { padding: 0.3em 0.8em; }
+    .title-box.portrait .menu-row { display: flex; gap: calc(var(--t) * 0.35); }
+    .title-box.portrait .menu-row button { flex: 1; }
+    h1 { margin: 0; font-size: clamp(42px, 9vmin, 120px); line-height: 0.95; color: var(--sun); transform: rotate(-4deg); }
+    h1 small { display: block; font-size: 0.45em; color: #fff; transform: rotate(2deg); margin-top: 0.2em; }
+    h2 { margin: 0; font-size: clamp(34px, 7vmin, 80px); color: var(--sun); }
+    .sub { margin: 0; font-size: clamp(16px, 2.6vmin, 26px); max-width: 32em; }
+    .menu { display: flex; flex-direction: column; gap: 12px; min-width: min(300px, 80vw); }
+    .keys { font-size: clamp(13px, 2vmin, 18px); background: rgba(28, 15, 43, 0.65); padding: 8px 14px; border-radius: 12px; margin: 0; max-width: 26em; }
+    /* A very short screen (a phone held sideways): no room for the keys hint beside Puff,
+       and a narrower menu keeps clear of him. */
+    @media (max-height: 480px) { .keys, .title-box.hint .keys { display: none; } .menu { min-width: 230px; } .title-box .menu { min-width: 0; }
+      /* The HUD's small labels stay at least 10 px (above) and are drawn stronger here. */
+      .lbl { opacity: 0.88; } #level-name { opacity: 1; } }
+    #levels-list { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    #levels-list button { display: flex; flex-direction: column; align-items: center; min-width: 7em; }
+    #levels-list small { color: #c77a00; font-size: 1.1em; letter-spacing: 2px; }
+    .card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none;
+            background: rgba(255, 244, 226, 0.97); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px;
+            padding: clamp(14px, 3vmin, 30px) clamp(18px, 4vmin, 44px); text-align: center; box-shadow: 8px 10px 0 rgba(28, 15, 43, 0.4);
+            max-width: 86vw; }
+    .card.on { display: block; animation: drop 0.45s cubic-bezier(.2, 1.6, .4, 1); }
+    .card h2 { color: var(--pink); font-size: clamp(26px, 5.5vmin, 60px); }
+    .card p { margin: 0.4em 0 0; font-size: clamp(16px, 3vmin, 30px); }
+    #res-stars { font-size: clamp(54px, 13vmin, 140px); color: var(--sun); letter-spacing: 6px; line-height: 1; animation: pop 0.5s ease-out; }
+    /* The result: a cream card the game centres over the board's cells (app `ui::result_card`),
+       sized from the card unit --r with minimum font sizes, so it never reaches the HUD panel.
+       Only the board is dimmed (#res-dim, placed on the board by the game), so the HUD panel
+       and Puff stay bright and Puff's cheer or sigh reads with the card. */
+    #result.dim { background: none; padding: 0; }
+    .res-dim { position: absolute; background: rgba(28, 15, 43, 0.4); border-radius: 12px; }
+    .res-card { position: absolute; transform: translate(-50%, -50%); box-sizing: border-box; display: flex; flex-direction: column;
+                align-items: center; gap: calc(var(--r) * 0.45); padding: calc(var(--r) * 0.8) calc(var(--r) * 0.7);
+                background: rgba(255, 244, 226, 0.97); color: var(--ink); border: 4px solid var(--ink); border-radius: calc(var(--r) * 1.1);
+                box-shadow: 6px 8px 0 rgba(28, 15, 43, 0.4); animation: drop 0.45s cubic-bezier(.2, 1.6, .4, 1); }
+    .res-card h2 { color: var(--pink); font-size: max(22px, calc(var(--r) * 1.5)); line-height: 1.05; }
+    .res-card #res-stars { font-size: max(34px, calc(var(--r) * 2.4)); letter-spacing: 0.1em;
+                           text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink), 0 4px 0 var(--ink); }
+    .res-card #res-stars:empty { display: none; }
+    .res-card .sub { font-size: max(14px, calc(var(--r) * 0.75)); line-height: 1.25; max-width: none; color: var(--ink); }
+    .res-card .menu { flex-direction: row; flex-wrap: wrap; justify-content: center; min-width: 0; gap: calc(var(--r) * 0.4); }
+    .res-card .menu button { font-size: max(15px, calc(var(--r) * 0.7)); padding: 0.35em 0.9em; }
+    #res-next { display: none; }
+    #res-next.on { display: inline-block; }
+    .panel { background: rgba(28, 15, 43, 0.9); border: 3px solid var(--ink); border-radius: 18px; padding: 16px 22px;
+             max-height: 78vh; overflow: auto; text-align: left; min-width: min(340px, 86vw); }
+    .panel h3 { margin: 12px 0 6px; color: var(--sun); font-size: 19px; }
+    .panel label { display: flex; gap: 8px; align-items: center; margin: 6px 0; font-size: 16px; }
+    .panel select, .panel input { font: inherit; font-size: 16px; }
+    .panel input[type=checkbox] { width: 22px; height: 22px; }
+    .binds { border-collapse: collapse; font-size: 16px; }
+    .binds td { padding: 3px 8px; }
+    .binds button { font-size: 15px; padding: 4px 10px; box-shadow: 0 3px 0 var(--ink); min-width: 120px; }
+    .note { font-size: 14px; opacity: 0.85; margin: 6px 0 0; }
+    @keyframes pop { from { transform: scale(1.6); } to { transform: scale(1); } }
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+    @keyframes drop { from { transform: translate(-50%, -120%) rotate(-6deg); } to { transform: translate(-50%, -50%); } }
+  </style>
+  <!-- Trunk builds the evani-match-3 binary; wasm-opt -Oz runs in release.
+       The --enable flags match the wasm features rustc turns on by default
+       for wasm32-unknown-unknown; without them Trunk's wasm-opt rejects the module. -->
+  <link data-trunk rel="rust" data-bin="evani-match-3" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+  <!-- The game's light DOM UI. The wasm fills the HUD and screens and shows
+       one screen at a time; buttons say what they do in data-cmd. -->
+  <div id="ui">
+    <div id="hud">
+      <div id="hud-body" class="hud-body">
+        <div class="hud-top"><span id="level-name"></span><button data-cmd="pause" class="pause" aria-label="Pause">II</button></div>
+        <div class="box moves-box"><div id="moves" class="moves ink"></div><div class="lbl">moves</div></div>
+        <div class="box score-box"><div class="lbl">score</div><div id="score" class="score"></div>
+          <div class="bar"><div id="bar-fill" class="fill"></div><div id="bar-marks"></div></div>
+          <div id="hud-stars" class="stars"></div></div>
+        <div id="goals" class="goals"></div>
+        <div id="banner" class="banner ink"></div>
+      </div>
+    </div>
+    <!-- After the HUD: a callout may sit over the HUD panel's edge. -->
+    <div id="floats"></div>
+    <div id="intro" class="card"><h2 id="intro-name"></h2><p id="intro-goal"></p></div>
+    <div id="title" class="screen">
+      <div id="title-box" class="title-box">
+        <h1 class="ink">Puff's<br> Sweet Grid<small class="ink">a candy match-3</small></h1>
+        <div class="menu">
+          <button data-cmd="play">Play</button>
+          <div class="menu-row">
+            <button data-cmd="levels" class="alt">Levels</button>
+            <button data-cmd="settings" class="alt">Settings</button>
+          </div>
+        </div>
+        <p class="keys">Drag a sweet onto a neighbour, or tap two neighbours, to make a line of three.<br>
+          Four in a line, an L or five make specials. Keys: arrows to move, Space to pick, Esc to pause.</p>
+      </div>
+    </div>
+    <div id="levels" class="screen dim">
+      <h2 class="ink">Levels</h2>
+      <div id="levels-list"></div>
+      <button data-cmd="close-levels" class="alt">Back</button>
+    </div>
+    <div id="pause" class="screen dim">
+      <h2 class="ink">Paused</h2>
+      <div class="menu">
+        <button data-cmd="resume">Resume</button>
+        <button data-cmd="restart">Restart level</button>
+        <button data-cmd="settings" class="alt">Settings</button>
+        <button data-cmd="title" class="alt">Quit to title</button>
+      </div>
+    </div>
+    <div id="result" class="screen dim">
+      <div id="res-dim" class="res-dim"></div>
+      <div id="res-card" class="res-card">
+        <h2 id="res-head" class="ink"></h2>
+        <div id="res-stars"></div>
+        <p id="res-sub" class="sub"></p>
+        <div class="menu">
+          <button id="res-next" data-cmd="next">Next level</button>
+          <button data-cmd="restart">Play again</button>
+          <button data-cmd="title" class="alt">Title screen</button>
+        </div>
+      </div>
+    </div>
+    <div id="settings" class="screen dim">
+      <div class="panel" id="settings-body"></div>
+      <button data-cmd="close-settings">Back</button>
+    </div>
+  </div>
+</body>
+</html>

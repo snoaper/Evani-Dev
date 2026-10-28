@@ -1,0 +1,43 @@
+# The kart racer demo's module manifest. `cargo xtask build kart-racer` turns
+# this into Cargo features of the evani-kart-racer crate; anything not listed
+# is not built.
+name = "kart-racer"
+kit = "kart-racer"   # crate kits/evani-kit-kart-racer
+look = "toon"        # crate looks/evani-look-toon
+effects = ["outline", "speedlines", "shake", "bloom", "shadows"]   # each is an evani-fx feature
+
+[modules]
+physics = "simple"   # the catalog's physics for kart racers; the kit's arcade karts read physics.gravity
+net = true           # online play through a host's link (evani-net/1, lockstep with a referee); with no host the single-player game is unchanged
+models = true        # S4-1b: the rivals' shared part pack (data/rivals.json); streams after the title
+xr = false
+live = true          # dev only; `--ship` builds always drop it
+
+[review]
+# Scripted capture moments for the card (the kit's CaptureMoments), each on a tier.
+# Every tier shows at least twice; the HUD is in each one (countdown included).
+moments = ["countdown@high", "countdown_go@low", "rivals@high", "rivals@low", "drift@high", "boost@ultra", "item_hit@low", "overtake@medium", "final_lap@ultra", "finish@medium", "podium@high", "threat@ultra"]
+# Shot on every showcase tier (Low and Ultra) besides the target pack's signature moments:
+# the incoming-item warning at full strength.
+showcase_extra = ["threat"]
+# The race HUD, one element per player, and the results screen that takes its place once the
+# race is over (the podium); the review needs one of them visible and filled in each capture.
+hud = ["#hud0", "#results"]
+# The run video starts on a drift-boost: sparks, the flame and the speed lines.
+video = "boost"
+try = [
+  "Start a one-player race, hold W and drift through the first bend (steer and hold Left Shift) until the sparks turn orange, then let go for a boost.",
+  "Drive through a row of floating item boxes and press E to use what you get; from the back of the pack the items get stronger.",
+  "Pause with Esc, open Settings, switch effects off and on and change a key.",
+  "Back at the title, start a two-player race: player 2 drives with the arrow keys, Right Shift and Enter.",
+  "Finish three laps: first to third gets the podium, fourth or lower loses.",
+]
+
+# A playground for the Evani.app library: it supports free roam (docs/PLAYGROUNDS.md).
+[playground]
+free_roam = true
+
+# Beside the shipped game, `build-facts.json` (docs/PUBLISHING.md "The statement"): the game's own licence and any third-party files.
+[statement]
+game_licence = "MIT"
+third_party = []

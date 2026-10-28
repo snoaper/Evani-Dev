@@ -1,0 +1,22 @@
+# Benchmark B, hard-surface prop 8 of 10: a treasure chest with a domed lid.
+make: chest
+style: toon_chunky
+parts:
+  base: { boxy, slightly_rounded }
+  lid: { shape: dome, chunky }
+  bands: { count: 2, thick }
+  lock: { shape: plate, size: large }
+relief:
+  base.faces: planks(straight, width 12cm, depth 2mm)
+  bands.outer: rivets(row, size 1.2cm, pitch 8cm)
+must:
+  fit_box: [0.7, 1.0, 0.75] m
+  stands: ground
+  clear: { parts: [lock, bands], at_least: 1cm }
+  symmetric: x
+  swing_clear: { part: lid, about: base.lid_hinge, angle: 95 deg, at_least: 3mm }
+  tri_budget: { low: 500, medium: 1.2k, high: 3k, ultra: 9k }
+match: { front: ../ref/chest/front.png, side: ../ref/chest/side.png }
+explore: auto
+return: 3
+seed: 108

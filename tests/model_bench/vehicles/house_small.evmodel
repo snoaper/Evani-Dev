@@ -1,0 +1,20 @@
+# Benchmark B, structure 9 of 10: a small cottage with a pitched roof.
+make: house
+style: toon_chunky
+parts:
+  walls: { boxy, slightly_leaning }
+  roof: { shape: gable, steep, overhang: large }
+  chimney: { chunky, crooked: slight }
+  door: { shape: arched }
+  windows: { count: 3, shape: round_top }
+relief:
+  walls.faces: bricks(running, size 25cm, depth 8mm)
+  roof.up: planks(staggered, width 30cm, depth 1cm)
+must:
+  fit_box: [7.0, 6.0, 6.0] m
+  stands: ground
+  tri_budget: { low: 1.5k, medium: 4k, high: 10k, ultra: 30k }
+match: { front: ../ref/house_small/front.png, side: ../ref/house_small/side.png }
+explore: auto
+return: 3
+seed: 209

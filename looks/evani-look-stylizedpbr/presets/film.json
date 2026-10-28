@@ -1,0 +1,42 @@
+{
+  "name": "film",
+  "description": "Animated-film light: warm key from front-left, cool fill, a back kick that makes edges glow, shadows as deep as the plain look's with little wrap, a key 60 degrees up and a soft ambient so dark stone and turned-away faces keep mid-tones; a softer, hue-keeping tonemap that keeps white off the clip so glows stay orange; exposure set so the scene keeps the plain look's brightness; skin with a soft warm terminator, wet eyes with a catchlight. Same params and shaders as the plain look; only values differ.",
+  "params": {
+    "wrap": 0.1,
+    "spec": 1.0,
+    "rim": 0.3,
+    "rim_width": 0.35,
+    "sky": 0.42,
+    "ground": 0.25,
+    "ground_warmth": 0.6,
+    "contrast": 0.85,
+    "kick": 0.35,
+    "kick_wrap": 0.2,
+    "kick_yaw": 40,
+    "kick_pitch": 35,
+    "kick_r": 1.0,
+    "kick_g": 0.96,
+    "kick_b": 0.88,
+    "fill": 0.28,
+    "fill_r": 0.75,
+    "fill_g": 0.82,
+    "fill_b": 1.0,
+    "fill_yaw": 120,
+    "fill_pitch": 10,
+    "skin_wrap": 0.45,
+    "skin_scatter": 0.8,
+    "eye_gloss": 0.06,
+    "eye_catch": 2.5,
+    "hue_keep": 0.9
+  },
+  "post": {
+    "render.light.direction": [-0.2865, 0.866, 0.4095],
+    "render.light.color": [1.0, 0.92, 0.82],
+    "render.light.intensity": 2.4,
+    "render.saturation": 1.166,
+    "render.ambient": [0.18, 0.19, 0.22],
+    "render.clear_color": [0.35, 0.55, 0.85],
+    "render.exposure": 0.5,
+    "fx.bloom.threshold": 4.0
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "assets": [
+    {
+      "group": "later",
+      "hash": "eb7db50dc08e4b60",
+      "kind": "model",
+      "name": "layer-brushed.glb",
+      "priority": 10,
+      "size": 35044,
+      "url": "layer-brushed.glb"
+    },
+    {
+      "group": "later",
+      "hash": "497596b9b27ed912",
+      "kind": "model",
+      "name": "layer-brushed.low.glb",
+      "priority": 10,
+      "size": 15276,
+      "tier": "low",
+      "url": "layer-brushed.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "7db907859a5b3d19",
+      "kind": "model",
+      "name": "layer-bubble.glb",
+      "priority": 10,
+      "size": 27784,
+      "url": "layer-bubble.glb"
+    },
+    {
+      "group": "later",
+      "hash": "f9019bc6e6169c0e",
+      "kind": "model",
+      "name": "layer-bubble.low.glb",
+      "priority": 10,
+      "size": 11196,
+      "tier": "low",
+      "url": "layer-bubble.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "ef6ce4be45a83ab7",
+      "kind": "model",
+      "name": "layer-coat.glb",
+      "priority": 10,
+      "size": 27768,
+      "url": "layer-coat.glb"
+    },
+    {
+      "group": "later",
+      "hash": "927d3c4593ad6cef",
+      "kind": "model",
+      "name": "layer-coat.low.glb",
+      "priority": 10,
+      "size": 11180,
+      "tier": "low",
+      "url": "layer-coat.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "eb43af6069737034",
+      "kind": "model",
+      "name": "layer-velvet.glb",
+      "priority": 10,
+      "size": 59512,
+      "url": "layer-velvet.glb"
+    },
+    {
+      "group": "later",
+      "hash": "aa597a85c5e1a320",
+      "kind": "model",
+      "name": "layer-velvet.low.glb",
+      "priority": 10,
+      "size": 20408,
+      "tier": "low",
+      "url": "layer-velvet.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "2efe5b21c5b3372e",
+      "kind": "model",
+      "name": "proof-barrel.glb",
+      "priority": 10,
+      "size": 21568,
+      "url": "proof-barrel.glb"
+    },
+    {
+      "group": "later",
+      "hash": "f1af5c634ca88362",
+      "kind": "model",
+      "name": "proof-crate.glb",
+      "priority": 10,
+      "size": 17088,
+      "url": "proof-crate.glb"
+    },
+    {
+      "group": "later",
+      "hash": "f5a202ea82061b13",
+      "kind": "texture",
+      "name": "proof-figure.base.astc.ktx2",
+      "priority": 5,
+      "size": 1398624,
+      "url": "proof-figure.base.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "4271d110f89e9fa0",
+      "kind": "texture",
+      "name": "proof-figure.base.bc7.ktx2",
+      "priority": 5,
+      "size": 1398576,
+      "url": "proof-figure.base.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "d47e1b3e309ee3cd",
+      "kind": "texture",
+      "name": "proof-figure.base.jpg",
+      "priority": 5,
+      "size": 155761,
+      "url": "proof-figure.base.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "3550a7a4f59da037",
+      "kind": "model",
+      "name": "proof-figure.glb",
+      "priority": 10,
+      "size": 137404,
+      "url": "proof-figure.glb"
+    },
+    {
+      "group": "later",
+      "hash": "77292dda2e951192",
+      "kind": "texture",
+      "name": "proof-figure.low.base.jpg",
+      "priority": 5,
+      "size": 13808,
+      "tier": "low",
+      "url": "proof-figure.low.base.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "3f26491d22ba5e1e",
+      "kind": "model",
+      "name": "proof-figure.low.glb",
+      "priority": 10,
+      "size": 137204,
+      "tier": "low",
+      "url": "proof-figure.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "0d1ffc4a010e994f",
+      "kind": "texture",
+      "name": "proof-figure.low.normal.png",
+      "priority": 5,
+      "size": 1539,
+      "tier": "low",
+      "url": "proof-figure.low.normal.png"
+    },
+    {
+      "group": "later",
+      "hash": "4fcedcedd4b09a8a",
+      "kind": "texture",
+      "name": "proof-figure.mr.png",
+      "priority": 5,
+      "size": 2209,
+      "url": "proof-figure.mr.png"
+    },
+    {
+      "group": "later",
+      "hash": "037aa6b045364725",
+      "kind": "texture",
+      "name": "proof-figure.normal.astc.ktx2",
+      "priority": 5,
+      "size": 350032,
+      "url": "proof-figure.normal.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "274efd0ce5530a6a",
+      "kind": "texture",
+      "name": "proof-figure.normal.bc7.ktx2",
+      "priority": 5,
+      "size": 349968,
+      "url": "proof-figure.normal.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "1cdd15dccac5186d",
+      "kind": "texture",
+      "name": "proof-figure.normal.png",
+      "priority": 5,
+      "size": 5376,
+      "url": "proof-figure.normal.png"
+    },
+    {
+      "group": "later",
+      "hash": "d17596697a20e6e2",
+      "kind": "model",
+      "name": "proof-kart.glb",
+      "priority": 10,
+      "size": 66072,
+      "url": "proof-kart.glb"
+    }
+  ],
+  "version": 2
+}

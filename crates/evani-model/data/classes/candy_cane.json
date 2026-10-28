@@ -1,0 +1,45 @@
+{
+  "class": "candy_cane",
+  "version": 1,
+  "family": "organic",
+  "means": "a giant candy cane standing on its end: a straight shaft, a half-circle hook bending to +x and a short drop",
+  "source": "our own proportions for a chunky toon candy cane (about 2.5 m tall); the hook is a half circle of centre-line radius hook.radius",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 6.0, "typical": ["front", "three_quarter", "side"] },
+  "clip_floor": true,
+  "measures": {
+    "shaft.radius": { "default": 0.135, "min": 0.08, "max": 0.145, "step": 0.01, "means": "tube radius" },
+    "shaft.height": { "default": 2.05, "min": 1.4, "max": 2.1, "step": 0.1, "means": "height where the hook starts (centre line)" },
+    "hook.radius": { "default": 0.28, "min": 0.18, "max": 0.3, "step": 0.03, "means": "centre-line radius of the hook" },
+    "hook.drop": { "default": 0.2, "min": 0.0, "max": 0.4, "step": 0.05, "means": "length of the straight drop after the hook" }
+  },
+  "parts": [
+    { "name": "shaft", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "shaft.radius", "points": ["0", "-0.2", "0", "0", "shaft.height", "0"] },
+      "at": ["0", "0", "0"] },
+    { "name": "hook", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "shaft.radius", "points": [
+        "hook.radius + hook.radius * -1.00000", "shaft.height + hook.radius * 0.00000", "0",
+        "hook.radius + hook.radius * -0.96593", "shaft.height + hook.radius * 0.25882", "0",
+        "hook.radius + hook.radius * -0.86603", "shaft.height + hook.radius * 0.50000", "0",
+        "hook.radius + hook.radius * -0.70711", "shaft.height + hook.radius * 0.70711", "0",
+        "hook.radius + hook.radius * -0.50000", "shaft.height + hook.radius * 0.86603", "0",
+        "hook.radius + hook.radius * -0.25882", "shaft.height + hook.radius * 0.96593", "0",
+        "hook.radius + hook.radius * 0.00000", "shaft.height + hook.radius * 1.00000", "0",
+        "hook.radius + hook.radius * 0.25882", "shaft.height + hook.radius * 0.96593", "0",
+        "hook.radius + hook.radius * 0.50000", "shaft.height + hook.radius * 0.86603", "0",
+        "hook.radius + hook.radius * 0.70711", "shaft.height + hook.radius * 0.70711", "0",
+        "hook.radius + hook.radius * 0.86603", "shaft.height + hook.radius * 0.50000", "0",
+        "hook.radius + hook.radius * 0.96593", "shaft.height + hook.radius * 0.25882", "0",
+        "hook.radius + hook.radius * 1.00000", "shaft.height + hook.radius * 0.00000", "0",
+        "2 * hook.radius", "shaft.height - hook.drop", "0"
+      ] },
+      "at": ["0", "0", "0"] }
+  ],
+  "groups": {},
+  "variants": {},
+  "counts": {},
+  "anchors": [ { "name": "top", "at": "hook.mid" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "box" }
+}

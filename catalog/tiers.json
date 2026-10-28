@@ -1,0 +1,173 @@
+{
+  "tiers": [
+    {
+      "id": "lite",
+      "name": "Lite",
+      "target_devices": "budget tablets and low-end phones (Mali-G52 class)",
+      "frame_rate": "60 fps target, 30 fps floor",
+      "render_scale": "0.65×, DPR ≤ 1",
+      "max_draw_calls": "100",
+      "max_triangles": "40k",
+      "max_sprites": "3,000",
+      "max_texture_memory": "64 MB",
+      "max_particles": "1,000",
+      "shadows": "Blob or baked shadows",
+      "budget_points": 5,
+      "download_targets": {
+        "boot_kb": 100,
+        "total_kb": 2560,
+        "texture_memory_mb": 48
+      }
+    },
+    {
+      "id": "low",
+      "name": "Low",
+      "target_devices": "mid-range phones and older integrated GPUs",
+      "frame_rate": "60 fps target, 30 fps floor",
+      "render_scale": "0.75×, DPR ≤ 1.25",
+      "max_draw_calls": "150",
+      "max_triangles": "100k",
+      "max_sprites": "5,000",
+      "max_texture_memory": "96 MB",
+      "max_particles": "2,000",
+      "shadows": "Blob or baked shadows",
+      "budget_points": 7,
+      "download_targets": {
+        "boot_kb": 200,
+        "total_kb": 3584,
+        "texture_memory_mb": 72
+      }
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "target_devices": "recent phones and integrated laptop GPUs",
+      "frame_rate": "60 fps",
+      "render_scale": "1.0×, DPR ≤ 1.5",
+      "max_draw_calls": "300",
+      "max_triangles": "400k",
+      "max_sprites": "20,000",
+      "max_texture_memory": "192 MB",
+      "max_particles": "10,000",
+      "shadows": "1 cascade, 1024²",
+      "budget_points": 11,
+      "download_targets": {
+        "boot_kb": 300,
+        "total_kb": 5120,
+        "texture_memory_mb": 144
+      }
+    },
+    {
+      "id": "high",
+      "name": "High",
+      "target_devices": "desktops and laptops with discrete GPUs",
+      "frame_rate": "60–120 fps",
+      "render_scale": "1.0×, DPR ≤ 2",
+      "max_draw_calls": "800",
+      "max_triangles": "2M",
+      "max_sprites": "100,000",
+      "max_texture_memory": "512 MB",
+      "max_particles": "50,000",
+      "shadows": "2 cascades, 2048²",
+      "budget_points": 16,
+      "download_targets": {
+        "boot_kb": 400,
+        "total_kb": 6656,
+        "texture_memory_mb": 384
+      }
+    },
+    {
+      "id": "ultra",
+      "name": "Ultra",
+      "target_devices": "high-end desktop GPUs",
+      "frame_rate": "60 fps at 1440p and above",
+      "render_scale": "1.0× native, optional temporal upscale",
+      "max_draw_calls": "2,500 (indirect)",
+      "max_triangles": "6M",
+      "max_sprites": "500,000",
+      "max_texture_memory": "1.5 GB (streamed)",
+      "max_particles": "250,000",
+      "shadows": "4 cascades, 4096²",
+      "budget_points": 24,
+      "download_targets": {
+        "boot_kb": 500,
+        "total_kb": 7168,
+        "texture_memory_mb": 1152
+      }
+    },
+    {
+      "id": "vr",
+      "name": "VR",
+      "target_devices": "standalone headsets and PC VR through WebXR",
+      "frame_rate": "72–90 Hz stereo, 120 Hz where supported",
+      "render_scale": "1.0× eye buffers with fixed or eye-tracked foveation",
+      "max_draw_calls": "200",
+      "max_triangles": "750k",
+      "max_sprites": "10,000",
+      "max_texture_memory": "256 MB",
+      "max_particles": "5,000",
+      "shadows": "1 cascade, 1024², or baked",
+      "budget_points": 9,
+      "download_targets": {
+        "boot_kb": 300,
+        "total_kb": 5120,
+        "texture_memory_mb": 192
+      }
+    }
+  ],
+  "download_targets": {
+    "status": "provisional (Chris, 2026-10-20, S4-3; STAGES.md Stage 4 notes); fixed after the kart racer is measured on Low and Ultra",
+    "basis": "gzip level 9 of what a player's browser fetches on that tier (index.html, the code and the streamed files of one texture family); 1 KB = 1024 bytes, 1 MB = 1024 KB; build-time tool data for `cargo xtask check` and `cargo xtask publish`, never compiled into a game",
+    "code_kb": {
+      "2d": 350,
+      "3d": 500
+    },
+    "code_basis": "wasm + js + html, the same on every tier; `3d` is any game whose look has the 3d style or that lists `models` (500 KB includes models and anim), `2d` every other game",
+    "per_tier": "each tier's `download_targets`: `boot_kb` the files the title waits for ([stream] boot), `total_kb` code plus everything the tier ever fetches, `texture_memory_mb` 75 percent of `max_texture_memory`"
+  },
+  "render_paths": {
+    "2d": [
+      "Instanced sprite batches from one texture atlas per layer, a single render pass at reduced render scale, outlines and shading baked into sprites, no post chain beyond the final composite",
+      "Instanced sprite batches from one texture atlas per layer, a single render pass, outlines and shading baked into sprites",
+      "Instanced sprite batches plus a half-resolution post chain",
+      "Instanced sprite batches, normal-mapped 2D lighting in a light buffer, full-resolution post chain",
+      "Instanced sprite batches, high-resolution 2D light buffer, compute particles at full cap, full post chain",
+      "The 2D game sits on a lit table-top diorama or a large floating screen in a small 3D room, rendered in single-pass stereo with 4× MSAA"
+    ],
+    "pseudo-3d": [
+      "Pseudo-3D pass in a WGSL fragment or compute shader into a 320×180 target, nearest-neighbour upscale, shorter draw distance, no post",
+      "Pseudo-3D pass in a WGSL fragment or compute shader into a 320×180 target, nearest-neighbour upscale, minimal post",
+      "Pseudo-3D pass into a 320×180 target, post chain at target resolution",
+      "Pseudo-3D pass into a 480×270 target, longer draw distance, full post chain",
+      "Pseudo-3D pass into a 640×360 target, maximum draw distance and sprite count, full post chain",
+      "The pseudo-3D view plays on a curved virtual screen inside a 3D cockpit or arcade cabinet, rendered in single-pass stereo with 4× MSAA"
+    ],
+    "3d": [
+      "Forward pass with vertex or baked lighting, one directional light, blob shadows, tonemapping folded into the main pass, at reduced render scale with a smaller triangle and draw-call budget",
+      "Forward pass with vertex or baked lighting, one directional light, blob shadows, tonemapping folded into the main pass",
+      "Forward pass with instancing and CPU frustum culling, one shadow cascade, up to 8 point lights, HDR target with tonemapping",
+      "Clustered forward with compute light binning, two shadow cascades, image-based lighting, full HDR post chain, compute particles",
+      "GPU-driven: compute frustum and occlusion culling with indirect draws, four shadow cascades, compute particles, volumetric passes, optional temporal upscale",
+      "Single-pass stereo forward renderer with 4× MSAA instead of TAA, fixed or eye-tracked foveation, space-warp where available, baked lighting plus one shadowed light; PC VR headsets get High-tier limits"
+    ]
+  },
+  "render_path_order": [
+    "lite",
+    "low",
+    "medium",
+    "high",
+    "ultra",
+    "vr"
+  ],
+  "vr_comfort_off_effects": [
+    "motionblur",
+    "dof",
+    "chroma",
+    "grain",
+    "flare",
+    "crt",
+    "tiltshift",
+    "shake",
+    "speedlines"
+  ]
+}

@@ -1,0 +1,22 @@
+[package]
+name = "evani-kit-example"
+description = "Evani.Dev example kit: proves the KitPlugin interface (params, formula, system, scene, input action, data file)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+evani-core.workspace = true
+# Spinner placement builds the instances the scene draws (place.rs). The
+# scene is 3D, so the kit turns on the renderer's 3D path (`forward`).
+evani-render = { workspace = true, features = ["forward"] }
+
+[dev-dependencies]
+# The review_dump test writes review.json.
+serde_json.workspace = true
+
+[lints]
+workspace = true

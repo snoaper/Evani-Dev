@@ -1,0 +1,21 @@
+# Benchmark B, stylized organic 10 of 10: a chibi body (no face detail),
+# standing in a neutral pose; also the seated driver the kart musts refer to.
+make: character_body
+style: toon_chunky
+parts:
+  head: { size: very_large, round }
+  torso: { short, rounded }
+  arms: { short, chunky }
+  legs: { short, chunky }
+  hands: { shape: mitten }
+  feet: { shape: boot, large }
+must:
+  fit_box: [0.6, 0.9, 1.4] m
+  stands: ground
+  symmetric: x
+  anchor: { name: hand.l, at: hands.l }
+  tri_budget: { low: 800, medium: 2k, high: 6k, ultra: 18k }
+match: { front: ../ref/chibi_body/front.png, side: ../ref/chibi_body/side.png }
+explore: auto
+return: 3
+seed: 310

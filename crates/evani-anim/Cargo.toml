@@ -1,0 +1,22 @@
+[package]
+name = "evani-anim"
+description = "Evani.Dev animation runtime: EVC1 clip decoder and sampler, blend nodes, crossfades, 1D blend spaces, two-bone and aim IK, skinning matrices (part of the `anim` module)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Pure CPU scalar code, no GPU, no browser API, no new dependency: evani-core
+# only for the engine module and its parameter (as evani-physics). Games get
+# it only through the `anim` module (an optional dependency of the game
+# crate), so games without `anim` carry none of it.
+[dependencies]
+evani-core.workspace = true
+
+[dev-dependencies]
+# Tests read the rig fixture's nodes and skin with the engine's own reader.
+evani-gltf.workspace = true
+
+[lints]
+workspace = true

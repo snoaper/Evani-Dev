@@ -1,0 +1,17 @@
+# Benchmark B, stylized organic 1 of 10: a round-canopy toon tree.
+make: tree
+style: toon_chunky
+parts:
+  trunk: { thick, tapered, bend: slight }
+  branches: { count: 3, chunky }
+  canopy: { shape: cloud_puffs, puffs: 5, round }
+relief:
+  trunk.outer: bark(ridged, depth 8mm, scale 1)
+must:
+  fit_box: [3.6, 3.6, 5.0] m
+  stands: ground
+  tri_budget: { low: 800, medium: 2k, high: 6k, ultra: 18k }
+match: { front: ../ref/tree/front.png, side: ../ref/tree/side.png }
+explore: auto
+return: 3
+seed: 301

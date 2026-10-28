@@ -1,0 +1,44 @@
+{
+  "chase": {
+    "eye": [
+      0.0,
+      3.0,
+      -7.0
+    ],
+    "fov_deg": 62.0,
+    "source": "kit.kart_racer.cam_distance 7, cam_height 3, cam_look_ahead 4, cam_fov 62",
+    "target": [
+      0.0,
+      1.0,
+      4.0
+    ]
+  },
+  "files": {
+    "chase.png": "sha256:235f45de680c46846997929ccd78a597dd4da277a58f66fba34b0f39e75a4a81",
+    "front.png": "sha256:f0b9fa9f7eca8e81e2029348c8a72b1e6ebc4867188aff2413742305396395be",
+    "mesh.glb": "sha256:31e24d4e05263f0ad1686e4fd8911af046a10327013ccdffcd6a5c1aee3d49a7",
+    "side.png": "sha256:5ec022e9fc9905f05ca83102345cd97dd3c4f00146be46f19b771356e04ee38d",
+    "top.png": "sha256:50d2d6d3fed6c4c07a51b1b84dda6d762388135db35f9df1fe74b5fa78c4e3c7"
+  },
+  "frame_centre": [
+    0.0,
+    1.62,
+    0.02186
+  ],
+  "frame_m": 3.6,
+  "id": "kart_08_rumble",
+  "instances": 29,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": [
+    "rear tyres r 0.42 -> 0.52, w 0.44 -> 0.56, wheel x +-0.84 -> +-0.9",
+    "engine block size [0.95, 0.44, 0.5] -> [1.15, 0.56, 0.6], centre y 0.6 -> 0.66",
+    "exhausts: 4 instead of 2, at x +-0.18 and +-0.42, size y 0.42 -> 0.36",
+    "front bumper size y 0.22 -> 0.3"
+  ],
+  "size_m": {
+    "height": 1.263783,
+    "length": 3.076279,
+    "width": 2.45
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

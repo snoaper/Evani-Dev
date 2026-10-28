@@ -1,0 +1,39 @@
+{
+  "chase": {
+    "eye": [
+      0.0,
+      3.0,
+      -7.0
+    ],
+    "fov_deg": 62.0,
+    "source": "kit.kart_racer.cam_distance 7, cam_height 3, cam_look_ahead 4, cam_fov 62",
+    "target": [
+      0.0,
+      1.0,
+      4.0
+    ]
+  },
+  "files": {
+    "chase.png": "sha256:bf22b5e0c578c36121969c33f413f3983cab92a5929d2e88862b75796fc27224",
+    "front.png": "sha256:64976f1d8def127ac9c7b624c422429a67ff254ae4ff20d300325079e1d8a749",
+    "mesh.glb": "sha256:f05d62d8ca5120f5398d90e6f6424e33b8d96fb2a429def51c7079df667b9369",
+    "side.png": "sha256:a92c8261ecfa9d1b27b0488da0450e9b378d47af9006d5d082d95f2bac077827",
+    "top.png": "sha256:23502dd7f93f5d32cd873177428c996099d0e05a8ddb7dc3aab25fda3f7822c0"
+  },
+  "frame_centre": [
+    0.0,
+    1.53,
+    0.00716
+  ],
+  "frame_m": 3.4,
+  "id": "kart_01_pip",
+  "instances": 27,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": [],
+  "size_m": {
+    "height": 1.263782,
+    "length": 3.105681,
+    "width": 2.21
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

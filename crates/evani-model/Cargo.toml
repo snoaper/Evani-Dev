@@ -1,0 +1,18 @@
+[package]
+name = "evani-model"
+description = "Evani.Model: the AI-only 3D modeler's library (intent, fields, solver, mesher, checks, glTF). Development only, never in a game download."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Dependency rule (docs/EVANI_MODEL_BRIEF.md, originality 5; DECISIONS.md):
+# serde and serde_json only (D2). The GPU feature (wgpu with native backends,
+# D1) arrives in M2; M1 is the deterministic CPU path.
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

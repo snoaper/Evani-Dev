@@ -1,0 +1,66 @@
+[package]
+name = "evani-model-view"
+description = "Evani.Dev model viewer (dev only, never published): the page behind the Evani.Model tab, drawn by the engine's own 3D path in the toon look"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Module switches, from evani.toml (`cargo xtask features model-view`).
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = ["outline", "shadows", "models", "live"]
+fx = ["dep:evani-fx"]
+outline = ["fx", "evani-fx/outline"]
+shadows = ["fx", "evani-fx/shadows"]
+models = ["dep:evani-gltf", "evani-kit-model-view/models"]
+anim = ["models", "dep:evani-anim", "evani-render/skinning"]
+# The quality gate's renderer (STAGE3_PLAN S3-6, src/gate.rs): `?gate=1`
+# draws one model with the engine's own model path and reads back fixed
+# views. Never in `default` (the Model tab's page is unchanged); the
+# converter builds it on its own (`cargo xtask convert --gate`). Skinned
+# models draw since S3-9, but `gate` does not turn on `skinning` yet: the gate
+# still skips a skinned model (STAGE3_PLAN S3-9 follow-up).
+capture = ["evani-render/capture"]
+gate = ["models", "capture", "evani-render/models", "evani-core/texture-budget"]
+# `ui` turns on sharp MSDF text in the canvas (`[ui] fonts` in evani.toml).
+ui = ["evani-render/msdf", "dep:evani-ui"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-kit-model-view/live"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-kit-model-view.workspace = true
+evani-look-toon.workspace = true
+evani-fx = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-ui = { workspace = true, optional = true }
+evani-anim = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+serde_json.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Location",
+    "History",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "Node",
+    "Event",
+    "EventTarget",
+    "MouseEvent",
+    "PointerEvent",
+    "WheelEvent",
+    "Response",
+    "UrlSearchParams",
+    "console",
+] }
+
+[lints]
+workspace = true

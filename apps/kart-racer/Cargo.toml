@@ -1,0 +1,76 @@
+[package]
+name = "evani-kart-racer"
+description = "Evani.Dev kart racer demo: the kart-racer kit in the toon look, title to podium, one or two local players"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Module switches. `cargo xtask build kart-racer` reads evani.toml and turns
+# it into exactly these features (with --no-default-features), so a module
+# the game doesn't list is an absent optional dependency: zero bytes.
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = ["outline", "speedlines", "shake", "bloom", "shadows", "physics-simple", "models", "live"]  # matches evani.toml (models: the rivals' part pack)
+fx = ["dep:evani-fx"]
+outline = ["fx", "evani-fx/outline"]
+speedlines = ["fx", "evani-fx/speedlines"]
+shake = ["fx", "evani-fx/shake"]
+bloom = ["fx", "evani-fx/bloom"]
+vignette = ["fx", "evani-fx/vignette"]
+shadows = ["fx", "evani-fx/shadows"]
+physics-simple = ["dep:evani-physics", "evani-physics/simple"]
+physics-rigid = ["dep:evani-physics", "evani-physics/rigid"]
+# Online play (evani.toml `net`): lockstep with a referee over the host page's
+# link (src/online.rs). The referee is its own crate (referee/).
+net = ["dep:evani-net", "evani-net/lockstep", "evani-net/port", "evani-kit-kart-racer/net"]
+xr = ["dep:evani-xr"]
+# Stage 3 modules (evani.toml `models`, `anim`, `ui`). `models` pulls in the
+# model reader (evani-gltf) and the model pipeline (evani-render/models); `anim` adds
+# the animation runtime (evani-anim), `ui` the box layout (evani-ui).
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models", "evani-live?/models", "evani-kit-kart-racer/models"]
+anim = ["models", "dep:evani-anim", "evani-render/skinning"]
+# `ui` turns on sharp MSDF text in the canvas (`[ui] fonts` in evani.toml);
+# the box layout crate (evani-ui, S3-13b) comes with it.
+ui = ["evani-render/msdf", "dep:evani-ui"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-kit-kart-racer/live"]
+
+[dependencies]
+evani-core = { workspace = true, features = ["touch"] }
+evani-render.workspace = true
+evani-kit-kart-racer.workspace = true
+evani-look-toon.workspace = true
+evani-fx = { workspace = true, optional = true }
+evani-physics = { workspace = true, optional = true }
+evani-net = { workspace = true, optional = true }
+evani-xr = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-ui = { workspace = true, optional = true }
+evani-anim = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Location",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlSelectElement",
+    "HtmlInputElement",
+    "HtmlOptionElement",
+    "Node",
+    "Event",
+    "EventTarget",
+    "KeyboardEvent",
+    "console",
+] }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+# Tests drive the live API with JSON requests.
+serde_json.workspace = true

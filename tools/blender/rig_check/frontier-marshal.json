@@ -1,0 +1,53 @@
+{
+  "about": "Rig check for the Frontier Marshal (S3-16). Model frame: glTF, origin on the ground under the seat contact in the seated clips. Kart racer numbers from draw.rs draw_kart, shifted by +0.30 in z (the seat point). Wheel rim: centre kart (0, 0.98, 0.34), radius 0.23, pitched -1.0 rad. Sleeve fringe regions: the strands under each arm in the bind pose. Hand gaps 5 mm: the measured worst is 2.2 mm (look_back, right hand), so a hand drifting off the rim fails. 'under the seat': the kart body below the seat top, floor to 0.60 m, so no coat or body part may show through or under the seat. Limits above the goal (1.3x), each the measured worst plus about 15 percent (shrink: about 15 percent below), never to be raised to pass. Sleeve fringes are split into the root band (the 10 cm box at the strand roots, where each strand hands over from the sleeve to its fringe bone) and the strands below it. Root band stretch 2.0x standing, 3.5x seated, 4.7x look_back and celebrate (measured 1.69, 2.98, 4.03, 4.00x), because its 2-5 mm edges stretch where the sleeve bends (before the fringe bones: 5.4x in celebrate); its shrink 0.2, 0.11, 0.14, 0.02 (measured 0.24, 0.14, 0.17, 0.03): the band folds where a strand turns from the arm to hanging down, and the inside of a fold shortens. Strands below it: stretch 1.7, 1.55, 2.2, 2.15x (measured 1.45, 1.33, 1.92, 1.85x); shrink 0.3, 0.48, 0.55, 0.015 (measured 0.36, 0.57, 0.66, 0.021). The celebrate shrink is the thin webs that join neighbouring strands: with the arm straight up, strands rooted further out along the sleeve hang from higher up, so a web running from one strand's root to the next strand's lower part closes up like a pleated curtain (celebrate frames 42-63); each strand keeps its length (hang below). Hang (every strand edge below the 6 cm root band, 3 mm or longer and within 20 deg of straight down at rest, angle from straight down; the region starts at 0.295 m out, where the rig's fringe strands start, so the armpit edge beside it is not a strand): max 40 deg and worst mean 19 deg in the seated, look_back and standing clips (measured 34 and 16), 42 and 22 deg in celebrate with an arm straight up (measured 37 and 19). Strand edges also keep their length: 0.58-1.42x in the seated, look_back and standing clips (measured 0.685-1.24x), 0.42-1.6x in celebrate (measured 0.50-1.40x), so a strand that collapsed would fail even though its webs may fold. The rig before the fringe bones measured, the same way, a 118 deg mean in celebrate (strands fanned up and out) and 45-96 deg in the other clips. Armpit, yoke and whole mesh 33x and 0.01x, because the T-pose source pinches 1-5 mm edges at the back of the armpit when the arms come down (measured 28.6x); it sits under the arm and the old rig had the same.",
+  "armature": "marshal_rig",
+  "frame_step": 1,
+  "anchor_gaps": [
+    {"name": "left hand on the wheel rim", "anchor": "anchor:hand_l",
+     "target": {"ring": {"center": [0, 0.98, 0.64], "normal": [0, 0.5403, -0.8415], "radius": 0.23}},
+     "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back"], "max_mm": 5},
+    {"name": "right hand on the wheel rim", "anchor": "anchor:hand_r",
+     "target": {"ring": {"center": [0, 0.98, 0.64], "normal": [0, 0.5403, -0.8415], "radius": 0.23}},
+     "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back"], "max_mm": 5}
+  ],
+  "colliders": [
+    {"name": "seat cushion", "box": {"center": [0, 0.56, 0.0], "size": [0.72, 0.16, 0.62]},
+     "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back"],
+     "ignore_mm": 5, "max_count": 0, "max_depth_mm": 10},
+    {"name": "seat back", "box": {"center": [0, 0.86, -0.32], "size": [0.74, 0.7, 0.16], "rot_deg": [-16.04, 0, 0]},
+     "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back"],
+     "ignore_mm": 5, "max_count": 0, "max_depth_mm": 10},
+    {"name": "under the seat", "box": {"center": [0, 0.3, -0.05], "size": [0.72, 0.6, 0.52]},
+     "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back"],
+     "ignore_mm": 0, "max_count": 0, "max_depth_mm": 0}
+  ],
+  "stretch": [
+    {"name": "left sleeve fringe strands", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["stand_idle"], "max_ratio": 1.7, "min_ratio": 0.3, "max_count": 0},
+    {"name": "left sleeve fringe root band", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["stand_idle"], "max_ratio": 2, "min_ratio": 0.2, "max_count": 0},
+    {"name": "right sleeve fringe strands", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["stand_idle"], "max_ratio": 1.7, "min_ratio": 0.3, "max_count": 0},
+    {"name": "right sleeve fringe root band", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["stand_idle"], "max_ratio": 2, "min_ratio": 0.2, "max_count": 0},
+    {"name": "left sleeve fringe strands", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right"], "max_ratio": 1.55, "min_ratio": 0.48, "max_count": 0},
+    {"name": "left sleeve fringe root band", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right"], "max_ratio": 3.5, "min_ratio": 0.11, "max_count": 0},
+    {"name": "right sleeve fringe strands", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right"], "max_ratio": 1.55, "min_ratio": 0.48, "max_count": 0},
+    {"name": "right sleeve fringe root band", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right"], "max_ratio": 3.5, "min_ratio": 0.11, "max_count": 0},
+    {"name": "left sleeve fringe strands", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["look_back"], "max_ratio": 2.2, "min_ratio": 0.55, "max_count": 0},
+    {"name": "left sleeve fringe root band", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["look_back"], "max_ratio": 4.7, "min_ratio": 0.14, "max_count": 0},
+    {"name": "right sleeve fringe strands", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["look_back"], "max_ratio": 2.2, "min_ratio": 0.55, "max_count": 0},
+    {"name": "right sleeve fringe root band", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["look_back"], "max_ratio": 4.7, "min_ratio": 0.14, "max_count": 0},
+    {"name": "left sleeve fringe strands", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["celebrate"], "max_ratio": 2.15, "min_ratio": 0.015, "max_count": 0},
+    {"name": "left sleeve fringe root band", "region": [{"center": [0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["celebrate"], "max_ratio": 4.7, "min_ratio": 0.02, "max_count": 0},
+    {"name": "right sleeve fringe strands", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]}], "exclude_region": [{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["celebrate"], "max_ratio": 2.15, "min_ratio": 0.015, "max_count": 0},
+    {"name": "right sleeve fringe root band", "region": [{"center": [-0.67,1.46,0], "size": [0.5,0.28,0.5]},{"center": [-0.67,1.57,0], "size": [0.5,0.1,0.5]}], "clips": ["celebrate"], "max_ratio": 4.7, "min_ratio": 0.02, "max_count": 0},
+    {"name": "left armpit and yoke", "region": [{"center": [0.31, 1.5, 0.0], "size": [0.22, 0.4, 0.5]}],
+     "max_ratio": 33, "min_ratio": 0.01, "max_count": 0},
+    {"name": "right armpit and yoke", "region": [{"center": [-0.31, 1.5, 0.0], "size": [0.22, 0.4, 0.5]}],
+     "max_ratio": 33, "min_ratio": 0.01, "max_count": 0},
+    {"name": "whole mesh", "max_ratio": 33, "min_ratio": 0.01, "max_count": 0}
+  ],
+  "hang": [
+    {"name": "left sleeve fringes hang", "region": [{"center": [0.5525,1.45,-0.086], "size": [0.515,0.29,0.115]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back", "stand_idle"], "root_mm": 60, "edge_mm": 3, "rest_deg": 20, "max_deg": 40, "max_count": 0, "max_mean_deg": 19, "min_len_ratio": 0.58, "max_len_ratio": 1.42},
+    {"name": "right sleeve fringes hang", "region": [{"center": [-0.5525,1.45,-0.086], "size": [0.515,0.29,0.115]}], "clips": ["idle_seated", "lean_left", "lean_center", "lean_right", "look_back", "stand_idle"], "root_mm": 60, "edge_mm": 3, "rest_deg": 20, "max_deg": 40, "max_count": 0, "max_mean_deg": 19, "min_len_ratio": 0.58, "max_len_ratio": 1.42},
+    {"name": "left sleeve fringes hang", "region": [{"center": [0.5525,1.45,-0.086], "size": [0.515,0.29,0.115]}], "clips": ["celebrate"], "root_mm": 60, "edge_mm": 3, "rest_deg": 20, "max_deg": 42, "max_count": 0, "max_mean_deg": 22, "min_len_ratio": 0.42, "max_len_ratio": 1.6},
+    {"name": "right sleeve fringes hang", "region": [{"center": [-0.5525,1.45,-0.086], "size": [0.515,0.29,0.115]}], "clips": ["celebrate"], "root_mm": 60, "edge_mm": 3, "rest_deg": 20, "max_deg": 42, "max_count": 0, "max_mean_deg": 22, "min_len_ratio": 0.42, "max_len_ratio": 1.6}
+  ]
+}

@@ -1,0 +1,17 @@
+[package]
+name = "evani-destruct"
+description = "Evani.Dev destruction module: hole spheres, structural collapse and pooled debris (Hexagon's mechanics, rebuilt)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Opt-in: a game lists it as an optional dependency behind a same-named
+# `destruct` feature; a game without it compiles none of this crate.
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+
+[lints]
+workspace = true

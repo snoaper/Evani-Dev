@@ -1,0 +1,49 @@
+# Fennel's Leap: the 2D platformer demo's module manifest.
+# `cargo xtask build 2d-platformer` turns this into Cargo features of the
+# evani-2d-platformer crate; anything not listed is not built.
+name = "2d-platformer"
+kit = "2d-platformer"   # crate kits/evani-kit-2d-platformer
+look = "pixel16"        # crate looks/evani-look-pixel16
+effects = ["parallax", "shake"]   # each is an evani-fx feature
+
+[modules]
+physics = "simple"   # the catalog's physics for platformers; the kit scales its gravity by physics.gravity
+net = false          # single player
+xr = false
+live = true          # dev only; `--ship` builds always drop it
+
+[review]
+# Scripted capture moments for the card (the kit's CaptureMoments), each on a
+# tier; captured at 1920x1080, 4 device pixels per art pixel (480 x 270 art px).
+# The HUD is pixel glyphs drawn in the canvas on the art grid (kit target
+# hud-layout.md); `canvas` checks the HUD sprites of every captured frame.
+hud = ["canvas"]
+# The art grid at 1080p is 480 x 270 (4x; DECISIONS 2026-10-15 fix 002 reads
+# the catalog's "320 x 224 internal" as "about 224 rows"), so the showcase is
+# 1920x1080 at exactly 4x instead of 5 x 320x224.
+internal_resolution = "480x270"
+# Phone shots at a real phone's pixel ratio: the whole-pixel scale comes from
+# device pixels (844x390 at dpr 3 shows about 234 rows, SPEC section 2; the
+# tier's DPR cap applies), so at dpr 1 the phone would see a desktop view.
+phone_dpr = 3
+world_edge = false   # a 2D side view: no 3D ground plane or horizon; the level's ends are checked by geocheck-2d camera framing
+# The run video plays the kit's `run` moment: the title demo's recorded run
+# (stomps, coins, jumps, a checkpoint, no hits) played live on the game.
+video = "run"
+moments = ["start@low", "stomp@ultra", "power_up@low", "checkpoint@ultra", "spikes@low", "pit@ultra", "goal@ultra"]
+try = [
+  "Press Play, walk right with D, hold Left Shift to run and tap or hold Space for a short or high jump.",
+  "Jump on a beetle to stomp it, grab coins (50 make an extra life) and touch a flag to set a checkpoint.",
+  "Ride a moving platform over the water; on a wooden plank, hold S and press Space to drop through.",
+  "Pause with Esc, open Settings, switch Parallax and Screen shake off and on, and change a key.",
+  "Reach the castle gate before the timer runs out for Level clear!, or lose every life for Game over.",
+]
+
+# A playground for the Evani.app library: it supports free roam (docs/PLAYGROUNDS.md).
+[playground]
+free_roam = true
+
+# Beside the shipped game, `build-facts.json` (docs/PUBLISHING.md "The statement"): the game's own licence and any third-party files.
+[statement]
+game_licence = "MIT"
+third_party = []

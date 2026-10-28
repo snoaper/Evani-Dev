@@ -1,0 +1,30 @@
+{
+  "name": "Cinder Ridge",
+  "size": [64, 64],
+  "cell_m": 2.0,
+  "mirror": true,
+  "terrain": [
+    {"kind": "rock", "rect": [0, 0, 63, 0]},
+    {"kind": "rock", "rect": [0, 0, 0, 63]},
+    {"kind": "water", "rect": [0, 30, 63, 33]},
+    {"kind": "ford", "rect": [12, 30, 17, 33]},
+    {"kind": "rock", "rect": [22, 24, 26, 27]},
+    {"kind": "rock", "rect": [5, 40, 8, 44]},
+    {"kind": "rock", "rect": [38, 40, 41, 42]},
+    {"kind": "rock", "rect": [29, 45, 33, 46]},
+    {"kind": "rock", "rect": [52, 50, 55, 53]}
+  ],
+  "nodes": [
+    {"cell": [24, 52], "amount": 600},
+    {"cell": [23, 54], "amount": 600},
+    {"cell": [23, 56], "amount": 600},
+    {"cell": [24, 58], "amount": 600},
+    {"cell": [26, 59], "amount": 600},
+    {"cell": [9, 36], "amount": 1000},
+    {"cell": [10, 37], "amount": 1000},
+    {"cell": [11, 36], "amount": 1000}
+  ],
+  "hub": [30, 52],
+  "workers": 4,
+  "start_reveal_m": 28
+}

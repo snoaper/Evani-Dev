@@ -1,0 +1,467 @@
+{
+  "about": "Evani.Dev effects. Each effect is a Cargo feature of evani-fx.",
+  "effects": [
+    {
+      "id": "bloom",
+      "name": "Bloom",
+      "group": "post",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Bright-pass, then a dual-Kawase blur over 4 to 5 half-resolution mips, composited additively before tonemapping."
+    },
+    {
+      "id": "grade",
+      "name": "Colour grading LUT",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "32³ 3D-texture LUT; per-scene swap with a crossfade."
+    },
+    {
+      "id": "vignette",
+      "name": "Vignette",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Radial darkening folded into the final composite pass; doubles as the comfort vignette in VR."
+    },
+    {
+      "id": "grain",
+      "name": "Film grain",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Animated hash noise in the composite pass, weighted toward midtones."
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic aberration",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Radial RGB offset in the composite pass, pulsed on hits and boosts."
+    },
+    {
+      "id": "crt",
+      "name": "CRT scanlines",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Scanlines, RGB aperture mask and barrel curvature, applied last at output resolution."
+    },
+    {
+      "id": "dither",
+      "name": "Dither and palette lock",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "4×4 Bayer dither, then quantise to the style palette."
+    },
+    {
+      "id": "pixelate",
+      "name": "Pixelation",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Render 3D at a low internal resolution and upscale with nearest-neighbour filtering."
+    },
+    {
+      "id": "outline",
+      "name": "Ink outlines",
+      "group": "post",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Depth and normal edge detection in 3D; alpha-dilated sprite outlines in 2D."
+    },
+    {
+      "id": "dof",
+      "name": "Depth of field",
+      "group": "post",
+      "cost_points": 3,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Circle of confusion from depth, half-resolution gather blur, focus locked to the player."
+    },
+    {
+      "id": "motionblur",
+      "name": "Motion blur",
+      "group": "post",
+      "cost_points": 3,
+      "works_with": [
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Camera-velocity blur with 8 samples; per-object velocity buffer at Ultra."
+    },
+    {
+      "id": "ssao",
+      "name": "Ambient occlusion",
+      "group": "post",
+      "cost_points": 3,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Half-resolution SAO or GTAO-lite with a bilateral blur; baked AO when it is off."
+    },
+    {
+      "id": "ssr",
+      "name": "Screen-space reflections",
+      "group": "post",
+      "cost_points": 3,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "View-space ray march with a roughness cutoff, falling back to the environment cubemap."
+    },
+    {
+      "id": "godrays",
+      "name": "Light shafts",
+      "group": "post",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Radial blur from the sun's screen position over an occlusion mask."
+    },
+    {
+      "id": "flare",
+      "name": "Lens flare",
+      "group": "post",
+      "cost_points": 1,
+      "works_with": [
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Ghost sprites along the sun-to-centre axis, hidden when the sun is occluded."
+    },
+    {
+      "id": "haze",
+      "name": "Heat haze",
+      "group": "post",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Distortion texture written by particles, applied in the composite pass."
+    },
+    {
+      "id": "tiltshift",
+      "name": "Tilt-shift",
+      "group": "post",
+      "cost_points": 2,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Vertical blur band around the focus line, plus a saturation lift."
+    },
+    {
+      "id": "shadows",
+      "name": "Dynamic shadows",
+      "group": "lighting",
+      "cost_points": 2,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Directional shadow map with 3×3 PCF; cascades and resolution follow the tier; blob shadows at Low."
+    },
+    {
+      "id": "lights2d",
+      "name": "2D dynamic lights",
+      "group": "lighting",
+      "cost_points": 2,
+      "works_with": [
+        "2d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Normal-mapped sprites lit by point lights accumulated in a light buffer."
+    },
+    {
+      "id": "daynight",
+      "name": "Day-night cycle",
+      "group": "lighting",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Time of day drives sun angle, ambient colour, fog and LUT blend."
+    },
+    {
+      "id": "fog",
+      "name": "Distance fog",
+      "group": "lighting",
+      "cost_points": 1,
+      "works_with": [
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Exponential height fog in material shaders; also hides the draw-distance edge."
+    },
+    {
+      "id": "volumetric",
+      "name": "Volumetric fog",
+      "group": "lighting",
+      "cost_points": 3,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Low-resolution froxel volume built in a compute pass, with temporal reprojection."
+    },
+    {
+      "id": "toonramp",
+      "name": "Toon ramp",
+      "group": "lighting",
+      "cost_points": 1,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Stepped diffuse from a 1D ramp texture, plus a specular blob."
+    },
+    {
+      "id": "rim",
+      "name": "Rim light",
+      "group": "lighting",
+      "cost_points": 1,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Fresnel rim on characters so they read against the background."
+    },
+    {
+      "id": "baked",
+      "name": "Baked lighting",
+      "group": "lighting",
+      "cost_points": 1,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Precomputed vertex colours or lightmaps; no runtime cost."
+    },
+    {
+      "id": "water",
+      "name": "Water reflection",
+      "group": "world",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Planar reflection at reduced resolution with depth-based shoreline foam in 3D; a mirrored, sine-distorted strip in 2D."
+    },
+    {
+      "id": "weather",
+      "name": "Rain and snow",
+      "group": "world",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Compute-simulated particles that follow the camera, splash decals, and a wet-surface roughness change."
+    },
+    {
+      "id": "wind",
+      "name": "Wind sway",
+      "group": "world",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Vertex-shader sway for foliage, flags and cloth from one global wind vector."
+    },
+    {
+      "id": "grass",
+      "name": "Instanced grass",
+      "group": "world",
+      "cost_points": 2,
+      "works_with": [
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Instanced blades with distance LOD and push-away around characters."
+    },
+    {
+      "id": "decals",
+      "name": "Decals",
+      "group": "world",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Pooled decals (skid marks, scorch, bullet holes) in a capped ring buffer."
+    },
+    {
+      "id": "destruction",
+      "name": "Destruction and debris",
+      "group": "world",
+      "cost_points": 3,
+      "works_with": [
+        "2d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Pre-fractured chunks or tile removal; debris is pooled, sleeps, then fades."
+    },
+    {
+      "id": "parallax",
+      "name": "Parallax layers",
+      "group": "world",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Background layers scrolling at different rates and tiling infinitely."
+    },
+    {
+      "id": "particles",
+      "name": "Particles",
+      "group": "feel",
+      "cost_points": 2,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Compute-shader simulation with instanced drawing for sparks, smoke and dust; particle caps follow the tier."
+    },
+    {
+      "id": "trails",
+      "name": "Trails",
+      "group": "feel",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Ribbon meshes from position history for vehicles, blades and projectiles."
+    },
+    {
+      "id": "speedlines",
+      "name": "Speed lines",
+      "group": "feel",
+      "cost_points": 1,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "Screen-space radial streaks plus a camera field-of-view kick scaled by speed."
+    },
+    {
+      "id": "shake",
+      "name": "Screen shake",
+      "group": "feel",
+      "cost_points": 0,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": true,
+      "implementation": "A trauma value drives Perlin-noise offset and roll, decaying every frame."
+    },
+    {
+      "id": "hitstop",
+      "name": "Hit-stop and flash",
+      "group": "feel",
+      "cost_points": 0,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Freeze the simulation for 2 to 6 frames on impact; white flash on the hit target."
+    },
+    {
+      "id": "juice",
+      "name": "Damage numbers and tweens",
+      "group": "feel",
+      "cost_points": 0,
+      "works_with": [
+        "2d",
+        "pseudo-3d",
+        "3d"
+      ],
+      "vr_comfort_off": false,
+      "implementation": "Pooled floating text, squash and stretch, easing curves for UI and pickups."
+    }
+  ]
+}

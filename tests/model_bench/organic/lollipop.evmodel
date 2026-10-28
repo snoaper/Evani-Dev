@@ -1,0 +1,18 @@
+# Benchmark B, stylized organic 5 of 10: a giant trackside swirl lollipop.
+make: lollipop
+style: toon_chunky
+parts:
+  candy: { shape: disc, swirl_turns: 3, thick }
+  stick: { long, thin }
+  base: { shape: mound }
+relief:
+  candy.faces: panel_lines(along, width 6mm, depth 3mm)
+must:
+  fit_box: [0.5, 1.0, 2.2] m
+  stands: ground
+  symmetric: x
+  tri_budget: { low: 300, medium: 800, high: 2k, ultra: 6k }
+match: { front: ../ref/lollipop/front.png, side: ../ref/lollipop/side.png }
+explore: auto
+return: 3
+seed: 305

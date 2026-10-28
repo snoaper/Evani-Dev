@@ -1,0 +1,39 @@
+{
+  "name": "Sugarpeak Loop",
+  "half_width": 7.0,
+  "sample_spacing": 2.0,
+  "points": [
+    [-80.0, 0.0, -60.0],
+    [0.0, 0.0, -70.0],
+    [80.0, 0.0, -65.0],
+    [125.0, 1.0, -35.0],
+    [130.0, 2.0, 15.0],
+    [100.0, 3.0, 45.0],
+    [60.0, 3.0, 30.0],
+    [30.0, 2.0, 55.0],
+    [10.0, 1.5, 95.0],
+    [-40.0, 2.5, 105.0],
+    [-90.0, 4.0, 80.0],
+    [-120.0, 3.0, 35.0],
+    [-115.0, 1.0, -20.0]
+  ],
+  "start_offset": 6.0,
+  "item_rows": [0.2, 0.5, 0.78],
+  "item_boxes_per_row": 4,
+  "scenery": {
+    "seed": 7,
+    "trees": 90,
+    "tree_min_distance": 22.0,
+    "ground_size": 520.0,
+    "mountains": [
+      { "pos": [0.0, 0.0, 220.0], "size": [150.0, 70.0, 60.0], "material": "mountain_pink" },
+      { "pos": [-190.0, 0.0, 150.0], "size": [110.0, 90.0, 80.0], "material": "mountain_lilac" },
+      { "pos": [210.0, 0.0, 120.0], "size": [120.0, 60.0, 90.0], "material": "mountain_mint" },
+      { "pos": [-220.0, 0.0, -110.0], "size": [130.0, 75.0, 90.0], "material": "mountain_pink" },
+      { "pos": [60.0, 0.0, -200.0], "size": [170.0, 55.0, 70.0], "material": "mountain_lilac" },
+      { "pos": [230.0, 0.0, -120.0], "size": [90.0, 80.0, 90.0], "material": "mountain_mint" },
+      { "pos": [-110.0, 0.0, 230.0], "size": [100.0, 50.0, 60.0], "material": "mountain_mint" },
+      { "pos": [150.0, 0.0, 230.0], "size": [110.0, 45.0, 70.0], "material": "mountain_pink" }
+    ]
+  }
+}

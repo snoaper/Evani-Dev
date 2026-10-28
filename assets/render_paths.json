@@ -1,0 +1,47 @@
+{
+  "about": "Which render path each style class gets on each tier, and what of catalog/tiers.json render_paths is built. `runs`: the path's base pass exists, so a game of this style can run on the tier. `missing`: parts of the catalog's description that are not built yet (ids under `deferred`). The Rust table in crates/evani-render/src/render_path.rs must match this file (test `table_matches_assets_json`); `cargo xtask check` reads this file. Edit both when a part gets built. The `3d` path is compiled only when a crate of the game turns on evani-render's `forward` feature (the 3D kits do; 2D games leave it off and never download it; `cargo xtask check` flags a mismatch).",
+  "tiers": ["lite", "low", "medium", "high", "ultra", "vr"],
+  "paths": {
+    "2d": {
+      "kind": "Sprites",
+      "lite": { "runs": true, "missing": [] },
+      "low": { "runs": true, "missing": [] },
+      "medium": { "runs": true, "missing": [] },
+      "high": { "runs": true, "missing": ["2d-normal-lighting"] },
+      "ultra": { "runs": true, "missing": ["2d-normal-lighting"] },
+      "vr": { "runs": false, "missing": ["vr-stereo"] }
+    },
+    "pseudo-3d": {
+      "kind": "Pseudo3d",
+      "lite": { "runs": false, "missing": ["pseudo-3d-pass"] },
+      "low": { "runs": false, "missing": ["pseudo-3d-pass"] },
+      "medium": { "runs": false, "missing": ["pseudo-3d-pass"] },
+      "high": { "runs": false, "missing": ["pseudo-3d-pass"] },
+      "ultra": { "runs": false, "missing": ["pseudo-3d-pass"] },
+      "vr": { "runs": false, "missing": ["pseudo-3d-pass", "vr-stereo"] }
+    },
+    "3d": {
+      "kind": "Forward",
+      "lite": { "runs": true, "missing": [] },
+      "low": { "runs": true, "missing": [] },
+      "medium": { "runs": true, "missing": ["cpu-frustum-culling", "point-lights"] },
+      "high": { "runs": true, "missing": ["cpu-frustum-culling", "point-lights", "shadow-cascades-2", "clustered-forward", "image-based-lighting"] },
+      "ultra": { "runs": true, "missing": ["gpu-driven-culling", "point-lights", "shadow-cascades-4", "clustered-forward", "image-based-lighting", "volumetric-passes", "temporal-upscale"] },
+      "vr": { "runs": false, "missing": ["vr-stereo"] }
+    }
+  },
+  "deferred": {
+    "pseudo-3d-pass": { "stage": 6, "who": "first Phase B kit whose genre lists pseudo-3d-road or pseudo-3d-raycast", "what": "pseudo-3D pass into a 320x180 to 640x360 target with nearest upscale" },
+    "2d-normal-lighting": { "stage": 5, "who": "kit 004 (look pixelhd)", "what": "normal-mapped 2D lighting in a light buffer (High, Ultra)" },
+    "cpu-frustum-culling": { "stage": 5, "who": "kits 005 and 006", "what": "CPU frustum culling with instancing (Medium and up)" },
+    "point-lights": { "stage": 5, "who": "kits 005 and 006", "what": "up to 8 point lights in the forward pass" },
+    "shadow-cascades-2": { "stage": 5, "who": "kits 005 and 006", "what": "two shadow cascades (High)" },
+    "clustered-forward": { "stage": 5, "who": "kits 005 and 006", "what": "clustered forward with compute light binning" },
+    "image-based-lighting": { "stage": 5, "who": "kits 005 and 006", "what": "image-based lighting" },
+    "gpu-driven-culling": { "stage": 8, "who": "cluster streaming (indirect draws)", "what": "compute frustum and occlusion culling with indirect draws (Ultra)" },
+    "shadow-cascades-4": { "stage": 8, "who": "Ultra frame target with unlimited detail", "what": "four shadow cascades (Ultra)" },
+    "volumetric-passes": { "stage": 8, "who": "Ultra frame target with unlimited detail", "what": "volumetric passes (Ultra)" },
+    "temporal-upscale": { "stage": 8, "who": "Ultra frame target with unlimited detail", "what": "optional temporal upscale (Ultra)" },
+    "vr-stereo": { "stage": 9, "who": "real VR (evani-xr)", "what": "single-pass stereo render path with 4x MSAA and foveation" }
+  }
+}

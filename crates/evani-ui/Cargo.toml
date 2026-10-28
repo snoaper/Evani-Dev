@@ -1,0 +1,16 @@
+[package]
+name = "evani-ui"
+description = "Evani.Dev box layout for in-canvas menus and HUD panels: row/column boxes, fit/grow/fixed sizes, padding, gap, alignment, text wrap through a measure callback, scrolling (part of the `ui` module)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# No dependency at all, no GPU, no browser API, no allocation: the same code
+# runs natively (tests) and in a game's wasm. Games get it only through the
+# `ui` module (an optional dependency of the game crate), so games without
+# `ui` carry none of it. The output is a list of rectangles and text runs;
+# the game draws them (docs/UI_LAYOUT.md).
+[lints]
+workspace = true

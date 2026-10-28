@@ -1,0 +1,12 @@
+{
+  "units": [
+    {"id": "worker", "hp": 40, "speed": 4.5, "radius": 0.55, "sight": 9, "range": 0.6, "damage": 3, "cooldown": 1.0, "cost": 50, "train_s": 7},
+    {"id": "trooper", "hp": 70, "speed": 5.0, "radius": 0.5, "sight": 11, "range": 7, "damage": 7, "cooldown": 0.9, "cost": 80, "train_s": 9},
+    {"id": "rumbler", "hp": 220, "speed": 3.6, "radius": 0.9, "sight": 11, "range": 9, "damage": 24, "cooldown": 2.0, "cost": 180, "train_s": 16, "requires": "bastion"}
+  ],
+  "buildings": [
+    {"id": "hub", "size": 3, "hp": 1500, "cost": 400, "build_s": 60, "sight": 18, "range": 0, "damage": 0, "cooldown": 1.0, "trains": ["worker"], "buildable": false},
+    {"id": "foundry", "size": 3, "hp": 700, "cost": 150, "build_s": 20, "sight": 9, "range": 0, "damage": 0, "cooldown": 1.0, "trains": ["trooper", "rumbler"], "requires": "hub"},
+    {"id": "bastion", "size": 2, "hp": 450, "cost": 120, "build_s": 15, "sight": 13, "range": 11, "damage": 11, "cooldown": 1.0, "trains": [], "requires": "foundry"}
+  ]
+}

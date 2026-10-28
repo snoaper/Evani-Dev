@@ -1,0 +1,20 @@
+[package]
+name = "evani-xr"
+description = "Evani.Dev VR module (M1 stub: WebXR + WebGPU feature detection)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[dependencies]
+evani-core.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+web-sys = { workspace = true, features = ["Window", "Navigator"] }
+
+[lints]
+workspace = true

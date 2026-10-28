@@ -1,0 +1,15 @@
+# MC1: the frontier marshal, a cowboy in a T-pose built from code
+# (proportions measured from Chris's reference picture; all geometry ours).
+make: character
+style: toon_chunky
+colours:
+  leather: "#7b5233"
+  hair: "#231a14"
+  bandana: "#5f7286"
+must:
+  fit_box: [0.46, 1.78, 1.91] m
+  stands: ground
+  symmetric: x
+  anchor: { name: hand_l }
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+seed: 1901

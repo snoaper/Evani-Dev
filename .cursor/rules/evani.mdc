@@ -1,0 +1,8 @@
+---
+description: Evani.Dev engine rules for AI agents
+alwaysApply: true
+---
+<!-- BEGIN:evani-pointer engine=0.1.0 sha=b1dd478ab82115f4 (managed by `cargo xtask init-ai`; edits inside are replaced) -->
+Before changing anything, read and follow AGENTS.md at the repository root (and the AGENTS.md in the folder you work in): the Evani.Dev engine rules and tools, versioned with the engine. A task is done only when `cargo xtask check` prints `evani check: clean`.
+<!-- END:evani-pointer -->
+

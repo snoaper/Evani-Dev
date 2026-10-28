@@ -1,0 +1,22 @@
+# Benchmark B, vehicle 7 of 10: Sugarpeak Rally rival kart (Clover: bubble cover, round pods, no wing).
+# Reference: the base kart with this rival's shape overrides (manifest.json),
+# made by the reference tool; if Chris picks option A (decision D4) the
+# reference is the base kart for all eight.
+make: kart
+like: bench/kart_01_pip
+style: toon_chunky
+parts:
+  engine_cover: { shape: bubble, exhausts: 2 }
+  side_pods: { shape: round }
+  wing: remove
+relief:
+  tyres.outer: tread(block, depth 5mm, pitch 5cm)
+must:
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_07_clover/side.png, front: ../ref/kart_07_clover/front.png, top: ../ref/kart_07_clover/top.png, chase: ../ref/kart_07_clover/chase.png, mesh: ../ref/kart_07_clover/mesh.glb }
+explore: auto
+return: 3
+seed: 207

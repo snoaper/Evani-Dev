@@ -1,0 +1,48 @@
+[package]
+name = "evani-top-down-action-adventure"
+description = "Evani.Dev top-down action-adventure demo (Mossgate Keep): the top-down-action-adventure kit in the pixelhd look with 2D lights"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Module switches. `cargo xtask build top-down-action-adventure` reads
+# evani.toml and turns it into exactly these features (with
+# --no-default-features), so a module the game doesn't list is an absent
+# optional dependency: zero bytes.
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = ["lights2d", "physics-simple", "live"]
+fx = ["dep:evani-fx"]
+bloom = ["fx", "evani-fx/bloom", "evani-look-pixelhd/bloom"]
+vignette = ["fx", "evani-fx/vignette"]
+# The catalog effect `lights2d` (S5-R1): normal-mapped point lights on the
+# kit's sprites; the kit only pushes lights when built with it.
+lights2d = ["fx", "evani-fx/lights2d", "evani-kit-top-down-action-adventure/lights2d"]
+physics-simple = ["dep:evani-physics", "evani-physics/simple"]
+physics-rigid = ["dep:evani-physics", "evani-physics/rigid"]
+net = ["dep:evani-net"]
+xr = ["dep:evani-xr"]
+# Stage 3 modules (evani.toml `models`, `anim`, `ui`).
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models"]
+anim = ["models", "dep:evani-anim"]
+ui = ["evani-render/msdf", "dep:evani-ui"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-kit-top-down-action-adventure.workspace = true
+evani-look-pixelhd.workspace = true
+evani-fx = { workspace = true, optional = true }
+evani-physics = { workspace = true, optional = true }
+evani-net = { workspace = true, optional = true }
+evani-xr = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-ui = { workspace = true, optional = true }
+evani-anim = { workspace = true, optional = true }
+
+[lints]
+workspace = true

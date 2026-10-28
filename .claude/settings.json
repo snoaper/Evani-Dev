@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "args": [
+              "run",
+              "--quiet",
+              "--package",
+              "evani-guide",
+              "--target-dir",
+              "target/guide",
+              "--",
+              "check",
+              "--hook"
+            ],
+            "command": "cargo",
+            "timeout": 300,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

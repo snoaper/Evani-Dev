@@ -1,0 +1,344 @@
+{
+  "anchors": [
+    {
+      "at": "0,0.66,-0.3",
+      "name": "driver_seat",
+      "part": "seat_base"
+    },
+    {
+      "at": "0.9,0.33,0.95",
+      "name": "wheel_hub.fl",
+      "part": "front_tyres.l"
+    },
+    {
+      "at": "-0.9,0.33,0.95",
+      "name": "wheel_hub.fr",
+      "part": "front_tyres.r"
+    },
+    {
+      "at": "0.84,0.42,-0.86",
+      "name": "wheel_hub.rl",
+      "part": "rear_tyres.l"
+    },
+    {
+      "at": "-0.84,0.42,-0.86",
+      "name": "wheel_hub.rr",
+      "part": "rear_tyres.r"
+    },
+    {
+      "at": "0.26,0.738133,-1.515784",
+      "name": "exhaust.l",
+      "part": "exhausts.1"
+    },
+    {
+      "at": "-0.26,0.738133,-1.515784",
+      "name": "exhaust.r",
+      "part": "exhausts.0"
+    },
+    {
+      "at": "0,0.975923,0.344713",
+      "name": "steer_pivot",
+      "part": "steering_wheel"
+    },
+    {
+      "at": "0,1.234674,-1.185406",
+      "name": "item_slot",
+      "part": "wing"
+    }
+  ],
+  "class": "kart",
+  "collision": [
+    {
+      "excess": 0.0,
+      "missed": 0.0,
+      "name": "chassis",
+      "solid": "body"
+    },
+    {
+      "excess": 0.275176,
+      "missed": 0.0,
+      "name": "nose",
+      "solid": "body"
+    },
+    {
+      "excess": 0.093294,
+      "missed": 0.0,
+      "name": "side_pods.l",
+      "solid": "body"
+    },
+    {
+      "excess": 0.093294,
+      "missed": 0.0,
+      "name": "side_pods.r",
+      "solid": "body"
+    },
+    {
+      "excess": 0.023324,
+      "missed": 0.0,
+      "name": "bumper",
+      "solid": "body"
+    },
+    {
+      "excess": 0.078717,
+      "missed": 0.0,
+      "name": "engine_cover",
+      "solid": "body"
+    },
+    {
+      "excess": 0.022222,
+      "missed": 0.0,
+      "name": "exhausts.0",
+      "solid": "body"
+    },
+    {
+      "excess": 0.022222,
+      "missed": 0.0,
+      "name": "exhausts.1",
+      "solid": "body"
+    },
+    {
+      "excess": 0.043732,
+      "missed": 0.0,
+      "name": "wing_struts.l",
+      "solid": "body"
+    },
+    {
+      "excess": 0.043732,
+      "missed": 0.0,
+      "name": "wing_struts.r",
+      "solid": "body"
+    },
+    {
+      "excess": 0.0,
+      "missed": 0.0,
+      "name": "wing",
+      "solid": "body"
+    },
+    {
+      "excess": 0.002915,
+      "missed": 0.0,
+      "name": "seat_base",
+      "solid": "body"
+    },
+    {
+      "excess": 0.022727,
+      "missed": 0.0,
+      "name": "seat_back",
+      "solid": "body"
+    },
+    {
+      "excess": 0.227106,
+      "missed": 0.0,
+      "name": "front_tyres.l",
+      "solid": "wheel_fl"
+    },
+    {
+      "excess": 0.227106,
+      "missed": 0.0,
+      "name": "front_tyres.r",
+      "solid": "wheel_fr"
+    },
+    {
+      "excess": 0.190476,
+      "missed": 0.0,
+      "name": "rear_tyres.l",
+      "solid": "wheel_rl"
+    },
+    {
+      "excess": 0.190476,
+      "missed": 0.0,
+      "name": "rear_tyres.r",
+      "solid": "wheel_rr"
+    }
+  ],
+  "footprint": {
+    "half_segment": 0.442671,
+    "radius": 1.1
+  },
+  "hash": "sha256:0f460c5fd22563f2e8f3fef2e7d9fb6f9c53e47d16c8675a5bc38d1e49ddfa09",
+  "intent": "sha256:06b3efa5b8b54946ee974a2d900271b9d669cde4f0129aac7a4c0ecd8a905b7a",
+  "model": "kart-06b3",
+  "musts": [
+    {
+      "got": "every joint closed",
+      "kind": "connected",
+      "need": "joints touching",
+      "pass": true
+    },
+    {
+      "got": "one piece per solid",
+      "kind": "connected",
+      "need": "one piece per solid",
+      "pass": true,
+      "tier": "low"
+    },
+    {
+      "got": "one piece per solid",
+      "kind": "connected",
+      "need": "one piece per solid",
+      "pass": true,
+      "tier": "medium"
+    },
+    {
+      "got": "one piece per solid",
+      "kind": "connected",
+      "need": "one piece per solid",
+      "pass": true,
+      "tier": "high"
+    },
+    {
+      "got": "one piece per solid",
+      "kind": "connected",
+      "need": "one piece per solid",
+      "pass": true,
+      "tier": "ultra"
+    },
+    {
+      "got": "[3.085, 2.200, 1.259] m",
+      "kind": "fit_box",
+      "need": "<= [3.1, 2.21, 1.27] m (+1.0 mm)",
+      "pass": true
+    },
+    {
+      "got": "[3.067, 2.200, 1.260] m",
+      "kind": "fit_box",
+      "need": "<= [3.1, 2.21, 1.27] m (+1.9 mm)",
+      "pass": true,
+      "tier": "low"
+    },
+    {
+      "got": "[3.084, 2.200, 1.266] m",
+      "kind": "fit_box",
+      "need": "<= [3.1, 2.21, 1.27] m (+1.0 mm)",
+      "pass": true,
+      "tier": "medium"
+    },
+    {
+      "got": "[3.082, 2.200, 1.257] m",
+      "kind": "fit_box",
+      "need": "<= [3.1, 2.21, 1.27] m (+1.0 mm)",
+      "pass": true,
+      "tier": "high"
+    },
+    {
+      "got": "[3.085, 2.200, 1.257] m",
+      "kind": "fit_box",
+      "need": "<= [3.1, 2.21, 1.27] m (+1.0 mm)",
+      "pass": true,
+      "tier": "ultra"
+    },
+    {
+      "got": "seat width 2.000 m, body clear of the kart by 190.0 mm, sunk into the seat 0.0 mm",
+      "kind": "seats",
+      "need": "width >= 0.700 m, clear >= -5.0 mm, sunk <= 30.0 mm",
+      "pass": true
+    },
+    {
+      "got": "lowest point 2.0 mm, centre of mass inside the footprint",
+      "kind": "stands",
+      "need": "lowest point from -2.0 mm to +63.3 mm (half a 126.7 mm cell), centre of mass over the contact within one cell",
+      "pass": true,
+      "tier": "low"
+    },
+    {
+      "got": "lowest point 0.5 mm, centre of mass inside the footprint",
+      "kind": "stands",
+      "need": "lowest point from -2.0 mm to +36.6 mm (half a 73.3 mm cell), centre of mass over the contact within one cell",
+      "pass": true,
+      "tier": "medium"
+    },
+    {
+      "got": "lowest point 0.1 mm, centre of mass inside the footprint",
+      "kind": "stands",
+      "need": "lowest point from -2.0 mm to +22.7 mm (half a 45.4 mm cell), centre of mass over the contact within one cell",
+      "pass": true,
+      "tier": "high"
+    },
+    {
+      "got": "lowest point 0.0 mm, centre of mass inside the footprint",
+      "kind": "stands",
+      "need": "lowest point from -2.0 mm to +12.5 mm (half a 25.0 mm cell), centre of mass over the contact within one cell",
+      "pass": true,
+      "tier": "ultra"
+    },
+    {
+      "got": "largest mirror difference 0.0 mm",
+      "kind": "symmetric",
+      "need": "<= 0.5 mm",
+      "pass": true
+    },
+    {
+      "got": "2830 tris",
+      "kind": "tri_budget",
+      "need": "<= 3000",
+      "pass": true,
+      "tier": "low"
+    },
+    {
+      "got": "7514 tris",
+      "kind": "tri_budget",
+      "need": "<= 8000",
+      "pass": true,
+      "tier": "medium"
+    },
+    {
+      "got": "17610 tris",
+      "kind": "tri_budget",
+      "need": "<= 20000",
+      "pass": true,
+      "tier": "high"
+    },
+    {
+      "got": "51298 tris",
+      "kind": "tri_budget",
+      "need": "<= 60000",
+      "pass": true,
+      "tier": "ultra"
+    },
+    {
+      "got": "42.8 mm (front_tyres.r at 17 deg)",
+      "kind": "wheels_clear_chassis_at_steer",
+      "need": ">= 10.0 mm up to 30 deg",
+      "pass": true
+    }
+  ],
+  "seed": 201,
+  "style": "toon_chunky",
+  "tiers": {
+    "high": {
+      "budget": 20000,
+      "dropped": [],
+      "file": "kart.high.glb",
+      "kb": 309,
+      "must": "7/7",
+      "tris": 17610
+    },
+    "low": {
+      "budget": 3000,
+      "dropped": [
+        "steering_column",
+        "steering_wheel"
+      ],
+      "file": "kart.low.glb",
+      "kb": 66,
+      "must": "7/7",
+      "tris": 2830
+    },
+    "medium": {
+      "budget": 8000,
+      "dropped": [],
+      "file": "kart.medium.glb",
+      "kb": 137,
+      "must": "7/7",
+      "tris": 7514
+    },
+    "ultra": {
+      "budget": 60000,
+      "dropped": [],
+      "file": "kart.ultra.glb",
+      "kb": 830,
+      "must": "7/7",
+      "tris": 51298
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# Benchmark B, vehicle 8 of 10: Sugarpeak Rally rival kart (Rumble: heavy, oversized rear tyres, big engine, four exhausts).
+# Reference: the base kart with this rival's shape overrides (manifest.json),
+# made by the reference tool; if Chris picks option A (decision D4) the
+# reference is the base kart for all eight.
+make: kart
+like: bench/kart_01_pip
+style: toon_chunky
+parts:
+  rear_tyres: { size: very_oversized }
+  engine_cover: { shape: block, large, exhausts: 4 }
+  bumper: { type: bar, thick }
+relief:
+  tyres.outer: tread(chevron, depth 8mm, pitch 5cm)
+  engine_cover.outer: knurl(diamond, pitch 1cm, depth 1mm)
+must:
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_08_rumble/side.png, front: ../ref/kart_08_rumble/front.png, top: ../ref/kart_08_rumble/top.png, chase: ../ref/kart_08_rumble/chase.png, mesh: ../ref/kart_08_rumble/mesh.glb }
+explore: auto
+return: 3
+seed: 208

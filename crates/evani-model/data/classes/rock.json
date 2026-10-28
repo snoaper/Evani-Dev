@@ -1,0 +1,35 @@
+{
+  "class": "rock",
+  "version": 1,
+  "family": "organic",
+  "means": "a boulder: a lumpy noisy mound cut flat underneath, with optional flat facets sliced round its upper sides",
+  "source": "our own proportions for a chunky toon boulder (about 1.1 by 1.5 m, 0.88 m tall); facets are planes tilted 30 degrees, cut by boxes in a ring",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 6.0, "typical": ["three_quarter", "front", "side"] },
+  "clip_floor": true,
+  "measures": {
+    "body.width": { "default": 1.08, "min": 0.6, "max": 1.1, "step": 0.08, "means": "width (x)" },
+    "body.height": { "default": 1.0, "min": 0.5, "max": 1.0, "step": 0.08, "means": "height of the noise body before the flat cut" },
+    "body.length": { "default": 1.5, "min": 0.8, "max": 1.52, "step": 0.1, "means": "length (z)" },
+    "body.lumps": { "default": 4, "min": 1, "max": 8, "step": 1, "count": true, "means": "lumps merged into the body" },
+    "body.noise": { "default": 0.02, "min": 0.0, "max": 0.05, "step": 0, "fit": false, "means": "surface noise amplitude" },
+    "body.facets": { "default": 0, "min": 0, "max": 6, "step": 6, "count": true, "means": "flat facets round the upper sides" },
+    "body.facet_depth": { "default": 0.44, "min": 0.3, "max": 0.6, "step": 0, "fit": false, "means": "distance of the facet planes from the rock centre" }
+  },
+  "parts": [
+    { "name": "body", "role": "body", "solid": "body", "gen": "noise_rock",
+      "params": { "size": ["body.width", "body.height", "body.length"], "lumps": "body.lumps", "noise": "body.noise", "frequency": "2.5" },
+      "at": ["0", "0.375 * body.height", "0"] },
+    { "name": "facets", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut",
+      "count": "body.facets", "layout": "ring", "start": "15", "radius": "0.866 * (body.facet_depth + 0.3)",
+      "params": { "size": ["1.4", "1.4", "0.6"], "bevel": "0" },
+      "rot": ["0", "-30", "0"],
+      "at": ["0", "0.375 * body.height + 0.5 * (body.facet_depth + 0.3)", "0"] }
+  ],
+  "groups": {},
+  "variants": {},
+  "counts": { "body.lumps": "body.lumps" },
+  "anchors": [ { "name": "top", "at": "body.centre" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "box" }
+}

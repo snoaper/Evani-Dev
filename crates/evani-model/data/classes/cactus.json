@@ -1,0 +1,59 @@
+{
+  "class": "cactus",
+  "version": 1,
+  "family": "organic",
+  "means": "a saguaro-like cactus: a ribbed trunk with a rounded top, two L-shaped arms at uneven heights and an optional pot",
+  "source": "our own proportions for a chunky toon cactus (about 2.5 m tall, 1.35 m across the arms)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 8.0, "typical": ["front", "three_quarter", "side"] },
+  "clip_floor": true,
+  "blend": "0.06",
+  "measures": {
+    "trunk.radius": { "default": 0.3, "min": 0.2, "max": 0.34, "step": 0.03, "means": "trunk radius" },
+    "trunk.height": { "default": 2.3, "min": 1.5, "max": 2.5, "step": 0.2, "means": "trunk height" },
+    "trunk.ribs": { "default": 8, "min": 0, "max": 14, "step": 1, "count": true, "means": "ribs down the trunk" },
+    "arms.count": { "default": 2, "min": 1, "max": 2, "step": 1, "count": true, "means": "arms" },
+    "arms.radius": { "default": 0.15, "min": 0.1, "max": 0.18, "step": 0.02, "means": "arm radius" },
+    "arms.uneven": { "default": 0.0, "min": 0.0, "max": 0.4, "step": 0.2, "fit": false, "means": "height difference between the arms (each moves half of it)" },
+    "arms.reach": { "default": 0.53, "min": 0.4, "max": 0.55, "step": 0.04, "means": "distance of the upright part of an arm from the trunk axis" },
+    "arms.rise": { "default": 0.7, "min": 0.4, "max": 0.9, "step": 0.1, "means": "how far the arms rise" },
+    "pot.radius": { "default": 0.45, "min": 0.38, "max": 0.48, "step": 0.03, "means": "pot radius at the rim" }
+  },
+  "parts": [
+    { "name": "trunk", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "trunk.radius", "points": ["0", "-0.2", "0", "0", "trunk.height - trunk.radius", "0"] },
+      "at": ["0", "0", "0"] },
+    { "name": "ribs", "role": "trim", "solid": "body", "gen": "tube",
+      "count": "trunk.ribs", "layout": "ring", "start": "22.5",
+      "params": { "radius": "0.04", "points": ["0", "0.2", "trunk.radius - 0.02", "0", "trunk.height - trunk.radius - 0.05", "trunk.radius - 0.02"] },
+      "at": ["0", "0", "0"] },
+    { "name": "arm_a", "role": "body", "solid": "body", "gen": "tube", "group": "arms",
+      "params": { "radius": "arms.radius", "points": [
+        "0", "1.1 - arms.uneven / 2", "0",
+        "arms.reach - 0.15", "1.1 - arms.uneven / 2", "0",
+        "arms.reach - 0.044", "1.1 - arms.uneven / 2 + 0.044", "0",
+        "arms.reach", "1.1 - arms.uneven / 2 + 0.15", "0",
+        "arms.reach", "1.1 - arms.uneven / 2 + 0.15 + arms.rise", "0"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "arm_b", "role": "body", "solid": "body", "gen": "tube", "group": "arms",
+      "count": "arms.count - 1",
+      "params": { "radius": "arms.radius", "points": [
+        "0", "1.1 + arms.uneven / 2", "0",
+        "-(arms.reach - 0.2)", "1.1 + arms.uneven / 2", "0",
+        "-(arms.reach - 0.094)", "1.1 + arms.uneven / 2 + 0.044", "0",
+        "-(arms.reach - 0.05)", "1.1 + arms.uneven / 2 + 0.15", "0",
+        "-(arms.reach - 0.05)", "1.1 + arms.uneven / 2 + 0.15 + 0.85 * arms.rise", "0"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "pot", "role": "body", "solid": "body", "gen": "lathe",
+      "params": { "profile": ["pot.radius - 0.08", "0", "pot.radius", "0.35", "pot.radius - 0.05", "0.38", "trunk.radius + 0.02", "0.38"] },
+      "at": ["0", "0", "0"] }
+  ],
+  "groups": { "arms": ["arm_a", "arm_b"] },
+  "variants": {},
+  "counts": { "trunk.ribs": "trunk.ribs", "arms.count": "arms.count" },
+  "anchors": [ { "name": "top", "at": "trunk.end" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "cylinder" }
+}

@@ -1,0 +1,9 @@
+{
+  "items": ["zoom_pop", "goo_blob", "boing_bomb", "seeker_star", "shield_bubble"],
+  "labels": ["Zoom Pop", "Goo Blob", "Boing Bomb", "Seeker Star", "Shield Bubble"],
+  "bands": {
+    "front": [20, 45, 5, 0, 30],
+    "mid":   [30, 15, 30, 10, 15],
+    "back":  [35, 0, 20, 35, 10]
+  }
+}

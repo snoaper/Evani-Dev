@@ -1,0 +1,74 @@
+{
+  "about": "Proposed catalog entries for the stylizedpbr look and its ambient-occlusion pass (ChimpDuty gap modules evani-look-stylizedpbr and evani-fx-gtao, built against Evani.Dev f216906). A proposal only: Evani.Dev's catalog/*.json stays the source of truth and nothing here has been applied. The look entry keeps every existing field of catalog/looks.json 'stylizedpbr' unchanged and only adds fields; the effect entry fills the existing 'ssao' row with the GTAO implementation; the tier rows are additions for Chris to approve (catalog/tiers.json changes need his approval).",
+  "looks.json": {
+    "id": "stylizedpbr",
+    "name": "Stylized PBR",
+    "type": "3D",
+    "style_class": "3d",
+    "cameras": ["third-person", "first-person", "top-down", "isometric"],
+    "cost_points": 3,
+    "full_look_from_tier": "low",
+    "look": "Vibrant colours, chunky proportions, clean physically based materials.",
+    "render_rules": "Metal-roughness PBR with simplified textures, saturated albedo, strong rim and ambient occlusion, image-based light from a small cubemap.",
+    "proposed_additions": {
+      "crate": "looks/evani-look-stylizedpbr",
+      "features": {
+        "pcss": "Soft shadow edges on the existing shadow map (blocker search, penumbra from the sun's angular size).",
+        "fur": "Shells and silhouette fins on materials with extras.evani_fur, plus the baked clump map; Lite and Low draw the clump map only.",
+        "biplanar": "Runtime biplanar tiling detail (fabric weave) on flagged materials.",
+        "gtao": "Turns on the evani-fx 'ssao' effect (GTAO implementation) for Medium and up."
+      },
+      "slots": {
+        "toon_ramp": "Smooth wrapped diffuse (no bands); look.stylizedpbr.wrap.",
+        "rim": "Soft rim, stronger on the shadowed side; look.stylizedpbr.rim and rim_width.",
+        "tonemap": "Filmic curve with a toe (own rational fit): authored blacks stay dark, mid-grey 0.18 maps to 0.24, highlights roll off softly.",
+        "fog": "Light distance and height fog.",
+        "specular (new)": "Normalised Blinn-style lobe from roughness, Schlick Fresnel with F0 = mix(0.04, base, metal).",
+        "surface_params (new)": "Look constants for the model shader: direct AO, environment reflections, detail.",
+        "pcss_params (new, feature pcss)": "Light size and blocker search radius."
+      },
+      "params": [
+        "look.stylizedpbr.wrap", "look.stylizedpbr.spec", "look.stylizedpbr.rim", "look.stylizedpbr.rim_width",
+        "look.stylizedpbr.ao_strength", "look.stylizedpbr.env_spec", "look.stylizedpbr.pcss_light_deg",
+        "look.stylizedpbr.pcss_search", "look.stylizedpbr.fur_shells_max", "look.stylizedpbr.fur_fins",
+        "look.stylizedpbr.detail_strength", "look.stylizedpbr.detail_scale"
+      ],
+      "model_maps": "Reads the glTF metallicRoughnessTexture (G roughness, B metal) and occlusionTexture (R) that model.wgsl binds nothing for today; needs the evani-render 'look-surface' hook (look-surface.patch, CORE_REQUESTS-entry.md).",
+      "image_based_light": "Not built yet: a sky/ground hemisphere stands in for the small cubemap until the 'image-based-lighting' render-path row (Stage 5) lands.",
+      "tiers": {
+        "lite": "Blob shadows that also darken sky light, baked occlusion map, fur from the clump map (no shells), biplanar detail, render scale 0.65.",
+        "low": "As Lite at render scale 0.75.",
+        "medium": "1024 shadow map with PCSS, GTAO 2 slices x 3 steps, 6 fur shells plus fins, biplanar detail.",
+        "high": "2048 shadow map with PCSS (16 taps), GTAO 3 slices x 4 steps, 8 fur shells plus fins, biplanar detail."
+      }
+    }
+  },
+  "effects.json": {
+    "id": "ssao",
+    "name": "Ambient occlusion",
+    "group": "post",
+    "cost_points": 3,
+    "works_with": ["3d"],
+    "vr_comfort_off": false,
+    "implementation": "Half-resolution SAO or GTAO-lite with a bilateral blur; baked AO when it is off.",
+    "proposed_additions": {
+      "cargo_feature": "evani-fx/gtao (crate today: handover/evani-dev/gaps/evani-fx-gtao)",
+      "passes": [
+        "gtao.depth: half-resolution linear depth (nearest of each 2x2) plus a coarser 4x4 level for far steps",
+        "gtao.ao: horizon search in 2-3 slices per pixel with a fixed 4x4 interleaved rotation (no time term, deterministic), cosine-weighted arc integral",
+        "gtao.denoise: 3x3 depth-aware upsample multiplied into hdr; sky untouched"
+      ],
+      "params": ["fx.gtao.radius", "fx.gtao.strength", "fx.gtao.falloff", "fx.gtao.slices", "fx.gtao.steps"]
+    }
+  },
+  "tiers.json (needs Chris's approval)": {
+    "effects_on": {
+      "lite": [],
+      "low": [],
+      "medium": ["ssao"],
+      "high": ["ssao"],
+      "ultra": ["ssao"]
+    },
+    "note": "Only for games whose look asks for it (stylizedpbr with feature gtao). Low and Lite keep the baked occlusion map instead."
+  }
+}

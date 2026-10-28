@@ -1,0 +1,43 @@
+{
+  "chase": {
+    "eye": [
+      0.0,
+      3.0,
+      -7.0
+    ],
+    "fov_deg": 62.0,
+    "source": "kit.kart_racer.cam_distance 7, cam_height 3, cam_look_ahead 4, cam_fov 62",
+    "target": [
+      0.0,
+      1.0,
+      4.0
+    ]
+  },
+  "files": {
+    "chase.png": "sha256:6bc845e55bef204089a60440582a4514be89e7311db8d03e4ffdcf7c18ece228",
+    "front.png": "sha256:c5f54c0584e3d2fd5a8e5cba0cce53c9b031bf743b7937deff110f4088d07313",
+    "mesh.glb": "sha256:7c8fea5c203171689e5662e8503bc4e5aedcf27b8e576da9ca26d66681410b1e",
+    "side.png": "sha256:0b185c10a7a062e141f2473c683fc014fe79d147b113152cccb725d411a5fd07",
+    "top.png": "sha256:ce45b6c3a322a06ae2c8e989462c10d571debce56959285685fb67574610360f"
+  },
+  "frame_centre": [
+    0.0,
+    1.53,
+    0.00716
+  ],
+  "frame_m": 3.4,
+  "id": "kart_07_clover",
+  "instances": 24,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": [
+    "engine block drawn with SPHERE at size [1.0, 0.6, 0.7] (bubble cover), centre y 0.6 -> 0.68",
+    "side pods drawn with SPHERE at size [0.4, 0.42, 0.8]",
+    "rear wing and its two struts removed (instances 7, 9, 10)"
+  ],
+  "size_m": {
+    "height": 1.213172,
+    "length": 3.105681,
+    "width": 2.21
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

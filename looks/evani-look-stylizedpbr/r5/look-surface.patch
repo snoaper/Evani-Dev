@@ -1,0 +1,1153 @@
+diff --git a/crates/evani-render/Cargo.toml b/crates/evani-render/Cargo.toml
+index 109163f..c210c05 100644
+--- a/crates/evani-render/Cargo.toml
++++ b/crates/evani-render/Cargo.toml
+@@ -66,6 +66,18 @@ text = ["sprite-art"]
+ # upload and the tier's texture budget. Games without `models` download
+ # none of it. Needs `forward`.
+ models = ["forward", "dep:evani-gltf", "evani-core/texture-budget"]
++# Lit model shading for the `stylizedpbr` look (CORE_REQUESTS
++# `smooth-lighting`): models draw with `model_lit_vs` / `model_lit_fs`, which
++# read the metallic-roughness and occlusion maps, a per-material surface
++# uniform (glTF factors, `evani_fur` and `evani_detail` extras) and the
++# look's detail and fur clump maps; declares the `specular` and
++# `surface_params` slots. Games without it download none of it.
++look-surface = ["models", "shadows", "dep:serde_json"]
++# PCSS soft shadow edges on the forward shadow map (CORE_REQUESTS
++# `soft-shadows`): the shadow lookup searches blockers and widens the filter
++# with blocker distance; declares the `pcss_params` slot. A tier feature of
++# the existing shadow map, not a look; games without it download none of it.
++soft-shadows = ["shadows"]
+ 
+ [dependencies]
+ evani-core.workspace = true
+diff --git a/crates/evani-render/shaders/look_biplanar.wgsl b/crates/evani-render/shaders/look_biplanar.wgsl
+new file mode 100644
+index 0000000..07d8039
+--- /dev/null
++++ b/crates/evani-render/shaders/look_biplanar.wgsl
+@@ -0,0 +1,38 @@
++
++// evani.shader.biplanar
++// evani-look-stylizedpbr feature `biplanar`: a tiling detail map (fabric
++// weave: R = brightness, G = thread height, both around 0.5) laid on the
++// part in its own space with two planar projections instead of three. The
++// two planes are the ones facing the normal most; their weights fall to
++// zero before a plane turns edge-on, so no stretched texels show. The
++// screen derivatives are taken from the continuous position before the
++// planes are chosen, so mip selection never jumps at a plane switch.
++@group(1) @binding(7) var detail_map: texture_2d<f32>;
++
++// The 2D coordinates of `q` in the plane whose normal is axis `a` (0 x, 1 y,
++// 2 z).
++fn biplanar_plane(q: vec3<f32>, a: u32) -> vec2<f32> {
++    return select(select(q.xy, q.zx, a == 1u), q.yz, a == 0u);
++}
++
++fn biplanar_axis_value(v: vec3<f32>, a: u32) -> f32 {
++    return select(select(v.z, v.y, a == 1u), v.x, a == 0u);
++}
++
++fn detail_sample(p: vec3<f32>, n: vec3<f32>, scale: f32) -> vec2<f32> {
++    let q = p / max(scale, 1e-4);
++    let qx = dpdx(q);
++    let qy = dpdy(q);
++    let a = abs(n);
++    // Largest, smallest and middle axes of the normal.
++    let big = select(select(2u, 1u, a.y >= a.z), 0u, a.x >= a.y && a.x >= a.z);
++    let small = select(select(2u, 1u, a.y < a.z), 0u, a.x < a.y && a.x < a.z);
++    let mid = 3u - big - small;
++    let s0 = textureSampleGrad(detail_map, map_sampler, biplanar_plane(q, big), biplanar_plane(qx, big), biplanar_plane(qy, big)).rg;
++    let s1 = textureSampleGrad(detail_map, map_sampler, biplanar_plane(q, mid), biplanar_plane(qx, mid), biplanar_plane(qy, mid)).rg;
++    // Weights: zero below 0.55 (a plane well past 45 degrees), sharpened.
++    var w = max(vec2<f32>(biplanar_axis_value(a, big), biplanar_axis_value(a, mid)) - vec2<f32>(0.55), vec2<f32>(0.0));
++    w = w * w * w * w;
++    let total = max(w.x + w.y, 1e-6);
++    return (s0 * w.x + s1 * w.y) / total;
++}
+diff --git a/crates/evani-render/shaders/look_fur_surface.wgsl b/crates/evani-render/shaders/look_fur_surface.wgsl
+new file mode 100644
+index 0000000..c522b3d
+--- /dev/null
++++ b/crates/evani-render/shaders/look_fur_surface.wgsl
+@@ -0,0 +1,27 @@
++
++// evani.shader.fur_surface
++// evani-look-stylizedpbr feature `fur`: the baked clump map (R strand
++// height, G clump shade, B noise) on fur materials. Projected in the part's
++// own space on the plane facing the normal most, at the material's clump
++// scale. Lite/Low draw only this (roots dark, tips lighter); higher tiers
++// draw the shells and fins on top.
++@group(1) @binding(9) var clump_map: texture_2d<f32>;
++
++// The plane of the normal's largest axis.
++fn fur_axis(n: vec3<f32>) -> u32 {
++    let a = abs(n);
++    return select(select(2u, 1u, a.y >= a.z), 0u, a.x >= a.y && a.x >= a.z);
++}
++
++fn fur_plane(q: vec3<f32>, axis: u32) -> vec2<f32> {
++    return select(select(q.xy, q.zx, axis == 1u), q.yz, axis == 0u);
++}
++
++fn fur_sample(p: vec3<f32>, n: vec3<f32>, scale: f32) -> vec4<f32> {
++    let q = p / max(scale, 1e-4);
++    let qx = dpdx(q);
++    let qy = dpdy(q);
++    let axis = fur_axis(n);
++    let t = textureSampleGrad(clump_map, map_sampler, fur_plane(q, axis), fur_plane(qx, axis), fur_plane(qy, axis));
++    return vec4<f32>(t.rgb, 1.0);
++}
+diff --git a/crates/evani-render/shaders/look_surface.wgsl b/crates/evani-render/shaders/look_surface.wgsl
+new file mode 100644
+index 0000000..5b8c51e
+--- /dev/null
++++ b/crates/evani-render/shaders/look_surface.wgsl
+@@ -0,0 +1,206 @@
++// evani.shader.model_surface
++// evani-look-stylizedpbr: smooth stylised-realistic shading for models.
++// Appended after model.wgsl (same module: frame, model_mat, the maps and the
++// shadow lookup are shared) and drawn with model_lit_vs / model_lit_fs in
++// place of model_vs / model_fs. On top of the engine's model shading it:
++//   * reads the glTF metallicRoughness map (G roughness, B metal) and the
++//     occlusion map (R), scaled by the ModelSurface factors;
++//   * lights with the look's smooth toon_ramp body (wrapped diffuse), a
++//     roughness/metal specular lobe (slot `specular`), a hemisphere ambient
++//     with a cheap environment reflection and the rim slot;
++//   * calls detail_sample (biplanar.wgsl or its stub) and fur_sample
++//     (fur_surface.wgsl or its stub) before any discard.
++// Varyings 0-5 match model.wgsl; 7 and 8 carry the part-local position (m)
++// and normal for the tiling layers. Location 6 is never used.
++
++struct ModelSurface {
++    // Metal factor, roughness factor, occlusion strength, fur flag (> 0.5).
++    pbr: vec4<f32>,
++    // Fur: length (m), density (strands per cm^2), shells drawn on this tier
++    // (0 = the clump-map fallback, no shells), clump scale (m).
++    fur: vec4<f32>,
++    // Fur tip colour (linear rgb), detail flag (w > 0.5).
++    tip: vec4<f32>,
++    // Detail: tile size (m, 0 = the look's), strength, unused, unused.
++    detail: vec4<f32>,
++};
++
++@group(1) @binding(5) var mr_map: texture_2d<f32>;
++@group(1) @binding(6) var occlusion_map: texture_2d<f32>;
++@group(1) @binding(8) var<uniform> surface: ModelSurface;
++
++struct LitOut {
++    @builtin(position) pos: vec4<f32>,
++    @location(0) world: vec3<f32>,
++    @location(1) normal: vec3<f32>,
++    @location(2) tangent: vec4<f32>,
++    @location(3) uv: vec2<f32>,
++    @location(4) color: vec4<f32>,
++    @location(5) @interpolate(flat) mirror: f32,
++    @location(7) obj: vec3<f32>,
++    @location(8) obj_n: vec3<f32>,
++};
++
++//@slot specular
++//@slot surface_params
++
++@vertex
++fn model_lit_vs(in: ModelIn) -> LitOut {
++    let local = in.pos_offset.xyz + in.pos_scale.xyz * in.pos.xyz;
++    let l4 = vec4<f32>(local, 1.0);
++    let world = vec3<f32>(dot(in.row0, l4), dot(in.row1, l4), dot(in.row2, l4));
++    let c0 = vec3<f32>(in.row0.x, in.row1.x, in.row2.x);
++    let c1 = vec3<f32>(in.row0.y, in.row1.y, in.row2.y);
++    let c2 = vec3<f32>(in.row0.z, in.row1.z, in.row2.z);
++    let x12 = cross(c1, c2);
++    let s = select(1.0, -1.0, dot(c0, x12) < 0.0);
++    var o: LitOut;
++    o.pos = frame.view_proj * vec4<f32>(world, 1.0);
++    o.world = world;
++    o.normal = mat3x3<f32>(x12, cross(c2, c0), cross(c0, c1)) * in.normal.xyz * s;
++    o.tangent = vec4<f32>(mat3x3<f32>(c0, c1, c2) * in.tangent.xyz, in.tangent.w * s * in.pos_scale.w);
++    o.uv = in.uv_dq.zw + in.uv_dq.xy * in.uv;
++    o.color = in.tint;
++    o.mirror = s;
++    // Part-local metres (the instance's uniform scale applied), so tiling
++    // layers stay glued to the part however it moves.
++    o.obj = local * length(c0);
++    o.obj_n = in.normal.xyz;
++    return o;
++}
++
++// Sky / ground hemisphere colour for a direction (ambient and reflections).
++fn surface_hemi(dir_y: f32) -> vec3<f32> {
++    let sky = slot_surface_params(2u).rgb;
++    let ground = slot_surface_params(3u).rgb;
++    return frame.ambient.rgb * mix(ground, sky, clamp(dir_y * 0.5 + 0.5, 0.0, 1.0));
++}
++
++// The detail layer: modulates colour and roughness around neutral 0.5.
++fn surface_detail(base: vec3<f32>, rough: f32, d: vec2<f32>, strength: f32) -> vec4<f32> {
++    let k = clamp(strength, 0.0, 1.0);
++    let lum = 1.0 + (d.x - 0.5) * 0.9 * k;
++    let r = clamp(rough + (0.5 - d.y) * 0.3 * k, 0.04, 1.0);
++    return vec4<f32>(base * lum, r);
++}
++
++// Fur under the shells (and alone on Lite/Low). `f` is the baked clump map
++// at the material's clump scale, `fc` the same map four times larger (rgb =
++// strand height, clump shade, noise; a = 1 when the map is compiled in).
++fn surface_fur(base: vec3<f32>, f: vec4<f32>, fc: vec4<f32>, n_dot_v: f32) -> vec3<f32> {
++    let on = select(0.0, 1.0, surface.pbr.w > 0.5) * f.a;
++    // Shells drawn (fur.z >= 1): this surface is the skin at the roots,
++    // seen only between strands, so it stays dark.
++    let roots = base * 0.65 * mix(0.85, 1.05, f.g);
++    // No shells (Lite/Low, fur.z = 0): the clump map paints the fur instead.
++    // Big clumps (fc) break the coat into tufts with dark partings between
++    // them; the fine map adds strand-scale grain inside each tuft. Low parts
++    // of a tuft are root colour, high parts lean to the lighter tip colour.
++    let tuft = smoothstep(0.4, 1.0, clamp(fc.r, 0.0, 1.0));
++    let grain = smoothstep(0.45, 1.0, clamp(f.r, 0.0, 1.0));
++    let s = clamp(tuft * 0.5 + grain * 0.5 + (f.b - 0.5) * 0.1, 0.0, 1.0);
++    // Root and tip levels matched by eye to the High shells on the chimp and
++    // the look-lab plush, so switching tiers keeps the coat's tone.
++    let root_col = base * 0.25;
++    let tip_col = mix(base * 0.8, surface.tip.rgb, 0.15);
++    var col = mix(root_col, tip_col, s) * mix(0.7, 1.15, fc.g);
++    // Fuzzy edge: towards the silhouette the eye looks along the strands
++    // and sees mostly their lighter tips, so the outline goes soft and pale
++    // instead of ending on a hard dark edge.
++    let e = 1.0 - clamp(n_dot_v, 0.0, 1.0);
++    col = mix(col, tip_col * mix(0.8, 1.05, fc.g), smoothstep(0.35, 0.95, e) * 0.65);
++    return mix(base, select(col, roots, surface.fur.z >= 0.5), on);
++}
++
++// Roughness-limited Schlick term for reflections of the surroundings.
++fn surface_env_fresnel(n_dot_v: f32, f0: vec3<f32>, rough: f32) -> vec3<f32> {
++    let k = 1.0 - clamp(n_dot_v, 0.0, 1.0);
++    let k2 = k * k;
++    return f0 + (max(vec3<f32>(1.0 - rough), f0) - f0) * (k2 * k2 * k);
++}
++
++@fragment
++fn model_lit_fs(in: LitOut, @builtin(front_facing) facing: bool) -> @location(0) vec4<f32> {
++    let front = facing != (in.mirror < 0.0);
++    let uv3 = vec3<f32>(in.uv, 1.0);
++    let uv = vec2<f32>(dot(model_mat.uv0.xyz, uv3), dot(model_mat.uv1.xyz, uv3));
++    // Every map before any discard (uniform control flow).
++    let tex = textureSample(base_map, map_sampler, uv);
++    let nm = textureSample(normal_map, map_sampler, uv).xyz;
++    let em = textureSample(emissive_map, map_sampler, uv).rgb;
++    let mr = textureSample(mr_map, map_sampler, uv);
++    let occ_tex = textureSample(occlusion_map, map_sampler, uv).r;
++    let sp1 = slot_surface_params(1u);
++    let dscale = select(sp1.y, surface.detail.x, surface.detail.x > 0.0);
++    let det = detail_sample(in.obj, in.obj_n, dscale);
++    let fur = fur_sample(in.obj, in.obj_n, surface.fur.w);
++    let fur_c = fur_sample(in.obj, in.obj_n, surface.fur.w * 4.0);
++    var base = tex * model_mat.base * vec4<f32>(in.color.rgb, 1.0);
++    if ((!front && model_mat.flags.y < 0.5) || (model_mat.flags.x > 0.5 && base.a < model_mat.emissive_cutoff.w)) {
++        discard;
++    }
++    let side = select(-1.0, 1.0, front);
++    let ng = normalize(in.normal);
++    var n = ng;
++    if (model_mat.flags.z > 0.5 && abs(in.tangent.w) > 0.5) {
++        let t = normalize(in.tangent.xyz - ng * dot(ng, in.tangent.xyz));
++        let b = cross(ng, t) * in.tangent.w;
++        let m = (nm * 2.0 - 1.0) * vec3<f32>(model_mat.flags.w, model_mat.flags.w, 1.0);
++        n = normalize(t * m.x + b * m.y + ng * m.z);
++    }
++    n = n * side;
++    let g = ng * side;
++
++    var rough = clamp(surface.pbr.y * mr.g, 0.04, 1.0);
++    let metal = clamp(surface.pbr.x * mr.b, 0.0, 1.0);
++    let occ = mix(1.0, occ_tex, clamp(surface.pbr.z, 0.0, 1.0));
++    let dk = select(0.0, surface.detail.y * sp1.x, surface.tip.w > 0.5);
++    let dd = surface_detail(base.rgb, rough, det, dk);
++    rough = dd.w;
++
++    let dist = length(in.world - frame.eye.xyz);
++    let v = (frame.eye.xyz - in.world) / max(dist, 1e-4);
++    let l = frame.light_dir.xyz;
++    let ndl = dot(n, l);
++    let ndv = max(dot(n, v), 1e-3);
++    let albedo = surface_fur(dd.rgb, fur, fur_c, ndv);
++    let h = normalize(l + v);
++    let ndh = max(dot(n, h), 0.0);
++    // Blob shadows (only on tiers without a shadow map; the engine sends none
++    // with a map) also take some sky light, so grounding survives the bright
++    // hemisphere ambient on Low and Lite.
++    let blob = blob_vis(in.world, g);
++    let vis = shadow_vis(in.world, g) * blob * self_shadow(dot(g, l));
++    let sp0 = slot_surface_params(0u);
++    // Direct light: smooth ramp, shadowed, and (by `direct_ao`) the baked
++    // occlusion also darkens creases in sunlight.
++    let direct_occ = mix(1.0, occ, clamp(sp0.x, 0.0, 1.0));
++    let diffuse = slot_toon_ramp(ndl) * vis * direct_occ;
++    let f0 = mix(vec3<f32>(0.04), albedo, metal);
++    let spec = slot_specular(ndh, max(ndl, 0.0), ndv, rough, metal, albedo) * vis * direct_occ;
++    // Ambient: hemisphere by the normal. Reflections: the hemisphere seen in
++    // the mirror direction, which rough surfaces see blurred (the lookup
++    // leans to the normal and the sky's brightness, sp0.z times the ambient,
++    // falls to the ambient's own). Metals take all their ambient light this
++    // way, tinted by their base colour; `env_spec` (sp0.y) scales it only on
++    // dielectrics.
++    let ambient = surface_hemi(n.y) * occ * blob;
++    let r = reflect(-v, n);
++    let r2 = rough * rough;
++    let env_y = mix(r.y, n.y, r2);
++    let env_k = mix(sp0.y, 1.0, metal) * mix(max(sp0.z, 1.0), 1.0, r2);
++    let env = surface_hemi(env_y) * surface_env_fresnel(ndv, f0, rough) * (env_k * occ * mix(1.0, blob, 0.5));
++    let diff_col = albedo * (1.0 - metal);
++    var c = diff_col * (ambient + frame.light_color.rgb * diffuse) + frame.light_color.rgb * spec + env
++        + model_mat.emissive_cutoff.rgb * em + slot_rim(ndv, ndl, dist, albedo) * occ;
++    // Shadow tint, as the engine's model shading does it.
++    let k = clamp(1.0 - vis, 0.0, 1.0) * clamp(frame.shadow_tint.w, 0.0, 1.0);
++    let w = vec3<f32>(0.2126, 0.7152, 0.0722);
++    let ts = sqrt(max(frame.shadow_tint.rgb, vec3<f32>(0.0)));
++    let hs = ts / max(dot(ts, w), 1e-3);
++    let tt = hs * dot(sqrt(max(c, vec3<f32>(0.0))), w);
++    let tc = tt / max(1.0, max(tt.r, max(tt.g, tt.b)));
++    c = mix(c, tc * tc, k);
++    let f = clamp(slot_fog(dist, in.world.y), 0.0, 1.0);
++    return vec4<f32>(mix(c, frame.fog_color.rgb, f), 1.0);
++}
+diff --git a/crates/evani-render/shaders/soft_shadows.wgsl b/crates/evani-render/shaders/soft_shadows.wgsl
+new file mode 100644
+index 0000000..ab8d402
+--- /dev/null
++++ b/crates/evani-render/shaders/soft_shadows.wgsl
+@@ -0,0 +1,80 @@
++@group(0) @binding(1) var shadow_map: texture_depth_2d;
++@group(0) @binding(2) var shadow_cmp: sampler_comparison;
++
++// evani.shader.shadows_pcss
++// evani-look-stylizedpbr feature `pcss`: soft shadows from the same shadow
++// map, bindings and `shadow_vis` signature as the engine's PCF lookup (this
++// file replaces it). Contact shadows stay sharp and long ones blur, as under
++// a real sun of angular size `look.stylizedpbr.pcss_light_deg`:
++//   1. blocker search: average depth of the shadow-map texels nearer to the
++//      light than this point, over a disc of `pcss_search` texels;
++//   2. penumbra width = (receiver - blocker) distance in metres x the sun's
++//      angular size, turned into shadow-map uv from the light matrix (its z
++//      row's length is 1 / depth range, its x row's length 1 / half width);
++//   3. filter: hardware-compared taps over a disc of that width.
++// Taps lie on a golden-angle spiral turned per texel by a hash, 16 on the
++// tiers with a PCF radius (High) and 8 without (Medium).
++
++//@slot pcss_params
++
++fn pcss_spin(p: vec2<f32>) -> f32 {
++    let c = vec2<u32>(vec2<i32>(floor(p)));
++    var h = (c.x * 0x8f1bbcdcu) ^ (c.y * 0x5f356495u);
++    h = h ^ (h >> 16u);
++    h = h * 0x6b43a9b5u;
++    h = h ^ (h >> 16u);
++    return f32(h & 0xffffu) / 65535.0 * 6.2831853;
++}
++
++// Tap i of n on a disc of radius 1 (golden-angle spiral, even area).
++fn pcss_tap(i: i32, n: i32, spin: f32) -> vec2<f32> {
++    let r = sqrt((f32(i) + 0.5) / f32(n));
++    let a = f32(i) * 2.3999632 + spin;
++    return vec2<f32>(cos(a), sin(a)) * r;
++}
++
++fn shadow_vis(world: vec3<f32>, n: vec3<f32>) -> f32 {
++    if (frame.shadow.x < 0.5) {
++        return 1.0;
++    }
++    let p = frame.light_vp * vec4<f32>(world + n * frame.blob_info.z, 1.0);
++    let uv = vec2<f32>(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5);
++    let edge = max(abs(p.x), abs(p.y));
++    if (edge >= 1.0 || p.z <= 0.0 || p.z >= 1.0) {
++        return 1.0;
++    }
++    let z = p.z - frame.blob_info.w;
++    let prm = slot_pcss_params(0u);
++    let texel = frame.shadow.z;
++    let dims = vec2<f32>(textureDimensions(shadow_map));
++    let row_x = vec3<f32>(frame.light_vp[0].x, frame.light_vp[1].x, frame.light_vp[2].x);
++    let row_z = vec3<f32>(frame.light_vp[0].z, frame.light_vp[1].z, frame.light_vp[2].z);
++    let uv_per_m = 0.5 * length(row_x);
++    let m_per_z = 1.0 / max(length(row_z), 1e-6);
++    let taps = select(8, 16, frame.shadow.w > 0.5);
++    let spin = pcss_spin(uv * dims);
++    var blockers = 0.0;
++    var count = 0.0;
++    let search = prm.y * texel;
++    for (var i = 0; i < taps; i = i + 1) {
++        let t = clamp((uv + pcss_tap(i, taps, spin) * search) * dims, vec2<f32>(0.0), dims - vec2<f32>(1.0));
++        let d = textureLoad(shadow_map, vec2<i32>(t), 0);
++        if (d < z) {
++            blockers = blockers + d;
++            count = count + 1.0;
++        }
++    }
++    if (count < 0.5) {
++        return 1.0;
++    }
++    let blocker = blockers / count;
++    let penumbra_m = max(z - blocker, 0.0) * m_per_z * prm.x;
++    let radius = clamp(penumbra_m * uv_per_m, prm.z * texel, prm.w * texel);
++    var sum = 0.0;
++    for (var i = 0; i < taps; i = i + 1) {
++        sum = sum + textureSampleCompareLevel(shadow_map, shadow_cmp, uv + pcss_tap(i, taps, spin + 1.7) * radius, z);
++    }
++    let lit = sum / f32(taps);
++    let v = mix(1.0, lit, clamp(frame.shadow.y, 0.0, 1.0));
++    return mix(v, 1.0, smoothstep(0.85, 1.0, edge));
++}
+diff --git a/crates/evani-render/src/gpu/models.rs b/crates/evani-render/src/gpu/models.rs
+index 7c6b3ea..7d2f07e 100644
+--- a/crates/evani-render/src/gpu/models.rs
++++ b/crates/evani-render/src/gpu/models.rs
+@@ -75,7 +75,7 @@ pub async fn request_device(adapter: &wgpu::Adapter, timestamps: bool) -> Result
+ /// The material group (group 1 of model.wgsl): uniform, base, normal and
+ /// emissive maps, sampler. Layouts with the same entries are
+ /// interchangeable, so the pipeline and the bind groups each make one.
+-fn material_layout(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
++#[cfg(not(feature = "look-surface"))] fn material_layout(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
+     let tex = |binding| wgpu::BindGroupLayoutEntry {
+         binding,
+         visibility: wgpu::ShaderStages::FRAGMENT,
+@@ -143,7 +143,7 @@ pub fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModu
+         layout: Some(&layout),
+         vertex: wgpu::VertexState {
+             module,
+-            entry_point: Some("model_vs"),
++            entry_point: Some(MODEL_VS),
+             compilation_options: Default::default(),
+             buffers: &buffers,
+         },
+@@ -161,7 +161,7 @@ pub fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModu
+         },
+         fragment: Some(wgpu::FragmentState {
+             module,
+-            entry_point: Some("model_fs"),
++            entry_point: Some(MODEL_FS),
+             compilation_options: Default::default(),
+             targets: &[Some(wgpu::ColorTargetState {
+                 format: wgpu::TextureFormat::Rgba16Float,
+@@ -291,7 +291,7 @@ pub(super) struct ModelGpu {
+     synced: bool,
+     instances: wgpu::Buffer,
+     staging: Vec<f32>,
+-    runs: Vec<Run>,
++    runs: Vec<Run>, #[cfg(feature = "look-surface")] look: look::LookMaps,
+ }
+ 
+ fn pixel(dev: &wgpu::Device, queue: &wgpu::Queue, format: wgpu::TextureFormat, rgba: [u8; 4]) -> (wgpu::Texture, wgpu::TextureView) {
+@@ -449,7 +449,7 @@ impl ModelGpu {
+             synced: false,
+             instances: instance_buffer(dev, (INSTANCE_WORDS * 4 * 64) as u64),
+             staging: Vec::new(),
+-            runs: Vec::new(),
++            runs: Vec::new(), #[cfg(feature = "look-surface")] look: look::LookMaps::default(),
+         }
+     }
+ 
+@@ -504,7 +504,7 @@ impl ModelGpu {
+         for (id, prepared) in core::mem::take(&mut models.pending) {
+             let url = models.url(id).unwrap_or("").to_owned();
+             self.start(id, url, prepared);
+-        }
++        } #[cfg(feature = "look-surface")] self.look_maps(dev, queue, world);
+         let budget = match world.res::<Tiers>().active().max_texture_memory {
+             0 => u64::MAX,
+             mb => u64::from(mb) << 20,
+@@ -632,7 +632,7 @@ impl ModelGpu {
+         let mut materials = Vec::with_capacity(prepared.materials.len());
+         let mut uniforms = Vec::with_capacity(prepared.materials.len());
+         for m in &prepared.materials {
+-            let view = |k: usize, d: usize| m.maps[k].and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(&self.defaults[d].1);
++            #[cfg(not(feature = "look-surface"))] let view = |k: usize, d: usize| m.maps[k].and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(&self.defaults[d].1);
+             let mut words: [f32; MATERIAL_WORDS] = m.words;
+             if m.maps[1].and_then(|i| views.get(i)).and_then(Option::as_ref).is_none() {
+                 // No normal map arrived: the geometric normal.
+@@ -645,7 +645,7 @@ impl ModelGpu {
+                 mapped_at_creation: false,
+             });
+             queue.write_buffer(&ub, 0, bytemuck::cast_slice(&words));
+-            materials.push(dev.create_bind_group(&wgpu::BindGroupDescriptor {
++            #[cfg(not(feature = "look-surface"))] materials.push(dev.create_bind_group(&wgpu::BindGroupDescriptor {
+                 label: Some("evani.model.material"),
+                 layout: &self.layout,
+                 entries: &[
+@@ -656,7 +656,7 @@ impl ModelGpu {
+                     wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&self.sampler) },
+                 ],
+             }));
+-            uniforms.push(ub);
++            #[cfg(feature = "look-surface")] { let (g, sb) = self.look_group(dev, queue, &ub, m, &views); materials.push(g); uniforms.push(sb); } uniforms.push(ub);
+         }
+         let mut parts = Vec::with_capacity(prepared.parts.len());
+         for mut p in prepared.parts {
+@@ -818,3 +818,177 @@ impl ModelGpu {
+         draws
+     }
+ }
++
++// Lit model shading (feature `look-surface`, CORE_REQUESTS `smooth-lighting`).
++// Declared after everything else in this file: panic locations are in the
++// wasm, so other games' downloads stay byte-identical only if no line above
++// moves.
++
++#[cfg(not(feature = "look-surface"))]
++const MODEL_VS: &str = "model_vs";
++#[cfg(not(feature = "look-surface"))]
++const MODEL_FS: &str = "model_fs";
++#[cfg(feature = "look-surface")]
++const MODEL_VS: &str = "model_lit_vs";
++#[cfg(feature = "look-surface")]
++const MODEL_FS: &str = "model_lit_fs";
++
++/// The material group with the lit maps: 0-4 as without the feature, then
++/// metallic-roughness (5), occlusion (6), detail (7), the `ModelSurface`
++/// uniform (8) and the fur clump map (9).
++#[cfg(feature = "look-surface")]
++fn material_layout(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
++    let tex = |binding| wgpu::BindGroupLayoutEntry {
++        binding,
++        visibility: wgpu::ShaderStages::FRAGMENT,
++        ty: wgpu::BindingType::Texture {
++            sample_type: wgpu::TextureSampleType::Float { filterable: true },
++            view_dimension: wgpu::TextureViewDimension::D2,
++            multisampled: false,
++        },
++        count: None,
++    };
++    let uniform = |binding| wgpu::BindGroupLayoutEntry {
++        binding,
++        visibility: wgpu::ShaderStages::FRAGMENT,
++        ty: wgpu::BindingType::Buffer {
++            ty: wgpu::BufferBindingType::Uniform,
++            has_dynamic_offset: false,
++            min_binding_size: None,
++        },
++        count: None,
++    };
++    dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
++        label: Some("evani.layout.model_lit"),
++        entries: &[
++            uniform(0),
++            tex(1),
++            tex(2),
++            tex(3),
++            wgpu::BindGroupLayoutEntry {
++                binding: 4,
++                visibility: wgpu::ShaderStages::FRAGMENT,
++                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
++                count: None,
++            },
++            tex(5),
++            tex(6),
++            tex(7),
++            uniform(8),
++            tex(9),
++        ],
++    })
++}
++
++#[cfg(feature = "look-surface")]
++mod look {
++    use evani_core::ecs::World;
++    use evani_core::plugin::{GenRequest, GeneratedAsset, LookData};
++
++    use super::ModelGpu;
++    use crate::look_surface::{self, CLUMP_GENERATOR, DETAIL_GENERATOR, SURFACE_MAP_SIZE, SURFACE_WORDS};
++    use crate::model::ModelMaterial;
++
++    /// The look's tiling maps (detail, clump), made once per device.
++    #[derive(Default)]
++    pub struct LookMaps {
++        tried: bool,
++        detail: Option<(wgpu::Texture, wgpu::TextureView)>,
++        clump: Option<(wgpu::Texture, wgpu::TextureView)>,
++    }
++
++    /// A linear RGBA8 tiling map with its box-filtered mip chain.
++    fn upload(dev: &wgpu::Device, queue: &wgpu::Queue, width: u32, height: u32, rgba: &[u8]) -> Option<(wgpu::Texture, wgpu::TextureView)> {
++        if width == 0 || height == 0 || rgba.len() != (width * height * 4) as usize {
++            return None;
++        }
++        let mips = look_surface::mip_chain(width, height, rgba);
++        let t = dev.create_texture(&wgpu::TextureDescriptor {
++            label: Some("evani.model.look_map"),
++            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
++            mip_level_count: mips.len() as u32,
++            sample_count: 1,
++            dimension: wgpu::TextureDimension::D2,
++            format: wgpu::TextureFormat::Rgba8Unorm,
++            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
++            view_formats: &[],
++        });
++        for (level, (w, h, data)) in mips.iter().enumerate() {
++            queue.write_texture(
++                wgpu::TexelCopyTextureInfo { texture: &t, mip_level: level as u32, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
++                data,
++                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(*h) },
++                wgpu::Extent3d { width: *w, height: *h, depth_or_array_layers: 1 },
++            );
++        }
++        let v = t.create_view(&wgpu::TextureViewDescriptor::default());
++        Some((t, v))
++    }
++
++    impl ModelGpu {
++        /// Ask the active look for its detail and clump maps (once).
++        pub(super) fn look_maps(&mut self, dev: &wgpu::Device, queue: &wgpu::Queue, world: &World) {
++            if self.look.tried {
++                return;
++            }
++            self.look.tried = true;
++            let Some(look) = world.try_res::<LookData>() else {
++                return;
++            };
++            let make = |name: &str| {
++                let req = GenRequest { name: name.to_owned(), size: SURFACE_MAP_SIZE, seed: 1, params: Default::default() };
++                match look.generate(&req) {
++                    Some(GeneratedAsset::Texture { width, height, rgba8 }) => upload(dev, queue, width, height, &rgba8),
++                    _ => None,
++                }
++            };
++            self.look.detail = make(DETAIL_GENERATOR);
++            self.look.clump = make(CLUMP_GENERATOR);
++        }
++
++        /// One material's lit bind group and its `ModelSurface` buffer.
++        pub(super) fn look_group(
++            &self,
++            dev: &wgpu::Device,
++            queue: &wgpu::Queue,
++            ub: &wgpu::Buffer,
++            m: &ModelMaterial,
++            views: &[Option<wgpu::TextureView>],
++        ) -> (wgpu::BindGroup, wgpu::Buffer) {
++            let white = &self.defaults[0].1;
++            let view = |k: usize, d: usize| m.maps[k].and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(&self.defaults[d].1);
++            let lit = |k: usize| m.surface.maps[k].and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(white);
++            let mut words = m.surface.words;
++            if self.look.detail.is_none() {
++                // No detail map from the look: the layer stays off.
++                words[11] = 0.0;
++            }
++            let sb = dev.create_buffer(&wgpu::BufferDescriptor {
++                label: Some("evani.model.surface"),
++                size: (SURFACE_WORDS * 4) as u64,
++                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
++                mapped_at_creation: false,
++            });
++            queue.write_buffer(&sb, 0, bytemuck::cast_slice(&words));
++            let detail = self.look.detail.as_ref().map_or(white, |d| &d.1);
++            let clump = self.look.clump.as_ref().map_or(white, |c| &c.1);
++            let g = dev.create_bind_group(&wgpu::BindGroupDescriptor {
++                label: Some("evani.model.material_lit"),
++                layout: &self.layout,
++                entries: &[
++                    wgpu::BindGroupEntry { binding: 0, resource: ub.as_entire_binding() },
++                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(view(0, 0)) },
++                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(view(1, 1)) },
++                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(view(2, 0)) },
++                    wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&self.sampler) },
++                    wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(lit(0)) },
++                    wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::TextureView(lit(1)) },
++                    wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::TextureView(detail) },
++                    wgpu::BindGroupEntry { binding: 8, resource: sb.as_entire_binding() },
++                    wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(clump) },
++                ],
++            });
++            (g, sb)
++        }
++    }
++}
+diff --git a/crates/evani-render/src/lib.rs b/crates/evani-render/src/lib.rs
+index c5794e2..06a12a7 100644
+--- a/crates/evani-render/src/lib.rs
++++ b/crates/evani-render/src/lib.rs
+@@ -259,7 +259,7 @@ impl EngineModule for RenderModule {
+     fn build(&mut self, ctx: &mut PluginContext) -> Result<(), PluginError> {
+         ctx.resource(RenderGraph::standard());
+         ctx.resource(RenderWorld::default()); #[cfg(feature = "models")] ctx.resource(model::Models::default());
+-        ctx.resource(PostEffects::default());
++        ctx.resource(PostEffects::default()); #[cfg(any(feature = "look-surface", feature = "soft-shadows"))] look_surface::declare(&mut ctx.world.res_mut::<evani_core::slots::ShaderSlots>());
+         // The shared particle system drains the core queue from now on.
+         #[cfg(feature = "particles")]
+         {
+@@ -612,3 +612,7 @@ mod tests {
+ pub mod texture;
+ #[cfg(feature = "models")]
+ pub mod model;
++// Lit model shading and soft shadows (features `look-surface`,
++// `soft-shadows`); declared last for the same reason.
++#[cfg(any(feature = "look-surface", feature = "soft-shadows"))]
++pub mod look_surface;
+diff --git a/crates/evani-render/src/look_surface.rs b/crates/evani-render/src/look_surface.rs
+new file mode 100644
+index 0000000..1198cd8
+--- /dev/null
++++ b/crates/evani-render/src/look_surface.rs
+@@ -0,0 +1,222 @@
++//! Lit model shading and soft shadows (features `look-surface` and
++//! `soft-shadows`; CORE_REQUESTS `smooth-lighting` and `soft-shadows`).
++//!
++//! * `look-surface`: the model pipeline draws with `model_lit_vs` /
++//!   `model_lit_fs` (shaders/look_surface.wgsl, appended after model.wgsl in
++//!   the forward module), which read the glTF metallicRoughness and
++//!   occlusion maps (material group bindings 5 and 6), a per-material
++//!   `ModelSurface` uniform (binding 8, [`SurfaceMaterial::words`]) and two
++//!   look-supplied tiling maps: the detail weave (binding 7, generator
++//!   [`DETAIL_GENERATOR`]) and the fur clump map (binding 9, generator
++//!   [`CLUMP_GENERATOR`]). A look without those generators gets white maps
++//!   and the material flags keep both layers off.
++//! * `soft-shadows`: the forward module's shadow lookup is
++//!   shaders/soft_shadows.wgsl (PCSS: blocker search, penumbra from the
++//!   light size, filtered compare) in place of forward_shadows.wgsl. Same
++//!   bindings, same `shadow_vis` signature.
++//! * Both declare the slots their WGSL calls ([`declare`]); the look that
++//!   wants them (`stylizedpbr`) sets the bodies. The defaults shade like the
++//!   engine without the feature: no specular, no extra occlusion, the
++//!   tier's PCF radius.
++//!
++//! Games that turn neither feature on compile none of this.
++
++use evani_core::slots::{ShaderSlots, SlotSignature};
++
++/// Look generator for the biplanar detail map (RGBA8, R brightness and G
++/// height around 0.5, tiling). Sampled as linear data.
++pub const DETAIL_GENERATOR: &str = "surface.detail";
++/// Look generator for the fur clump map (RGBA8, R strand height, G clump
++/// shade, B noise, tiling). Sampled as linear data.
++pub const CLUMP_GENERATOR: &str = "surface.clump";
++/// Edge length asked of both generators.
++pub const SURFACE_MAP_SIZE: u32 = 256;
++
++/// Specular light from the sun for one pixel (zero by default).
++#[cfg(feature = "look-surface")]
++pub const SPECULAR: SlotSignature = SlotSignature {
++    name: "specular",
++    params: &[("n_dot_h", "f32"), ("n_dot_l", "f32"), ("n_dot_v", "f32"), ("roughness", "f32"), ("metal", "f32"), ("base", "vec3<f32>")],
++    ret: "vec3<f32>",
++    description: "Specular reflection of the sun from N.H, N.L, N.V, roughness, metalness and the base colour (zero = none)",
++    default_body: "    return vec3<f32>(0.0);",
++};
++
++/// Surface constants by index (0 occlusion/reflections, 1 detail, 2 sky
++/// tint, 3 ground tint).
++#[cfg(feature = "look-surface")]
++pub const SURFACE_PARAMS: SlotSignature = SlotSignature {
++    name: "surface_params",
++    params: &[("i", "u32")],
++    ret: "vec4<f32>",
++    description: "Model surface constants by index: 0 occlusion/reflections, 1 detail, 2 sky tint, 3 ground tint",
++    default_body: "    switch i {\n        case 0u: { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }\n        case 1u: { return vec4<f32>(0.0, 0.05, 0.0, 0.0); }\n        default: { return vec4<f32>(1.0, 1.0, 1.0, 0.0); }\n    }",
++};
++
++/// Soft-shadow constants (penumbra per metre, search radius, min and max
++/// filter radius in texels).
++#[cfg(feature = "soft-shadows")]
++pub const PCSS_PARAMS: SlotSignature = SlotSignature {
++    name: "pcss_params",
++    params: &[("i", "u32")],
++    ret: "vec4<f32>",
++    description: "Soft shadows: penumbra per metre, search radius, min and max filter radius (texels)",
++    default_body: "    return vec4<f32>(0.02, 6.0, 1.0, 12.0);",
++};
++
++/// Declare the slots this build's forward WGSL calls (idempotent: a look
++/// that declared them first keeps its bodies).
++pub fn declare(slots: &mut ShaderSlots) {
++    #[cfg(feature = "look-surface")]
++    {
++        slots.declare(SPECULAR);
++        slots.declare(SURFACE_PARAMS);
++    }
++    #[cfg(feature = "soft-shadows")]
++    slots.declare(PCSS_PARAMS);
++}
++
++/// Words in the `ModelSurface` uniform (group 1, binding 8).
++#[cfg(feature = "look-surface")]
++pub const SURFACE_WORDS: usize = 16;
++
++/// A material's lit-shading data beside [`crate::model::ModelMaterial`].
++#[cfg(feature = "look-surface")]
++#[derive(Clone, Debug, PartialEq)]
++pub struct SurfaceMaterial {
++    /// `ModelSurface`: [metal, rough, occlusion strength, fur flag],
++    /// [fur length m, density, shells drawn (0 = clump-map fallback), clump
++    /// scale m], [tip linear rgb, detail flag], [detail tile m, strength, 0, 0].
++    pub words: [f32; SURFACE_WORDS],
++    /// Metallic-roughness and occlusion maps: indices into
++    /// [`crate::model::Prepared::textures`].
++    pub maps: [Option<usize>; 2],
++}
++
++#[cfg(feature = "look-surface")]
++fn srgb_to_linear(c: f64) -> f32 {
++    let v = (c / 255.0).clamp(0.0, 1.0) as f32;
++    if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
++}
++
++/// The words for one material: glTF factors, `extras.evani_fur`
++/// (`length_m`, `density`, `shells`, `clump_scale_m`, `tip` sRGB 0-255) and
++/// `extras.evani_detail` (`scale_m`, `strength`). Out-of-range or malformed
++/// extras leave that layer off. Shells are always 0 here: the forward path
++/// draws no shells yet (CORE_REQUESTS `fur-shells`), so fur shades with the
++/// clump-map fallback on every tier.
++#[cfg(feature = "look-surface")]
++pub fn surface_words(metallic: f32, roughness: f32, occlusion_strength: f32, extras: &serde_json::Value) -> [f32; SURFACE_WORDS] {
++    let mut w = [0.0f32; SURFACE_WORDS];
++    w[0] = metallic.clamp(0.0, 1.0);
++    w[1] = roughness.clamp(0.0, 1.0);
++    w[2] = occlusion_strength.clamp(0.0, 1.0);
++    let num = |o: &serde_json::Value, k: &str| o.get(k).and_then(serde_json::Value::as_f64);
++    if let Some(f) = extras.get("evani_fur") {
++        let tip: Option<Vec<f64>> = f.get("tip").and_then(serde_json::Value::as_array).and_then(|a| a.iter().map(serde_json::Value::as_f64).collect());
++        if let (Some(len), Some(den), Some(clump), Some(tip)) = (num(f, "length_m"), num(f, "density"), num(f, "clump_scale_m"), tip)
++            && len > 0.0
++            && len <= 0.2
++            && den > 0.0
++            && clump > 0.0
++            && clump <= 1.0
++            && tip.len() == 3
++        {
++            w[3] = 1.0;
++            w[4] = len as f32;
++            w[5] = den as f32;
++            w[6] = 0.0;
++            w[7] = clump as f32;
++            for (k, c) in tip.iter().enumerate() {
++                w[8 + k] = srgb_to_linear(*c);
++            }
++        }
++    }
++    if let Some(d) = extras.get("evani_detail") {
++        let scale = num(d, "scale_m").unwrap_or(0.0);
++        let strength = num(d, "strength").unwrap_or(1.0);
++        if (0.0..=10.0).contains(&scale) && (0.0..=1.0).contains(&strength) {
++            w[11] = 1.0;
++            w[12] = scale as f32;
++            w[13] = strength as f32;
++        }
++    }
++    w
++}
++
++/// A box-filtered mip chain of a tiling RGBA8 image (level 0 first; odd
++/// edges round down, the last level is 1 x 1).
++#[cfg(feature = "look-surface")]
++pub fn mip_chain(width: u32, height: u32, rgba: &[u8]) -> Vec<(u32, u32, Vec<u8>)> {
++    let mut out = vec![(width, height, rgba.to_vec())];
++    while let Some((w, h, src)) = out.last() {
++        let (w, h) = (*w, *h);
++        if w <= 1 && h <= 1 {
++            break;
++        }
++        let (nw, nh) = ((w / 2).max(1), (h / 2).max(1));
++        let mut dst = vec![0u8; (nw * nh * 4) as usize];
++        for y in 0..nh {
++            for x in 0..nw {
++                for c in 0..4 {
++                    let mut sum = 0u32;
++                    for (dx, dy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
++                        let sx = (x * 2 + dx).min(w - 1);
++                        let sy = (y * 2 + dy).min(h - 1);
++                        sum += u32::from(src.get(((sy * w + sx) * 4 + c) as usize).copied().unwrap_or(0));
++                    }
++                    dst[((y * nw + x) * 4 + c) as usize] = ((sum + 2) / 4) as u8;
++                }
++            }
++        }
++        out.push((nw, nh, dst));
++    }
++    out
++}
++
++#[cfg(all(test, feature = "look-surface"))]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn fur_and_detail_extras_fill_the_words() {
++        let e = serde_json::json!({
++            "evani_fur": {"length_m": 0.01, "density": 120.0, "shells": 8, "clump_scale_m": 0.012, "tip": [255, 128, 0]},
++            "evani_detail": {"scale_m": 0.02, "strength": 0.5}
++        });
++        let w = surface_words(0.2, 0.7, 1.0, &e);
++        assert_eq!(&w[..4], &[0.2, 0.7, 1.0, 1.0]);
++        assert_eq!(w[6], 0.0, "no shells in the forward path yet");
++        assert!((w[8] - 1.0).abs() < 1e-6 && w[10] == 0.0 && (w[9] - 0.2158).abs() < 1e-3);
++        assert_eq!(&w[11..14], &[1.0, 0.02, 0.5]);
++    }
++
++    #[test]
++    fn bad_extras_leave_the_layers_off() {
++        let e = serde_json::json!({"evani_fur": {"length_m": 3.0, "density": 1.0, "shells": 8, "clump_scale_m": 0.01, "tip": [1, 2, 3]}, "evani_detail": {"strength": 4.0}});
++        let w = surface_words(0.0, 1.0, 1.0, &e);
++        assert_eq!(w[3], 0.0);
++        assert_eq!(w[11], 0.0);
++        assert_eq!(surface_words(0.0, 1.0, 1.0, &serde_json::Value::Null)[3..], [0.0; 13]);
++    }
++
++    #[test]
++    fn mips_average_and_end_at_one_pixel() {
++        let img: Vec<u8> = (0..4 * 4 * 4).map(|i| if (i / 4) % 2 == 0 { 0 } else { 200 }).collect();
++        let m = mip_chain(4, 4, &img);
++        assert_eq!(m.iter().map(|l| (l.0, l.1)).collect::<Vec<_>>(), [(4, 4), (2, 2), (1, 1)]);
++        assert!(m[1].2.iter().all(|&v| v == 100));
++        assert_eq!(mip_chain(4, 4, &img), m, "deterministic");
++    }
++
++    #[test]
++    fn slots_are_declared_once_with_zero_defaults() {
++        let mut s = ShaderSlots::with_builtins();
++        declare(&mut s);
++        declare(&mut s);
++        let id = s.id("specular").unwrap();
++        assert_eq!(s.get(id).unwrap().body, SPECULAR.default_body);
++        assert!(s.id("surface_params").is_some());
++        assert_eq!(s.id("pcss_params").is_some(), cfg!(feature = "soft-shadows"));
++    }
++}
+diff --git a/crates/evani-render/src/model.rs b/crates/evani-render/src/model.rs
+index 94d8e45..402e644 100644
+--- a/crates/evani-render/src/model.rs
++++ b/crates/evani-render/src/model.rs
+@@ -136,7 +136,7 @@ pub struct Part {
+ pub struct ModelMaterial {
+     pub words: [f32; MATERIAL_WORDS],
+     /// Base, normal and emissive maps: indices into [`Prepared::textures`].
+-    pub maps: [Option<usize>; 3],
++    pub maps: [Option<usize>; 3], #[cfg(feature = "look-surface")] pub surface: crate::look_surface::SurfaceMaterial,
+ }
+ 
+ /// A model ready for upload.
+@@ -311,7 +311,7 @@ fn material(g: &Gltf, m: Option<&Material>, textures: &mut Vec<TexNeed>) -> Mode
+     let (sn, cs) = r.sin_cos();
+     w[12..15].copy_from_slice(&[cs * s[0], -sn * s[1], o[0]]);
+     w[16..19].copy_from_slice(&[sn * s[0], cs * s[1], o[1]]);
+-    ModelMaterial { words: w, maps }
++    ModelMaterial { words: w, maps, #[cfg(feature = "look-surface")] surface: lit::surface(g, m, textures) }
+ }
+ 
+ /// Turn a glTF file into upload-ready parts. Drawn: every triangle
+@@ -563,7 +563,7 @@ pub fn count_draws(models: &mut Models, views: u32, stats: &mut RenderStats) {
+ mod tests {
+     use super::*;
+ 
+-    fn fixture(name: &str) -> Gltf {
++    pub(super) fn fixture(name: &str) -> Gltf {
+         let path = format!("{}/../../tests/fixtures/models/{name}", env!("CARGO_MANIFEST_DIR"));
+         Gltf::from_glb(&std::fs::read(&path).unwrap()).unwrap()
+     }
+@@ -685,7 +685,7 @@ mod tests {
+     /// The corpus material uses every core texture; only base colour,
+     /// normal and emissive are listed, and on no device does any fetch
+     /// reach the metallic-roughness or occlusion texture.
+-    #[test]
++    #[test] #[cfg(not(feature = "look-surface"))]
+     fn unsampled_maps_are_never_fetched() {
+         let g = fixture("corpus.src.glb");
+         let m = &g.materials[0];
+@@ -760,3 +760,47 @@ mod tests {
+         assert!((w[3] - nm[12]).abs() < 1e-6 && (w[0] - nm[0]).abs() < 1e-6);
+     }
+ }
++
++// Lit model shading (feature `look-surface`): the metallic-roughness and
++// occlusion maps are listed too, with the surface words. Declared last, so
++// no line above moves.
++#[cfg(feature = "look-surface")]
++mod lit {
++    use super::*;
++    use crate::look_surface::{SurfaceMaterial, surface_words};
++
++    /// A material's lit data (`None`: plain white, metal 0, rough 1).
++    pub(super) fn surface(g: &Gltf, m: Option<&Material>, textures: &mut Vec<TexNeed>) -> SurfaceMaterial {
++        let Some(m) = m else {
++            return SurfaceMaterial { words: surface_words(0.0, 1.0, 1.0, &serde_json::Value::Null), maps: [None; 2] };
++        };
++        let mr = m.metallic_roughness_texture.as_ref().and_then(|r| need(g, r.texture, false, textures));
++        let occ = m.occlusion_texture.as_ref().and_then(|r| need(g, r.texture, false, textures));
++        let strength = m.occlusion_texture.as_ref().map_or(1.0, |r| r.amount);
++        SurfaceMaterial { words: surface_words(m.metallic_factor, m.roughness_factor, strength, &m.extras), maps: [mr, occ] }
++    }
++
++    #[cfg(test)]
++    mod tests {
++        use super::super::tests::fixture;
++        use super::*;
++
++        /// With the feature, every core map of the corpus material is
++        /// listed (metallic-roughness and occlusion as linear data) and the
++        /// surface words carry its factors.
++        #[test]
++        fn lit_materials_list_the_metal_rough_and_occlusion_maps() {
++            let g = fixture("corpus.src.glb");
++            let m = &g.materials[0];
++            let p = prepare(&g).unwrap();
++            let mat = &p.materials[0];
++            assert_eq!(mat.maps, [Some(0), Some(1), Some(2)]);
++            let [Some(mr), Some(occ)] = mat.surface.maps else { panic!("both lit maps listed") };
++            assert_eq!(p.textures[mr].texture, m.metallic_roughness_texture.clone().unwrap().texture);
++            assert_eq!(p.textures[occ].texture, m.occlusion_texture.clone().unwrap().texture);
++            assert!(!p.textures[mr].srgb && !p.textures[occ].srgb);
++            assert_eq!(mat.surface.words[0], m.metallic_factor.clamp(0.0, 1.0));
++            assert_eq!(mat.surface.words[1], m.roughness_factor.clamp(0.0, 1.0));
++        }
++    }
++}
+diff --git a/crates/evani-render/src/shaders.rs b/crates/evani-render/src/shaders.rs
+index 9b4d4a4..c079430 100644
+--- a/crates/evani-render/src/shaders.rs
++++ b/crates/evani-render/src/shaders.rs
+@@ -25,7 +25,7 @@ pub struct EngineShader {
+ /// The forward WGSL plus its shadow-map lookup: the real one with the
+ /// `shadows` feature, a one-line stub without (so a game without shadows
+ /// ships none of the sampling code).
+-#[cfg(all(feature = "shadows", not(feature = "models")))]
++#[cfg(all(feature = "shadows", not(feature = "models"), not(feature = "soft-shadows")))]
+ const FORWARD_SOURCE: &str = concat!(
+     include_str!("../shaders/forward.wgsl"),
+     include_str!("../shaders/forward_shadows.wgsl")
+@@ -576,7 +576,7 @@ mod tests {
+ 
+     #[test]
+     fn engine_shaders_validate_with_every_body_set() {
+-        let mut slots = ShaderSlots::with_builtins();
++        let mut slots = ShaderSlots::with_builtins(); #[cfg(any(feature = "look-surface", feature = "soft-shadows"))] crate::look_surface::declare(&mut slots);
+         // The build's list holds the forward shader only with `forward`;
+         // every engine shader validates either way.
+         assert_eq!(ENGINE_SHADERS.iter().any(|s| s.name == "forward"), cfg!(feature = "forward"));
+@@ -615,7 +615,7 @@ mod tests {
+     #[test]
+     fn passes_use_the_required_slots() {
+         let s = |sh: EngineShader| slot_names(sh.source).collect::<Vec<_>>();
+-        assert_eq!(s(FORWARD), ["toon_ramp", "fog", "rim"]);
++        #[cfg(not(any(feature = "look-surface", feature = "soft-shadows")))] assert_eq!(s(FORWARD), ["toon_ramp", "fog", "rim"]);
+         assert_eq!(s(TONEMAP), ["exposure", "tonemap"]);
+         assert!(s(SPRITE).is_empty() && s(PRESENT).is_empty());
+     }
+@@ -737,7 +737,7 @@ mod tests {
+             .find(|(_, v)| v.space == naga::AddressSpace::Uniform)
+             .map(|(_, v)| m.types[v.ty].inner.size(m.to_ctx()));
+         assert_eq!(size, Some(SHADOWS_DEPTH.uniform_bytes));
+-        assert!(FORWARD.source.contains("evani.shader.shadows_sample"));
++        #[cfg(not(feature = "soft-shadows"))] assert!(FORWARD.source.contains("evani.shader.shadows_sample"));
+     }
+ 
+     #[cfg(not(feature = "shadows"))]
+@@ -984,7 +984,7 @@ mod tests {
+ // spliced and rebuilt with the same slot bodies. Declared after everything
+ // else in this file: panic locations are in the wasm, so other games'
+ // downloads stay byte-identical only if no line above moves.
+-#[cfg(all(feature = "models", feature = "shadows"))]
++#[cfg(all(feature = "models", feature = "shadows", not(feature = "look-surface"), not(feature = "soft-shadows")))]
+ const FORWARD_FULL: &str = concat!(
+     include_str!("../shaders/forward.wgsl"),
+     include_str!("../shaders/model.wgsl"),
+@@ -997,7 +997,7 @@ const FORWARD_FULL: &str = concat!(
+     include_str!("../shaders/forward_noshadow.wgsl")
+ );
+ // The models build ships it without comments (S3-3 size, about 2 KB gzip).
+-#[cfg(feature = "models")]
++#[cfg(feature = "models")] #[cfg_attr(feature = "look-surface", allow(clippy::large_const_arrays))] // must stay a const: FORWARD_SOURCE borrows it in a const
+ const FORWARD_BYTES: [u8; wgsl_strip(FORWARD_FULL.as_bytes(), &mut [])] = wgsl_stripped(FORWARD_FULL.as_bytes());
+ #[cfg(feature = "models")]
+ const FORWARD_SOURCE: &str = utf8(&FORWARD_BYTES);
+@@ -1102,3 +1102,74 @@ mod strip_tests {
+         assert_eq!(wgsl_strip(b"a // x\n//@slot t\n// evani.k\nb//\n", &mut []), "a \n//@slot t\n// evani.k\nb\n".len());
+     }
+ }
++
++// Lit model shading and soft shadows (features `look-surface` and
++// `soft-shadows`, CORE_REQUESTS `smooth-lighting` and `soft-shadows`; see
++// `crate::look_surface`). Declared after everything else in this file, so
++// no line above moves and other games' downloads stay byte-identical.
++#[cfg(all(feature = "soft-shadows", not(feature = "models")))]
++const FORWARD_SOURCE: &str = concat!(
++    include_str!("../shaders/forward.wgsl"),
++    include_str!("../shaders/soft_shadows.wgsl")
++);
++#[cfg(all(feature = "models", feature = "soft-shadows", not(feature = "look-surface")))]
++const FORWARD_FULL: &str = concat!(
++    include_str!("../shaders/forward.wgsl"),
++    include_str!("../shaders/model.wgsl"),
++    include_str!("../shaders/soft_shadows.wgsl")
++);
++#[cfg(all(feature = "look-surface", not(feature = "soft-shadows")))]
++const FORWARD_FULL: &str = concat!(
++    include_str!("../shaders/forward.wgsl"),
++    include_str!("../shaders/model.wgsl"),
++    include_str!("../shaders/look_surface.wgsl"),
++    include_str!("../shaders/look_biplanar.wgsl"),
++    include_str!("../shaders/look_fur_surface.wgsl"),
++    include_str!("../shaders/forward_shadows.wgsl")
++);
++#[cfg(all(feature = "look-surface", feature = "soft-shadows"))]
++const FORWARD_FULL: &str = concat!(
++    include_str!("../shaders/forward.wgsl"),
++    include_str!("../shaders/model.wgsl"),
++    include_str!("../shaders/look_surface.wgsl"),
++    include_str!("../shaders/look_biplanar.wgsl"),
++    include_str!("../shaders/look_fur_surface.wgsl"),
++    include_str!("../shaders/soft_shadows.wgsl")
++);
++
++#[cfg(all(test, any(feature = "look-surface", feature = "soft-shadows")))]
++mod look_surface_tests {
++    use evani_core::slots::ShaderSlots;
++
++    use super::*;
++    use crate::splice::{Bodies, slot_names, splice};
++
++    fn validate(src: &str) {
++        let module = naga::front::wgsl::parse_str(src).unwrap_or_else(|e| panic!("{}", e.emit_to_string(src)));
++        naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::empty())
++            .validate(&module)
++            .unwrap_or_else(|e| panic!("{e:?}"));
++    }
++
++    /// The forward module with this build's lit modules validates with the
++    /// slots' default bodies, and holds the entry points the pipelines use.
++    #[test]
++    fn the_lit_forward_module_validates_with_default_bodies() {
++        let mut slots = ShaderSlots::with_builtins();
++        crate::look_surface::declare(&mut slots);
++        for bodies in [Bodies::Current, Bodies::EngineDefaults] {
++            validate(&splice(FORWARD.source, &slots, bodies).unwrap().source);
++        }
++        assert_eq!(FORWARD.source.contains("fn model_lit_fs"), cfg!(feature = "look-surface"));
++        assert_eq!(FORWARD.source.contains("fn pcss_tap"), cfg!(feature = "soft-shadows"));
++        assert!(!include_str!("../shaders/look_surface.wgsl").contains("@location(6)"), "varying 6 stays free");
++        let mut want = vec!["toon_ramp", "fog", "rim"];
++        if cfg!(feature = "look-surface") {
++            want.extend(["specular", "surface_params"]);
++        }
++        if cfg!(feature = "soft-shadows") {
++            want.push("pcss_params");
++        }
++        assert_eq!(slot_names(FORWARD.source).collect::<Vec<_>>(), want);
++    }
++}
+diff --git a/crates/evani-render/tests/model_wgsl.rs b/crates/evani-render/tests/model_wgsl.rs
+index d188aba..1da9e75 100644
+--- a/crates/evani-render/tests/model_wgsl.rs
++++ b/crates/evani-render/tests/model_wgsl.rs
+@@ -25,7 +25,7 @@ fn entry(m: &naga::Module, name: &str) -> bool {
+ 
+ #[test]
+ fn wgsl_validates_with_and_without_models() {
+-    let slots = ShaderSlots::with_builtins();
++    #[cfg_attr(not(any(feature = "look-surface", feature = "soft-shadows")), allow(unused_mut))] let mut slots = ShaderSlots::with_builtins(); #[cfg(any(feature = "look-surface", feature = "soft-shadows"))] evani_render::look_surface::declare(&mut slots);
+     for (with_model, tail) in [(false, NOSHADOW), (false, SHADOWS), (true, NOSHADOW), (true, SHADOWS)] {
+         let src = [FORWARD, if with_model { MODEL } else { "" }, tail].concat();
+         for bodies in [Bodies::Current, Bodies::EngineDefaults] {
+@@ -52,7 +52,7 @@ fn wgsl_validates_with_and_without_models() {
+     // The build's forward source carries the model code only with `models`.
+     let fwd = evani_render::shaders::FORWARD.source;
+     assert_eq!(fwd.contains("evani.shader.model"), cfg!(feature = "models"));
+-    assert_eq!(fwd.contains("evani.shader.shadows_sample"), cfg!(feature = "shadows"));
++    assert_eq!(fwd.contains("evani.shader.shadows_sample"), cfg!(all(feature = "shadows", not(feature = "soft-shadows"))));
+     // What the build ships (the models build strips comments): it still
+     // splices and validates.
+     let s = splice(fwd, &slots, Bodies::Current).unwrap();

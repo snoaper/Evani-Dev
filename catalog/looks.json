@@ -1,0 +1,777 @@
+{
+  "about": "Evani.Dev looks (art styles). cost_points is the look's share of each tier budget.",
+  "looks": [
+    {
+      "id": "onebit",
+      "name": "1-bit monochrome",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Two colours only, dithered shading, crisp silhouettes.",
+      "render_rules": "Render to a low internal resolution (about 400×240), threshold everything to two palette colours, Bayer dithering for midtones, integer upscale."
+    },
+    {
+      "id": "handheld",
+      "name": "Handheld 4-shade",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Four shades of green-grey on a tiny 160×144 screen.",
+      "render_rules": "160×144 internal target, 4-colour palette lookup, 8×8 tile maps, nearest-neighbour integer upscale with letterboxing."
+    },
+    {
+      "id": "pixel8",
+      "name": "8-bit pixel",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Chunky sprites, a small fixed palette, tile-based worlds.",
+      "render_rules": "256×240 internal, fixed 54-colour palette, 8×8 tiles, 3 colours plus transparent per sprite, no sub-pixel positions."
+    },
+    {
+      "id": "pixel16",
+      "name": "16-bit pixel",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Richer palettes, layered parallax, detailed sprite animation.",
+      "render_rules": "320×224 internal, up to 256 colours with per-layer palettes, 16×16 tiles, several parallax planes, palette cycling for water and fire."
+    },
+    {
+      "id": "pixelhd",
+      "name": "HD pixel art",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Modern pixel art with a smooth camera, dynamic light and lots of particles.",
+      "render_rules": "480×270 internal, pixel-perfect sprites with sub-pixel camera smoothing, optional normal-mapped 2D lights, particles at native resolution."
+    },
+    {
+      "id": "isopixel",
+      "name": "Isometric pixel",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "isometric"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Diamond tile grids with clean 2:1 pixel lines, crafted little dioramas.",
+      "render_rules": "2:1 isometric projection, 32×16 tile footprint, depth sort by (x + y, z), static tile chunks cached to textures."
+    },
+    {
+      "id": "ascii",
+      "name": "ASCII text-mode",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Glyph grids, colour-coded characters, terminal feel.",
+      "render_rules": "Monospace glyph atlas, fixed character grid (about 80×45), per-cell foreground and background colour; all drawing is cell writes into one instanced pass."
+    },
+    {
+      "id": "vector",
+      "name": "Glowing vector lines",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Thin bright lines on black, like an old vector arcade monitor.",
+      "render_rules": "Everything drawn as line lists with additive blending, phosphor persistence from a frame-feedback texture, light bloom."
+    },
+    {
+      "id": "flat",
+      "name": "Flat geometric",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Clean shapes, solid fills, strong colour blocking, no texture.",
+      "render_rules": "Shapes as SDFs or tessellated polygons, a 5 to 7 colour palette, soft drop shadows only."
+    },
+    {
+      "id": "synth2d",
+      "name": "Neon synthwave 2D",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Magenta and cyan neon, gradient sunsets, perspective grid floors.",
+      "render_rules": "Additive neon strokes with glow, gradient sky layers, scrolling perspective grid; pairs well with bloom."
+    },
+    {
+      "id": "cartoon2d",
+      "name": "Cartoon 2D",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Bold outlines, flat cel colours, squash-and-stretch animation.",
+      "render_rules": "Vector-style sprites with 3 to 4 px dark outlines, two-tone cel shading baked into sprites, squash and stretch in the animator."
+    },
+    {
+      "id": "anime2d",
+      "name": "Anime 2D",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Clean line art, cel shading, expressive portraits and impact effects.",
+      "render_rules": "High-resolution sprites with thin line art and two-tone shading, impact frames and speed-line overlays, portrait layers for dialogue."
+    },
+    {
+      "id": "rubberhose",
+      "name": "1930s rubber-hose cartoon",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Pie-cut eyes, bendy limbs, sepia film, hand-inked backgrounds.",
+      "render_rules": "Boiling-line animation (2 to 3 frame line jitter), sepia grade, film grain, gate weave and vignette."
+    },
+    {
+      "id": "sketch",
+      "name": "Hand-drawn sketch",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Pencil or notebook doodles on paper.",
+      "render_rules": "Paper texture background, wobbly lines regenerated every few frames, cross-hatch shading."
+    },
+    {
+      "id": "watercolor2d",
+      "name": "Watercolour 2D",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "isometric",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Soft washes, bleeding edges, visible paper grain.",
+      "render_rules": "Painted layers with darkened edges, paper normal texture, a gentle colour-bleed shader on edges."
+    },
+    {
+      "id": "inkbrush",
+      "name": "Ink brush",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Black ink strokes, splashes, negative space, one accent colour.",
+      "render_rules": "Brush-stroke sprites, ink-splat particles, rice-paper background, a single accent colour."
+    },
+    {
+      "id": "comic",
+      "name": "Comic book",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Heavy inks, halftone dots, panel framing, sound words.",
+      "render_rules": "Halftone shading shader, thick outlines, comic-panel transitions, pop-up sound-word sprites."
+    },
+    {
+      "id": "papercut",
+      "name": "Paper cutout",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Layered paper shapes with drop shadows and torn edges.",
+      "render_rules": "Layered sprites with offset soft shadows, slight rotation wobble, paper fibre texture."
+    },
+    {
+      "id": "silhouette",
+      "name": "Silhouette",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Black foreground shapes against atmospheric gradients.",
+      "render_rules": "Foreground fully black, background gradient layers with fog, light shafts, rim light on characters."
+    },
+    {
+      "id": "flashvector",
+      "name": "Flash-era vector",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "side",
+        "top-down",
+        "board-ui"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Smooth vector characters with cut-out skeletal animation.",
+      "render_rules": "Bone-rigged cut-out parts with mesh deformation, tweened animation curves, crisp vector edges at any resolution."
+    },
+    {
+      "id": "prerendered",
+      "name": "Pre-rendered isometric",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "isometric",
+        "top-down"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Late-90s look: 3D models rendered into sprites with 8 or 16 facings.",
+      "render_rules": "Sprite sheets with 8 or 16 facings per animation, pre-lit, team-colour palette masks, isometric depth sort."
+    },
+    {
+      "id": "tabletop",
+      "name": "Tabletop materials",
+      "type": "2D",
+      "style_class": "2d",
+      "cameras": [
+        "board-ui",
+        "top-down"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Wood, felt, cardboard tokens and printed cards.",
+      "render_rules": "Textured board and token sprites, soft contact shadows, card flip and slide tweens."
+    },
+    {
+      "id": "mode7",
+      "name": "Mode-7 floor plane",
+      "type": "2.5D",
+      "style_class": "pseudo-3d",
+      "cameras": [
+        "pseudo-3d-road"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "A rotating, scaling textured ground plane with sprite racers, 16-bit style.",
+      "render_rules": "Per-scanline affine transform of a ground texture into a perspective floor, horizon sky layer, billboard sprites with 8 to 12 facing angles."
+    },
+    {
+      "id": "spriteroad",
+      "name": "Sprite-scaling road",
+      "type": "2.5D",
+      "style_class": "pseudo-3d",
+      "cameras": [
+        "pseudo-3d-road"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Curving, rolling road segments with scaled roadside sprites, arcade-cabinet style.",
+      "render_rules": "Segment-projected road with curve and hill offsets per segment, alternating stripe colours, scaled billboard sprites, parallax sky."
+    },
+    {
+      "id": "raycast",
+      "name": "Raycast 2.5D",
+      "type": "2.5D",
+      "style_class": "pseudo-3d",
+      "cameras": [
+        "pseudo-3d-raycast"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Grid maps with textured walls and sprite enemies, early-90s shooter style.",
+      "render_rules": "DDA raycast per screen column, textured walls and floors, per-column depth for sprite occlusion, distance shading."
+    },
+    {
+      "id": "hd2d",
+      "name": "HD-2D diorama",
+      "type": "2.5D",
+      "style_class": "3d",
+      "cameras": [
+        "top-down",
+        "isometric",
+        "third-person",
+        "side"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "Pixel sprites inside a lit 3D diorama with depth of field and bloom.",
+      "render_rules": "3D scene with pixel-art textures and nearest filtering; characters are pixel sprites drawn as camera-facing billboards; tilt-shift depth of field, bloom and point lights carry the look."
+    },
+    {
+      "id": "side25",
+      "name": "2.5D side view",
+      "type": "2.5D",
+      "style_class": "3d",
+      "cameras": [
+        "side"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "3D models on a 2D gameplay plane, with depth in the backgrounds.",
+      "render_rules": "Gameplay locked to the z = 0 plane with 2D physics; 3D models and a perspective camera; foreground and background built as 3D layers."
+    },
+    {
+      "id": "lowpoly",
+      "name": "Low-poly flat-shaded",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric",
+        "side"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Faceted geometry, flat colours, gradient skies.",
+      "render_rules": "Per-face normals, vertex colours or one palette texture, no texture maps, hemisphere ambient plus one directional light."
+    },
+    {
+      "id": "ps1",
+      "name": "Retro 32-bit",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Wobbly vertices, warped textures, crunchy low resolution.",
+      "render_rules": "320×240 internal, vertex snapping to a coarse grid, affine (non-perspective) texture mapping, nearest filtering, 15-bit colour with dithering."
+    },
+    {
+      "id": "n64",
+      "name": "Retro 64-bit",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Soft blurry textures, heavy fog, chunky smooth-shaded models.",
+      "render_rules": "Small 32 to 64 px textures with 3-point filtering, Gouraud vertex lighting, strong distance fog, 320×240 internal."
+    },
+    {
+      "id": "voxel",
+      "name": "Voxel",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Worlds and characters built from cubes.",
+      "render_rules": "Greedy-meshed chunks (16³ or 32³), per-vertex ambient occlusion, palette texture, chunk frustum and occlusion culling."
+    },
+    {
+      "id": "toybrick",
+      "name": "Toy brick",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric",
+        "side"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "Glossy studded plastic bricks and blocky toy figures; worlds look snap-built.",
+      "render_rules": "Instanced brick meshes with studs (studs drop at distance), glossy plastic material with low roughness, bevel highlights; all designs original."
+    },
+    {
+      "id": "clay",
+      "name": "Claymation",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric",
+        "side"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "Soft clay surfaces, fingerprints, stop-motion stepping.",
+      "render_rules": "Wrap lighting for a soft subsurface feel, fingerprint normal noise, animation sampled at 12 fps for a stop-motion feel."
+    },
+    {
+      "id": "felttoy",
+      "name": "Felt and wood toys",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Handmade craft materials: felt, yarn and wood grain.",
+      "render_rules": "Fresnel fuzz for felt, triplanar wood-grain textures, soft shadows, warm key light."
+    },
+    {
+      "id": "paper3d",
+      "name": "Papercraft 3D",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric",
+        "side"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Folded paper models with creases and card thickness.",
+      "render_rules": "Planar folded meshes with crease lines, paper fibre texture, plain backfaces, soft ambient occlusion."
+    },
+    {
+      "id": "toon",
+      "name": "Toon cel-shaded",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric",
+        "side"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Hard-edged lighting bands and ink outlines, like an animated film.",
+      "render_rules": "2 to 3 band ramp diffuse, specular blob, inverted-hull or post-process outlines, saturated palette."
+    },
+    {
+      "id": "chibi",
+      "name": "Chibi",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Big heads, tiny bodies, cute and bouncy.",
+      "render_rules": "Head-to-body ratio of 1:1.5 to 1:2, soft toon shading, rim light, bouncy procedural secondary motion."
+    },
+    {
+      "id": "cozy",
+      "name": "Pastel cozy",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Soft pastels, rounded forms, gentle light.",
+      "render_rules": "Rounded bevelled meshes, pastel palette, soft wrap lighting, light fog, no harsh blacks."
+    },
+    {
+      "id": "handpainted",
+      "name": "Hand-painted stylized",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Painted textures with baked light and exaggerated shapes.",
+      "render_rules": "Painted albedo with baked lighting, mostly unlit shading, exaggerated silhouettes, 512 to 1024 px textures."
+    },
+    {
+      "id": "stylizedpbr",
+      "name": "Stylized PBR",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "Vibrant colours, chunky proportions, clean physically based materials.",
+      "render_rules": "Metal-roughness PBR with simplified textures, saturated albedo, strong rim and ambient occlusion, image-based light from a small cubemap."
+    },
+    {
+      "id": "realpbr",
+      "name": "Realistic PBR",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 4,
+      "full_look_from_tier": "medium",
+      "look": "Physically based materials, natural light, believable scale.",
+      "render_rules": "Metal-roughness PBR, image-based lighting (prefiltered cubemap plus BRDF lookup), ACES tonemapping, cascaded shadows, KTX2 texture streaming."
+    },
+    {
+      "id": "photoreal",
+      "name": "Gritty photoreal",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 5,
+      "full_look_from_tier": "high",
+      "look": "Desaturated documentary realism, grime and wear.",
+      "render_rules": "Full PBR with detail maps, grime decals, photographic colour grade, volumetric atmosphere, high-resolution KTX2 textures streamed by distance."
+    },
+    {
+      "id": "diorama",
+      "name": "Diorama tilt-shift",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "top-down",
+        "isometric",
+        "third-person"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "The world looks like a tabletop miniature.",
+      "render_rules": "High camera angle, strong tilt-shift blur band, slightly oversaturated materials, soft contact shadows."
+    },
+    {
+      "id": "minimal3d",
+      "name": "Untextured minimal",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Solid colours and light only; geometric and clean.",
+      "render_rules": "Single-colour materials, one or two lights, crisp shadows when budget allows, one signal colour for anything interactive."
+    },
+    {
+      "id": "wireframe",
+      "name": "Wireframe hologram",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down"
+      ],
+      "cost_points": 1,
+      "full_look_from_tier": "low",
+      "look": "Glowing edges, scanline shimmer, sci-fi HUD.",
+      "render_rules": "Barycentric wireframe shader, additive glow, scanline and flicker noise, depth-faded edges."
+    },
+    {
+      "id": "synth3d",
+      "name": "Synthwave 3D",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Neon grid landscapes, chrome, striped sunsets.",
+      "render_rules": "Emissive grid terrain, chrome through environment-map reflection, gradient sky with a striped sun, bloom required."
+    },
+    {
+      "id": "darkfantasy",
+      "name": "Dark fantasy painterly",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "low",
+      "look": "Muted palettes, gothic shapes, heavy atmosphere.",
+      "render_rules": "PBR or painted albedo, low-key lighting, fog volumes, warm torch point lights, desaturated grade."
+    },
+    {
+      "id": "noir",
+      "name": "Noir monochrome",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Black and white, hard shadows, one accent colour.",
+      "render_rules": "Greyscale grade with an optional single accent hue, hard shadows, high-contrast key light, film grain."
+    },
+    {
+      "id": "vhs",
+      "name": "VHS horror",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "first-person",
+        "third-person"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Low resolution, tape distortion, oppressive darkness.",
+      "render_rules": "480×270 internal, tape-wobble and chroma-bleed post, heavy grain, a flashlight as the main light."
+    },
+    {
+      "id": "watercolor3d",
+      "name": "Watercolour 3D",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 3,
+      "full_look_from_tier": "medium",
+      "look": "3D scenes shaded like a painting, with pigment bleed and paper.",
+      "render_rules": "Watercolour post shader (Kuwahara-style smoothing), edge darkening, paper texture overlay, wobbling ink edges."
+    },
+    {
+      "id": "hatched",
+      "name": "Ink hatching 3D",
+      "type": "3D",
+      "style_class": "3d",
+      "cameras": [
+        "third-person",
+        "first-person",
+        "top-down",
+        "isometric"
+      ],
+      "cost_points": 2,
+      "full_look_from_tier": "low",
+      "look": "Pen-and-ink illustration with hatched shading.",
+      "render_rules": "Tonal art maps (hatching textures blended by light intensity), screen-space outlines, off-white paper background."
+    }
+  ]
+}

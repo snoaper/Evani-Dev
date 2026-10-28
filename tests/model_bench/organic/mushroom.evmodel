@@ -1,0 +1,16 @@
+# Benchmark B, stylized organic 3 of 10: a big-capped toadstool.
+make: mushroom
+style: toon_chunky
+parts:
+  stem: { thick, bulge: slight, curve: slight }
+  cap: { shape: dome, wide, rim: rolled }
+  gills: { count: 24, shallow }
+  spots: { count: 7, raised }
+must:
+  fit_box: [1.2, 1.2, 1.3] m
+  stands: ground
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 9k }
+match: { front: ../ref/mushroom/front.png, side: ../ref/mushroom/side.png }
+explore: auto
+return: 3
+seed: 303

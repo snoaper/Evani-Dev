@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "evani-live": {
+      "args": [
+        "mcp"
+      ],
+      "command": ".evani/bin/evani-live-bridge",
+      "type": "stdio"
+    }
+  }
+}

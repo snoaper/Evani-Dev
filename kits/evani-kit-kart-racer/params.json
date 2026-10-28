@@ -1,0 +1,10 @@
+{
+  "kit.kart_racer.item_respawn_s": 1.5,
+  "kit.kart_racer.finale_cam_hold_s": 0.8,
+  "kit.kart_racer.finale_cam_move_s": 2.6,
+  "kit.kart_racer.finale_cam_distance": 8.5,
+  "kit.kart_racer.finale_cam_azimuth": 0.28,
+  "kit.kart_racer.finale_cam_height": 2.4,
+  "kit.kart_racer.finale_cam_look_y": 3.4,
+  "kit.kart_racer.finale_cam_fov": 44.0
+}

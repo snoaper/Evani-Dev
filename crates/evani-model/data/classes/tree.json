@@ -1,0 +1,49 @@
+{
+  "class": "tree",
+  "version": 1,
+  "family": "organic",
+  "means": "a toon tree: a tapering, slightly bent trunk, a ring of short branches and a canopy of one big puff with a ring of smaller puffs",
+  "source": "our own proportions for a chunky toon tree (about 3.4 m across, 4.8 m tall)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 12.0, "typical": ["three_quarter", "front", "side"] },
+  "clip_floor": true,
+  "blend": "0.12",
+  "measures": {
+    "trunk.radius": { "default": 0.22, "min": 0.12, "max": 0.3, "step": 0.03, "means": "trunk radius at the base" },
+    "trunk.taper": { "default": 0.2, "min": 0.0, "max": 0.5, "step": 0.15, "means": "how much thinner the trunk is at the top" },
+    "trunk.height": { "default": 2.4, "min": 1.6, "max": 2.6, "step": 0.2, "means": "trunk height" },
+    "trunk.bend": { "default": 0.0, "min": 0.0, "max": 0.45, "step": 0, "fit": false, "means": "sideways bend of the trunk top" },
+    "branches.count": { "default": 3, "min": 0, "max": 6, "step": 1, "count": true, "means": "branches" },
+    "branches.radius": { "default": 0.1, "min": 0.06, "max": 0.14, "step": 0.015, "means": "branch radius" },
+    "canopy.puffs": { "default": 5, "min": 1, "max": 9, "step": 1, "count": true, "means": "canopy puffs, the middle one included" },
+    "canopy.size": { "default": 2.05, "min": 1.4, "max": 2.2, "step": 0.15, "means": "middle puff diameter" },
+    "canopy.spread": { "default": 0.85, "min": 0.5, "max": 0.95, "step": 0.08, "means": "distance of the outer puffs from the middle" }
+  },
+  "parts": [
+    { "name": "trunk", "role": "body", "solid": "body", "gen": "tube",
+      "params": { "radius": "trunk.radius", "radius_end": "trunk.radius * (1 - trunk.taper)", "points": [
+        "0", "-0.2", "0",
+        "0.25 * trunk.bend", "0.45 * trunk.height", "0",
+        "trunk.bend", "trunk.height", "0"
+      ] },
+      "at": ["0", "0", "0"] },
+    { "name": "branches", "role": "body", "solid": "body", "gen": "tube",
+      "count": "branches.count", "layout": "ring", "start": "30",
+      "params": { "radius": "branches.radius", "radius_end": "0.7 * branches.radius", "points": ["0", "0", "0", "0", "0.55", "0.6"] },
+      "at": ["0.9 * trunk.bend", "0.9 * trunk.height", "0"] },
+    { "name": "canopy", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "params": { "size": ["canopy.size", "0.95 * canopy.size", "canopy.size"] },
+      "at": ["trunk.bend", "trunk.height + 1.3", "0"] },
+    { "name": "canopy_puffs", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "count": "canopy.puffs - 1", "layout": "ring", "start": "45", "radius": "canopy.spread",
+      "jitter": ["0.08", "0.15", "0.08"],
+      "params": { "size": ["0.72 * canopy.size", "0.68 * canopy.size", "0.72 * canopy.size"] },
+      "at": ["trunk.bend", "trunk.height + 1.05", "0"] }
+  ],
+  "groups": {},
+  "variants": { "canopy.shape": { "cloud_puffs": {} } },
+  "counts": { "branches.count": "branches.count", "canopy.puffs": "canopy.puffs" },
+  "anchors": [ { "name": "crown", "at": "canopy.top" } ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "cylinder" }
+}

@@ -1,0 +1,22 @@
+{
+  "format": "evani-look-moments/1",
+  "game": "sandbox",
+  "moments": [
+    {
+      "capture": {
+        "camera": "path",
+        "sim_time": 2
+      },
+      "name": "start"
+    },
+    {
+      "capture": {
+        "camera": "path",
+        "sim_time": 6
+      },
+      "name": "mid"
+    }
+  ],
+  "tier": "medium",
+  "width": 320
+}

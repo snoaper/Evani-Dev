@@ -1,0 +1,41 @@
+{
+  "class": "building",
+  "version": 1,
+  "family": "structures",
+  "means": "a plain flat-roofed building: a box body, a roof slab with a small overhang, a door on the front and rows of windows on the front (beside the door below) and both sides",
+  "source": "our own proportions for a chunky toon town building (about 6 m by 8 m, two storeys)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 25, "typical": ["three_quarter", "front", "side"] },
+  "measures": {
+    "body.width": { "default": 6, "min": 4, "max": 10, "step": 0.5, "means": "front width (x)" },
+    "body.length": { "default": 8, "min": 4, "max": 12, "step": 0.5, "means": "depth front to back (z)" },
+    "body.height": { "default": 6, "min": 3.5, "max": 12, "step": 0.5, "means": "wall height" },
+    "body.bevel": { "default": 0.08, "min": 0.03, "max": 0.2, "step": 0.05, "fit": false, "means": "rounding of the wall edges" },
+    "roof.overhang": { "default": 0.2, "min": 0, "max": 0.5, "step": 0.1, "means": "how far the roof slab reaches past the walls" },
+    "roof.thick": { "default": 0.3, "min": 0.2, "max": 0.5, "step": 0.1, "means": "roof slab thickness" },
+    "door.width": { "default": 1.2, "min": 0.9, "max": 2, "step": 0.2, "means": "door width" },
+    "door.height": { "default": 2.2, "min": 2, "max": 2.6, "step": 0.2, "means": "door height" },
+    "windows.count": { "default": 3, "min": 0, "max": 6, "step": 1, "count": true, "means": "windows per row" },
+    "windows.size": { "default": 1, "min": 0.7, "max": 1.4, "step": 0.15, "means": "window scale" }
+  },
+  "parts": [
+    { "name": "body", "role": "body", "solid": "body", "gen": "rounded_box", "params": { "size": ["body.width", "body.height", "body.length"], "bevel": "body.bevel" }, "at": ["0", "body.height / 2", "0"] },
+    { "name": "roof", "role": "body", "solid": "body", "gen": "rounded_box", "params": { "size": ["body.width + 2 * roof.overhang", "roof.thick", "body.length + 2 * roof.overhang"], "bevel": "0.05" }, "at": ["0", "body.height + roof.thick / 2 - 0.02", "0"] },
+    { "name": "door", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "params": { "size": ["door.width", "door.height - 0.06", "0.5"], "bevel": "0.03" }, "at": ["0", "(door.height + 0.06) / 2", "body.length / 2"] },
+    { "name": "windows", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "count": "windows.count", "spread": "(body.width - 1.0) / max(1, windows.count)", "spread_axis": "x", "params": { "size": ["0.9 * windows.size", "1.1 * windows.size", "0.5"], "bevel": "0.03" }, "at": ["0", "body.height - 1.6", "body.length / 2"] },
+    { "name": "low_front_windows", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "count": "windows.count / 2 * min(1, max(0, body.height - 4.4))", "spread": "(body.width / 2 - door.width / 2 - 0.8) / max(1, windows.count / 2)", "spread_axis": "x", "params": { "size": ["0.9 * windows.size", "1.1 * windows.size", "0.5"], "bevel": "0.03" }, "at": ["(door.width / 2 + 0.3 + body.width / 2 - 0.5) / 2", "1.6", "body.length / 2"], "mirror": "x", "group": "windows" },
+    { "name": "side_windows", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "mirror": "x", "group": "windows", "count": "windows.count", "spread": "(body.length - 1.0) / max(1, windows.count)", "spread_axis": "z", "params": { "size": ["0.5", "1.1 * windows.size", "0.9 * windows.size"], "bevel": "0.03" }, "at": ["body.width / 2", "body.height - 1.6", "0"] },
+    { "name": "low_side_windows", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "mirror": "x", "group": "windows", "count": "windows.count * min(1, max(0, body.height - 4.4))", "spread": "(body.length - 1.0) / max(1, windows.count)", "spread_axis": "z", "params": { "size": ["0.5", "1.1 * windows.size", "0.9 * windows.size"], "bevel": "0.03" }, "at": ["body.width / 2", "1.6", "0"] }
+  ],
+  "groups": {},
+  "variants": {
+    "roof.shape": { "flat": {} }
+  },
+  "counts": { "windows.count": "windows.count" },
+  "anchors": [
+    { "name": "door", "at": "door.front" },
+    { "name": "roof_top", "at": "roof.top" }
+  ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "box" }
+}

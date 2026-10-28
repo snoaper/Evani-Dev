@@ -1,0 +1,67 @@
+{
+  "class": "bench",
+  "version": 1,
+  "family": "props",
+  "means": "a park bench: slatted seat and back on two leg frames, back supports along the recline and armrests that curl down to the front of the frames",
+  "source": "our own proportions for a chunky toon park bench (about 1.6 m wide, seat at 0.45 m)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 7.0, "typical": ["three_quarter", "front", "side"] },
+  "measures": {
+    "seat.length": { "default": 1.6, "min": 1.2, "max": 1.75, "step": 0.1, "means": "seat width (left to right)" },
+    "seat.height": { "default": 0.45, "min": 0.38, "max": 0.5, "step": 0.03, "means": "height of the seat top" },
+    "seat.depth": { "default": 0.46, "min": 0.36, "max": 0.52, "step": 0.04, "means": "seat depth (front to back)" },
+    "seat.slats": { "default": 4, "min": 2, "max": 6, "step": 1, "count": true, "means": "seat slats" },
+    "seat.tilt": { "default": 0.0, "min": 0.0, "max": 6.0, "step": 3.0, "fit": false, "means": "how far the seat dips towards the back, degrees" },
+    "back.slats": { "default": 3, "min": 2, "max": 5, "step": 1, "count": true, "means": "back slats" },
+    "back.recline": { "default": 10.0, "min": 0.0, "max": 24.0, "step": 4.0, "means": "how far the back leans back, degrees" },
+    "back.height": { "default": 0.4, "min": 0.3, "max": 0.45, "step": 0.03, "means": "length of the back supports above the seat" },
+    "legs.thick": { "default": 0.06, "min": 0.045, "max": 0.09, "step": 0.01, "means": "leg frame bar thickness" },
+    "legs.count": { "default": 2, "min": 2, "max": 2, "step": 0, "count": true, "means": "leg frames (a mirrored pair)" },
+    "armrests.height": { "default": 0.66, "min": 0.6, "max": 0.72, "step": 0.03, "means": "height of the armrests" }
+  },
+  "parts": [
+    { "name": "seat", "role": "body", "solid": "body", "gen": "rounded_box",
+      "count": "seat.slats", "spread": "seat.depth / seat.slats", "spread_dir": ["0", "sin(seat.tilt)", "cos(seat.tilt)"],
+      "params": { "size": ["seat.length", "0.035", "0.82 * seat.depth / seat.slats"], "bevel": "0.012" },
+      "rot": ["0", "-seat.tilt", "0"],
+      "at": ["0", "seat.height - 0.0175 - (seat.slats - 1) / 2 * seat.depth / seat.slats * sin(seat.tilt)", "0.04"] },
+    { "name": "legs", "role": "body", "solid": "body", "gen": "frame", "mirror": "x",
+      "params": { "size": ["seat.depth + 0.04", "seat.height - 0.025"], "thickness": "legs.thick", "depth": "legs.thick", "bevel": "0.25 * legs.thick" },
+      "rot": ["90", "0", "0"],
+      "at": ["seat.length / 2 - 0.13", "(seat.height - 0.025) / 2", "0.04"] },
+    { "name": "back_supports", "role": "body", "solid": "body", "gen": "tube", "mirror": "x", "group": "back",
+      "params": { "radius": "0.032", "points": [
+        "0", "seat.height - 0.06", "0",
+        "0", "seat.height - 0.06 + (back.height + 0.06) * cos(back.recline)", "-(back.height + 0.06) * sin(back.recline)"
+      ] },
+      "at": ["seat.length / 2 - 0.13", "0", "0.04 - seat.depth / 2 + 0.04"] },
+    { "name": "back_slats", "role": "body", "solid": "body", "gen": "rounded_box", "group": "back",
+      "count": "back.slats", "spread": "back.height * 0.8 / back.slats", "spread_dir": ["0", "cos(back.recline)", "-sin(back.recline)"],
+      "params": { "size": ["seat.length", "0.68 * back.height / back.slats", "0.035"], "bevel": "0.012" },
+      "rot": ["0", "-back.recline", "0"],
+      "at": [
+        "0",
+        "seat.height - 0.06 + (back.height * 0.58 + 0.06) * cos(back.recline) + 0.04 * sin(back.recline)",
+        "0.04 - seat.depth / 2 + 0.04 - (back.height * 0.58 + 0.06) * sin(back.recline) + 0.04 * cos(back.recline)"
+      ] },
+    { "name": "armrests", "role": "body", "solid": "body", "gen": "tube", "mirror": "x",
+      "params": { "radius": "0.028", "points": [
+        "0", "armrests.height", "-(armrests.height - seat.height + 0.06) * sin(back.recline) / cos(back.recline)",
+        "0", "armrests.height + 0.01", "seat.depth * 0.55",
+        "0", "armrests.height - 0.03", "seat.depth * 0.72",
+        "0", "armrests.height - 0.1", "seat.depth * 0.8",
+        "0", "seat.height + 0.04", "seat.depth * 0.8",
+        "0", "seat.height - 0.02", "seat.depth * 0.74"
+      ] },
+      "at": ["seat.length / 2 - 0.13", "0", "0.04 - seat.depth / 2 + 0.04"] }
+  ],
+  "groups": { "back": ["back_supports", "back_slats"] },
+  "variants": {
+    "legs.shape": { "frame": {} },
+    "armrests.shape": { "curl": {} }
+  },
+  "counts": { "seat.slats": "seat.slats", "back.slats": "back.slats", "legs.count": "legs.count" },
+  "anchors": [ { "name": "seat_line", "at": "seat.first.top" } ],
+  "musts": { "connected": true, "stands": "ground", "symmetric": "x" },
+  "collision": { "footprint": "box" }
+}

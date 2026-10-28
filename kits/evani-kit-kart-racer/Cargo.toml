@@ -1,0 +1,45 @@
+[package]
+name = "evani-kit-kart-racer"
+description = "Evani.Dev kart racer kit: arcade drift-boost karts, items, AI racers, laps and split-screen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+# Drawing, sound, HUD and the plugin (on by default: the game). Off, the kit
+# is only the race rules (race, karts, AI, items, track), the part a
+# headless multiplayer referee builds (apps/kart-racer/referee).
+default = ["render"]
+render = ["dep:evani-render"]
+# Online play (evani.toml `net`): the race as a lockstep game for evani-net
+# (src/net.rs). The referee and the app's `net` feature turn it on.
+net = ["dep:evani-net"]
+# Dev-only live asset focus (`focus.*`, docs/LIVE_API.md 6.28): the app
+# turns this on with its `live` module, so shipped builds (which always drop
+# live) never carry it.
+live = ["evani-core/focus", "render"]
+# Rival karts built from detailed model parts (src/rivals.rs, data/rivals.json,
+# S4-1b). The app turns it on with its `models` module (evani.toml); without
+# it none of this code is in the build and every kart is drawn from primitives.
+models = ["render", "evani-render/models"]
+
+[dependencies]
+# The `touch` feature is the on-screen controls layer (README "Touch controls"):
+# it sets the same actions the keys do, and only this game's download has it.
+evani-core = { workspace = true, features = ["touch"] }
+# The track is drawn from custom meshes (src/trackmesh.rs) on the 3D path.
+evani-render = { workspace = true, features = ["forward", "meshes"], optional = true }
+# Online play only (`net`): the lockstep core, nothing else of evani-net.
+evani-net = { workspace = true, optional = true, features = ["lockstep"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Done-when 4: the kit also runs with another look (no toon look needed).
+evani-look-basic.workspace = true
+
+[lints]
+workspace = true

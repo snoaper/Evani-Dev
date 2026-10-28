@@ -1,0 +1,22 @@
+# Benchmark B, hard-surface prop 10 of 10: a round shield with a boss and rim.
+make: shield
+style: toon_chunky
+parts:
+  face: { shape: round, domed: slight }
+  rim: { thick }
+  boss: { shape: dome, large }
+  straps: { count: 2 }
+relief:
+  face.outer: planks(straight, width 10cm, depth 2mm)
+  rim.outer: rivets(row, size 1.5cm, pitch 9cm)
+  straps.outer: weave(twill, pitch 6mm, depth 1mm)
+  face.edges: wear(dents, depth 2mm, density 0.2)
+must:
+  fit_box: [0.18, 0.8, 0.8] m
+  anchor: { name: grip, diameter: 3cm }
+  max_size: { length: 0.18m }
+  tri_budget: { low: 300, medium: 800, high: 2k, ultra: 6k }
+match: { front: ../ref/shield/front.png, side: ../ref/shield/side.png }
+explore: auto
+return: 3
+seed: 110

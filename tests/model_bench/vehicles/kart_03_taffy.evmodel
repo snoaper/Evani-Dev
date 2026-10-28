@@ -1,0 +1,23 @@
+# Benchmark B, vehicle 3 of 10: Sugarpeak Rally rival kart (Taffy: sleek, low and long-nosed).
+# Reference: the base kart with this rival's shape overrides (manifest.json),
+# made by the reference tool; if Chris picks option A (decision D4) the
+# reference is the base kart for all eight.
+make: kart
+like: bench/kart_01_pip
+style: toon_chunky
+parts:
+  chassis: { stance: very_low, long }
+  nose: { shape: wedge, long }
+  wing: { wide, raised }
+relief:
+  tyres.outer: tread(chevron, depth 4mm, pitch 2cm)
+  chassis.sides: panel_lines(seams, width 4mm, depth 2mm)
+must:
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_03_taffy/side.png, front: ../ref/kart_03_taffy/front.png, top: ../ref/kart_03_taffy/top.png, chase: ../ref/kart_03_taffy/chase.png, mesh: ../ref/kart_03_taffy/mesh.glb }
+explore: auto
+return: 3
+seed: 203

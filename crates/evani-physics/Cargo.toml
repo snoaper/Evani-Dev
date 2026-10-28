@@ -1,0 +1,22 @@
+[package]
+name = "evani-physics"
+description = "Evani.Dev physics module (M1 stub): simple or rigid backend, chosen by Cargo feature"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+# evani.toml `physics = "simple"` or `"rigid"` turns on one of these. If both
+# end up on (feature unification), rigid wins; see DECISIONS.md.
+default = []
+simple = []
+rigid = [] # `collide` (below): the static triangle world, casts and character mover, docs in src/collide/mod.rs
+collide = []
+
+[dependencies]
+evani-core.workspace = true
+
+[lints]
+workspace = true

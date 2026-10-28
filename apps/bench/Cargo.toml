@@ -1,0 +1,40 @@
+[package]
+name = "evani-bench"
+description = "Evani.Dev bench: stress content at every tier along a fixed camera path, checked against the tier limits (browser GPU run via `cargo xtask bench`, native CPU-only run via `cargo run -p evani-bench`)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[lib]
+name = "evani_bench"
+path = "src/lib.rs"
+
+[[bin]]
+name = "evani-bench"
+path = "src/main.rs"
+
+[dependencies]
+evani-core.workspace = true
+# The bench scene is 3D (the forward pass is what it measures first), and
+# its model phase draws the textured, normal-mapped model path (S3-3) and
+# its character phase skinned, animated rigs (S3-9).
+evani-render = { workspace = true, features = ["forward", "models", "skinning"] }
+evani-anim.workspace = true
+evani-gltf.workspace = true
+# The bench always measures the effects a tier switches on (bloom, vignette,
+# outline, shadows, particles),
+# so the budget points it reports are the real ones.
+evani-fx = { workspace = true, features = ["bloom", "vignette", "shadows", "outline", "particles"] }
+evani-look-basic.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+web-sys = { workspace = true, features = ["Window", "Document", "Element", "HtmlElement", "Node", "Location"] }
+
+[lints]
+workspace = true

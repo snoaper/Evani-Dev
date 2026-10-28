@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mossgate Keep</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #14121c; overflow: hidden; }
+    /* Whole-pixel art: if the browser ever scales the canvas, keep the pixels square. */
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none;
+                    image-rendering: pixelated; image-rendering: crisp-edges; }
+  </style>
+  <!-- Trunk builds the evani-top-down-action-adventure binary; wasm-opt -Oz runs in release.
+       The --enable flags match the wasm features rustc turns on by default
+       for wasm32-unknown-unknown; without them Trunk's wasm-opt rejects the module. -->
+  <link data-trunk rel="rust" data-bin="evani-top-down-action-adventure" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue"
+        data-type="main">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Benchmark B, stylized organic 4 of 10: a floating puffy cloud (no ground contact).
+make: cloud
+style: toon_chunky
+parts:
+  puffs: { count: 6, round, flat_bottom }
+must:
+  fit_box: [4.0, 2.0, 1.6] m
+  stands: none
+  connected: true
+  tri_budget: { low: 300, medium: 800, high: 2k, ultra: 6k }
+match: { front: ../ref/cloud/front.png, side: ../ref/cloud/side.png, top: ../ref/cloud/top.png }
+explore: auto
+return: 3
+seed: 304

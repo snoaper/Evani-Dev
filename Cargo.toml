@@ -1,0 +1,150 @@
+[workspace]
+resolver = "3"
+# Partner bridges are outside the engine and its workspace (each its own).
+exclude = ["bridges"]
+members = [
+    "crates/evani-core",
+    "crates/evani-render",
+    "crates/evani-fx",
+    "crates/evani-physics",
+    "crates/evani-net",
+    "crates/evani-xr",
+    "crates/evani-live",
+    "crates/evani-gltf",
+    "crates/evani-ui",
+    "crates/evani-anim",
+    "kits/evani-kit-example",
+    "kits/evani-kit-kart-racer",
+    "kits/evani-kit-match-3",
+    "looks/evani-look-basic",
+    "looks/evani-look-toon",
+    "looks/evani-look-cartoon2d",
+    "apps/sandbox",
+    "apps/kart-racer",
+    "apps/kart-racer/referee",
+    "apps/match-3",
+    "kits/evani-kit-2d-platformer",
+    "looks/evani-look-pixel16",
+    "looks/evani-look-pixelhd",
+    "looks/evani-look-stylizedpbr",
+    "apps/2d-platformer",
+    "apps/bench",
+    "tools/xtask",
+    "tools/evani-live-bridge",
+    "tools/evani-lookguard",
+    "tools/evani-geocheck",
+    "tools/evani-geocheck-2d",
+    "tools/evani-guide",
+    "crates/evani-model",
+    "tools/evani-model",
+    "tools/model-bench-ref",
+    "tools/evani-convert",
+    "tools/evani-model-fur-locks",
+    "kits/evani-kit-model-view",
+    "kits/evani-kit-tactical-fps",
+    "kits/evani-kit-top-down-action-adventure",
+    "kits/evani-kit-base-building-rts",
+    "apps/model-view",
+    "apps/tactical-fps",
+    "apps/top-down-action-adventure",
+    "apps/base-building-rts",
+    "looks/evani-look-photoreal",
+    "crates/evani-combat",
+    "crates/evani-material-proc",
+    "crates/evani-destruct",
+    "crates/evani-material-layers",
+    "crates/evani-material-character",
+    "crates/evani-material-nature",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+publish = false
+
+# Exact pins. Engine (shipped) crates first, then dev-tool crates (native only).
+# wasm-bindgen / web-sys / js-sys are kept at or above what wgpu 30.0.1 needs
+# (wasm-bindgen >= 0.2.127, web-sys/js-sys >= 0.3.104) so Cargo unifies them.
+[workspace.dependencies]
+# --- shipped engine crates ---
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+web-sys = "=0.3.106"
+js-sys = "=0.3.106"
+wgpu = { version = "=30.0.1", default-features = false, features = ["webgpu", "wgsl", "std"] }
+glam = "=0.34.1"
+bytemuck = { version = "=1.25.2", features = ["derive"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+console_error_panic_hook = "=0.1.7"
+
+# --- dev tools (native only, never in a game download) ---
+toml = "=1.1.8"
+flate2 = "=1.1.10"
+# `cargo xtask size-report`: brotli size of a ship build (what a CDN with brotli serves).
+brotli = { version = "=9.0.0", default-features = false, features = ["std"] }
+
+# --- workspace crates ---
+evani-core = { path = "crates/evani-core" }
+evani-render = { path = "crates/evani-render" }
+evani-fx = { path = "crates/evani-fx", default-features = false }
+evani-physics = { path = "crates/evani-physics", default-features = false }
+evani-net = { path = "crates/evani-net" }
+evani-xr = { path = "crates/evani-xr" }
+evani-live = { path = "crates/evani-live" }
+evani-gltf = { path = "crates/evani-gltf" }
+evani-ui = { path = "crates/evani-ui" }
+evani-anim = { path = "crates/evani-anim" }
+evani-kit-example = { path = "kits/evani-kit-example" }
+evani-kit-kart-racer = { path = "kits/evani-kit-kart-racer" }
+evani-kit-match-3 = { path = "kits/evani-kit-match-3" }
+evani-look-basic = { path = "looks/evani-look-basic" }
+evani-look-toon = { path = "looks/evani-look-toon" }
+evani-look-cartoon2d = { path = "looks/evani-look-cartoon2d" }
+evani-kit-2d-platformer = { path = "kits/evani-kit-2d-platformer" }
+evani-look-pixel16 = { path = "looks/evani-look-pixel16" }
+evani-look-pixelhd = { path = "looks/evani-look-pixelhd" }
+evani-look-stylizedpbr = { path = "looks/evani-look-stylizedpbr" }
+evani-model = { path = "crates/evani-model" }
+evani-kit-model-view = { path = "kits/evani-kit-model-view" }
+evani-kit-tactical-fps = { path = "kits/evani-kit-tactical-fps" }
+evani-look-photoreal = { path = "looks/evani-look-photoreal" }
+evani-kit-top-down-action-adventure = { path = "kits/evani-kit-top-down-action-adventure" }
+evani-kit-base-building-rts = { path = "kits/evani-kit-base-building-rts" }
+evani-combat = { path = "crates/evani-combat" }
+evani-material-proc = { path = "crates/evani-material-proc" }
+evani-material-layers = { path = "crates/evani-material-layers" }
+evani-destruct = { path = "crates/evani-destruct" }
+evani-material-character = { path = "crates/evani-material-character" }
+evani-material-nature = { path = "crates/evani-material-nature" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(web_sys_unstable_apis)"] }
+
+[workspace.lints.clippy]
+# "No unwrap or expect on fallible browser or GPU calls in release paths."
+# Enforced for all non-test code (clippy.toml allows them in tests).
+unwrap_used = "deny"
+expect_used = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Native dev tools (xtask, bridge) build fast and debuggable in dev profile.
+[profile.dev.package."*"]
+opt-level = 1
+
+# The geometry check does heavy f64 geometry over thousands of instances.
+[profile.dev.package.evani-geocheck]
+opt-level = 3
+
+# Evani.Model meshes and checks millions of field samples per compile.
+[profile.dev.package.evani-model]
+opt-level = 3

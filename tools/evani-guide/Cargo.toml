@@ -1,0 +1,28 @@
+[package]
+name = "evani-guide"
+description = "Evani.Dev AI guidance: the engine-owned AGENTS.md block and its pointer files, `doctor`, the `check` gate, the new-game scaffold and the eval stub (native dev tool, never in a game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only; never part of a game download. Kept light on purpose:
+# the Claude Code Stop hook builds and runs this crate's binary at a turn's
+# end, so it must compile in seconds (no engine crates, no wgpu).
+[dependencies]
+serde_json.workspace = true
+toml.workspace = true
+# The look guard state in `check` (guard hash and the approval record only).
+evani-lookguard = { path = "../evani-lookguard", default-features = false }
+# `doctor --fix`: check the pinned tools' downloads (msdf-atlas-gen here,
+# S3-5's model converters) against their SHA-256 (the version xtask,
+# geocheck and lookguard already use).
+sha2 = { version = "=0.10.9", default-features = false }
+# `modelcheck`: open model files with the engine's own reader (normals, LOD
+# nodes, texture sets). A path crate whose only dependency is serde_json, so
+# the Stop hook still builds in seconds; no new external crate.
+evani-gltf.workspace = true
+
+[lints]
+workspace = true

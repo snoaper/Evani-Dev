@@ -1,0 +1,20 @@
+# Benchmark B, structure 10 of 10: a round stone watch tower with a cone roof.
+make: tower
+style: toon_chunky
+parts:
+  body: { shape: round, tapered: slight }
+  base: { flared }
+  crown: { shape: battlements, count: 8 }
+  roof: { shape: cone, tall }
+  windows: { count: 4, shape: slit }
+relief:
+  body.outer: stone(ashlar, size 40cm, depth 1.5cm)
+  base.contact: wear(cracks, depth 3mm, density 0.3)
+must:
+  fit_box: [4.0, 4.0, 12.0] m
+  stands: ground
+  tri_budget: { low: 2k, medium: 5k, high: 12k, ultra: 35k }
+match: { front: ../ref/tower/front.png, side: ../ref/tower/side.png }
+explore: auto
+return: 3
+seed: 210

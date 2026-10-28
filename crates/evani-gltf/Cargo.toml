@@ -1,0 +1,25 @@
+[package]
+name = "evani-gltf"
+description = "Evani.Dev model reader: GLB and glTF, KHR_mesh_quantization, EXT_meshopt_compression, Evani metadata (part of the `models` module)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# No GPU, no browser API: the same code runs natively (converter, tests) and
+# in a game's wasm. Games get it only through the `models` module (an
+# optional dependency of the game crate), so games without `models` carry
+# none of it.
+[features]
+default = []
+# Native-only: read glTF animation channels and samplers for the converter's
+# clip baking (S3-7). No game turns it on; a wasm build with it on is a
+# compile error (src/lib.rs) and a test scans every game manifest.
+anim-source = []
+
+[dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

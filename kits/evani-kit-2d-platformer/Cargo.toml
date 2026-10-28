@@ -1,0 +1,34 @@
+[package]
+name = "evani-kit-2d-platformer"
+description = "Evani.Dev 2D platformer kit: tile levels with slopes and one-ways, coyote-time hero, enemies, moving platforms, indexed pixel art"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+# Live builds only (the app's `live` turns it on): a staged capture moment
+# holds its frame, and the `run` moment plays the attract recording for the
+# review's run video. A shipped game has none of it.
+showcase = []
+
+[dependencies]
+# The `touch` feature is the on-screen controls layer (README "Touch controls"):
+# it only sets the actions the keys already drive, and only this game's
+# download has it.
+evani-core = { workspace = true, features = ["touch"] }
+# pixel-art: the canvas backing store follows the exact device-pixel box, so
+# the whole-pixel scale stays exact at fractional devicePixelRatios.
+evani-render = { workspace = true, features = ["pixel-art"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Done-when 4: the kit also runs with another look (no pixel16 needed).
+evani-look-basic.workspace = true
+evani-look-pixel16.workspace = true
+
+[lints]
+workspace = true

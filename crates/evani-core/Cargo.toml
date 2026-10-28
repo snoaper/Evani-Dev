@@ -1,0 +1,134 @@
+[package]
+name = "evani-core"
+description = "Evani.Dev core: loop, ECS, input, assets, audio, overlay, params, plugin interfaces"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+default = []
+# Live capture support: the sim clock hold that `capture.frame`, `bench.run`
+# and `compare.ab` use. Only evani-live turns it on, so shipped games carry none of it.
+capture = []
+# Asset focus (`focus.*`): kits list their assets and one can be shown on
+# its own on a turntable camera. Only evani-live (and kits' own `live`
+# features) turn it on, so shipped games carry none of it.
+focus = []
+# Live code swapping (dev only, docs/LIVE_API.md 10): every system, module
+# frame, scene update and the frame step run through subsecond's jump
+# table, so a patched function body takes effect at the next call. Only
+# evani-live turns it on (through every game's `live` feature), so shipped
+# games carry none of it; xtask's ship scan checks.
+hotpatch = ["dep:subsecond"]
+# On-screen touch controls (README "Touch controls"): a kit that needs keys
+# turns it on so phones and tablets can play; games whose kit doesn't carry
+# none of it.
+touch = []
+# Touch look pads (S5-E1, `TouchLayout::look_pad`): a drag area whose finger
+# movement drives the mouse-look actions. Its own switch so only games that use
+# one (tactical-fps) download it; games with plain `touch` are byte for byte
+# what they were.
+touch-look = ["touch"]
+# Mouse-look through the browser's pointer lock (README "Pointer lock"): the
+# kit declares `kit.pointer_lock()`; the lock is released on Esc, blur, a
+# hidden tab, page unload, a fatal error, a panic and a stalled loop. Games
+# that don't turn it on carry none of it (no listeners, no timer, no code).
+pointer-lock = []
+# Per-tier texture memory (`TierPreset::max_texture_memory`, megabytes). The
+# `models` module reads it for its texture budget, so only a game that lists
+# `models` turns it on (its app feature does); every other game's tier table
+# is byte for byte what it was.
+texture-budget = []
+# Asset manifest v2 fields (`tier`, `priority`, `group`, `offset`) for the
+# `models` module's streaming (S3-4). Off, `AssetEntry` is exactly v1 (a v2
+# manifest still reads; the extra fields are ignored), so games without
+# `models` are byte for byte what they were.
+stream = []
+# Per-tier point-light cap (`TierPreset::max_point_lights`). Only evani-render's
+# `point-lights` feature turns it on; every other game's tier table is unchanged.
+point-lights = []
+# Sun shadow cascades per tier (`TierPreset::shadow_cascades`, 1 or 2). Only
+# evani-render's `shadow-cascades` feature turns it on; every other game's tier
+# table is unchanged.
+shadow-cascades = []
+# Sky-cube size per tier for image-based lighting (`TierPreset::ibl_cube`,
+# face pixels, 0 = analytic sky). Only evani-render's `ibl` feature turns it
+# on; every other game's tier table is unchanged.
+ibl = []
+# Ground-truth AO quality per tier (`TierPreset::gtao`, 0 off to 3). Only
+# evani-render's `gtao` feature turns it on; every other game's tier table is
+# unchanged.
+gtao = []
+# Positional (3D) audio (S5-E2): sounds and looping voices placed in the world,
+# heard relative to a listener (pan + distance falloff; Web Audio PannerNode on
+# the web). Off, the audio code and the PannerNode bindings are not compiled,
+# so games that don't list it are byte for byte what they were.
+audio-3d = [
+    "web-sys/PannerNode",
+    "web-sys/PanningModelType",
+    "web-sys/DistanceModelType",
+    "web-sys/AudioListener",
+]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+# Dioxus subsecond (MIT OR Apache-2.0), dev builds only (`hotpatch`).
+subsecond = { version = "=0.7.10", optional = true }
+
+[build-dependencies]
+# build.rs compiles assets/tiers/*.json into a Rust table (README "How data
+# ships"); the same pinned serde_json as above, not a new crate.
+serde_json.workspace = true
+
+# Browser glue. A headless referee build (`--cfg evani_headless`, set only by
+# `cargo xtask build <id> --referee`) leaves it out, so the referee wasm has
+# no imports; every normal build is unchanged.
+[target.'cfg(all(target_arch = "wasm32", not(evani_headless)))'.dependencies]
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+console_error_panic_hook.workspace = true
+web-sys = { workspace = true, features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    # play.rs: `?mode=free` / `#mode=free` (free roam).
+    "Location",
+    "HtmlElement",
+    "Node",
+    "CssStyleDeclaration",
+    "Performance",
+    "PerformanceEntry",
+    "PerformanceResourceTiming",
+    "Event",
+    "EventTarget",
+    "AddEventListenerOptions",
+    "KeyboardEvent",
+    "MouseEvent",
+    "PointerEvent",
+    "WheelEvent",
+    "Navigator",
+    "Gamepad",
+    "GamepadButton",
+    "Storage",
+    "MediaQueryList",
+    "VisibilityState",
+    "Response",
+    "AudioContext",
+    "AudioContextState",
+    "BaseAudioContext",
+    "AudioNode",
+    "AudioParam",
+    "GainNode",
+    "AudioBuffer",
+    "AudioBufferSourceNode",
+    "AudioScheduledSourceNode",
+    "AudioDestinationNode",
+] }
+
+[lints]
+workspace = true

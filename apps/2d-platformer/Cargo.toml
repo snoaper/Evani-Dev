@@ -1,0 +1,65 @@
+[package]
+name = "evani-2d-platformer"
+description = "Evani.Dev 2D platformer demo (Fennel's Leap): the 2d-platformer kit in the pixel16 look, title to castle gate"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Module switches. `cargo xtask build 2d-platformer` reads evani.toml and
+# turns it into exactly these features (with --no-default-features), so a
+# module the game doesn't list is an absent optional dependency: zero bytes.
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = ["parallax", "shake", "physics-simple", "live"]
+fx = ["dep:evani-fx"]
+parallax = ["fx", "evani-fx/parallax"]
+shake = ["fx", "evani-fx/shake"]
+bloom = ["fx", "evani-fx/bloom"]
+vignette = ["fx", "evani-fx/vignette"]
+physics-simple = ["dep:evani-physics", "evani-physics/simple"]
+physics-rigid = ["dep:evani-physics", "evani-physics/rigid"]
+net = ["dep:evani-net"]
+xr = ["dep:evani-xr"]
+# Stage 3 modules (evani.toml `models`, `anim`, `ui`). `models` pulls in the
+# model reader (evani-gltf) and the model pipeline (evani-render/models); `anim` adds
+# the animation runtime (evani-anim), `ui` the box layout (evani-ui).
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models", "evani-live?/models"]
+anim = ["models", "dep:evani-anim", "evani-render/skinning"]
+# `ui` turns on sharp MSDF text in the canvas (`[ui] fonts` in evani.toml);
+# the box layout crate (evani-ui, S3-13b) comes with it.
+ui = ["evani-render/msdf", "dep:evani-ui"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-kit-2d-platformer/showcase"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-kit-2d-platformer.workspace = true
+evani-look-pixel16.workspace = true
+evani-fx = { workspace = true, optional = true }
+evani-physics = { workspace = true, optional = true }
+evani-net = { workspace = true, optional = true }
+evani-xr = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-ui = { workspace = true, optional = true }
+evani-anim = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlSelectElement",
+    "HtmlInputElement",
+    "Node",
+    "Event",
+    "EventTarget",
+    "KeyboardEvent",
+] }
+
+[lints]
+workspace = true

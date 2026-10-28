@@ -1,0 +1,142 @@
+/* The race HUD (one per local player, filled by the game's code).
+   Its own stylesheet so a saved edit swaps into the running game in place
+   (docs/LIVE_API.md 14): no reload, the race keeps going.
+
+   Positions and sizes that read a --hud-* variable are live tunables
+   (kit.kart_racer.hud_*, in HUD units u); the game writes them on #ui and
+   the fallback number in each use is the same default as in the kit's code. */
+.hud { position: absolute; left: 0; right: 0; top: 0; height: 100%; display: none; }
+.hud.on { display: block; }
+#ui.two .hud { height: 50%; }
+#ui.two #hud1 { top: 50%; border-top: 3px solid var(--ink); box-sizing: border-box; }
+/* Sized by the short side of the screen (vmin) so the HUD reads the same
+   on a 1080p monitor and a phone held either way; clamp keeps it legible. */
+.hud { --u: clamp(5px, 1vmin, 11px); }
+#ui.two .hud { --u: clamp(4px, 0.62vmin, 7px); }
+.hud .tl { position: absolute; left: calc(var(--u) * 2.2); top: calc(var(--u) * 1.4); }
+.hud .tr { position: absolute; right: calc(var(--u) * 2.2); top: calc(var(--u) * 1.4); text-align: right;
+           display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--u) * 0.8); }
+.hud .bl { position: absolute; left: calc(var(--u) * 2.2); bottom: calc(var(--u) * 1.6); }
+/* Drift tier: bottom-centre, 18 % from the bottom (14 % on a phone). */
+.hud .bc { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; }
+.hud .tc { position: absolute; left: 50%; top: calc(var(--u) * 1.4); transform: translateX(-50%); }
+/* Centred on 38 % from the top (hud-layout): half the 1.3 line height up,
+   so the numeral clears the player marker over the kart. */
+.hud .mid { position: absolute; left: 0; right: 0; top: 38%; margin-top: calc(var(--u) * -5.85); text-align: center; font-size: calc(var(--u) * 9); }
+/* The 3-2-1 numeral rides higher than the layout's 38 % centre: the player marker
+   over the kart sits right under that line and the numeral covered it. */
+.hud .mid.count { margin-top: calc(var(--u) * -11.5); }
+/* LAP and FINAL LAP banners: hud-layout asks for 12 % from the top, but the item slot (top-centre) reaches
+   down to about 14.6 %, so the banner's top edge sits just under the slot (15 u) with a tight line height:
+   its centre lands at about 19 % at 1080p, the highest it can sit without covering the slot. */
+.hud .mid.banner { top: calc(var(--u) * var(--hud-banner-top, 15)); margin-top: 0; font-size: calc(var(--u) * var(--hud-banner-size, 7)); line-height: 1.1; }
+/* FINISH! rides the banner band in the final-lap style, with its own top. */
+.hud .mid.finish { top: calc(var(--u) * var(--hud-finish-top, 17)); }
+/* WRONG WAY rides the banner band, just under the item slot and its warning: the player marker sits at
+   about 37 % of the view height, so the centred 38 % line put the banner right on top of it. A short
+   split-screen half (phone held wide, under 600 px tall) has no room between slot and marker, so the
+   banner sits beside the slot instead. */
+.hud .mid.wrong { top: calc(var(--u) * var(--hud-wrong-top, 19)); margin-top: 0; font-size: calc(var(--u) * var(--hud-wrong-size, 7)); line-height: 1.15; }
+@media (max-height: 599px) {
+  #ui.two .hud .mid.wrong { top: calc(var(--u) * 5); left: calc(50% + var(--u) * 8); right: auto; text-align: left;
+                            white-space: nowrap; font-size: max(12px, calc(var(--u) * 3.5)); }
+}
+.hud .mid.pop-a { animation: pop-a 0.35s ease-out; } .hud .mid.pop-b { animation: pop-b 0.35s ease-out; }
+@keyframes pop-a { from { transform: scale(1.3); } to { transform: scale(1); } }
+@keyframes pop-b { from { transform: scale(1.3); } to { transform: scale(1); } }
+/* Over the line (hud.fin): FINISH! rides the banner slot, the place sits big under it,
+   the race HUD fades and only the time stays. */
+.hud .big { display: none; position: absolute; left: 0; right: 0; top: calc(var(--u) * var(--hud-finish-place-top, 27)); text-align: center;
+            font-size: calc(var(--u) * var(--hud-finish-place-size, 14)); line-height: 1.1; color: var(--sun); }
+.hud.fin .big { display: block; animation: pop-a 0.5s ease-out; }
+.hud.fin .tl, .hud.fin .tc, .hud.fin .bl, .hud.fin .bc, .hud.fin .cue { opacity: 0; transition: opacity 0.4s; }
+.hud .cue { position: absolute; left: 0; right: 0; top: 55%; text-align: center; font-size: calc(var(--u) * 4.9); color: var(--sun); }
+.hud .place { font-size: calc(var(--u) * 10); line-height: 1; color: var(--sun); }
+.hud .place small { font-size: 0.4em; color: #fff; }
+/* The "+1" pop on an overtake: pops in and stays until the game clears it. */
+/* A mint badge with its own ink border, raised and set apart, so it never reads as part of "/8". */
+.hud .place .gain { display: inline-block; margin-left: 0.6em; font-size: 0.36em; vertical-align: 0.95em; line-height: 1;
+                    padding: 0.08em 0.32em 0.04em; border: 0.12em solid var(--ink); border-radius: 0.55em;
+                    background: var(--mint); color: var(--ink); text-shadow: none; box-shadow: 0 0.12em 0 var(--ink); }
+.hud .place .gain:empty { display: none; }
+.hud .place .gain.a { animation: gain-a 0.45s ease-out; } .hud .place .gain.b { animation: gain-b 0.45s ease-out; }
+@keyframes gain-a { from { transform: scale(1.9); } to { transform: scale(1); } }
+@keyframes gain-b { from { transform: scale(1.9); } to { transform: scale(1); } }
+.hud .lap { font-size: calc(var(--u) * 4.6); line-height: 1.1; margin-top: calc(var(--u) * 0.4); }
+.hud .lap.final { color: var(--sun); }
+.hud .time { font-size: calc(var(--u) * 3.2); }
+/* Small print: never under 12 px on a phone or 16 px at 1080p (1.5 vmin). */
+/* The driver's name: 14 px at least so it clears the 12 px floor with room to spare on a phone, with a
+   thinner outline than the big numbers so the small letters stay open. */
+.hud .who { font-size: max(14px, 1.6vmin, calc(var(--u) * 2.2)); margin-top: calc(var(--u) * 0.3); }
+#ui .hud .who { text-shadow: 1px 1px 0 var(--ink), -1px 1px 0 var(--ink), 1px -1px 0 var(--ink), -1px -1px 0 var(--ink), 0 2px 0 var(--ink); }
+.hud .slot { box-sizing: border-box; width: calc(var(--u) * var(--hud-slot-size, 13)); padding: calc(var(--u) * 0.8) calc(var(--u) * 0.6) calc(var(--u) * 0.6);
+             border-radius: calc(var(--u) * 2); border: calc(var(--u) * 0.55) solid var(--ink); background: rgba(255, 255, 255, 0.9);
+             box-shadow: 0 calc(var(--u) * 0.6) 0 var(--ink), inset 0 0 0 calc(var(--u) * 0.4) var(--lilac);
+             display: flex; flex-direction: column; align-items: center; text-align: center; }
+.hud .slot .icon { width: calc(var(--u) * 8); height: calc(var(--u) * 8); }
+.hud .slot .icon svg { display: block; width: 100%; height: 100%; }
+.hud .slot .item { color: var(--ink); text-shadow: none; font-size: max(12px, 1.5vmin, calc(var(--u) * 1.7)); line-height: 1.1; white-space: nowrap; }
+/* Incoming-item warning: under the item slot, red like WRONG WAY, blinking faster the closer the item is
+   (12 px at least on a phone, 16 px at 1080p). */
+.hud .threat { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: calc(var(--u) * var(--hud-threat-gap, 1.4));
+               white-space: nowrap; text-align: center; font-size: max(12px, 1.5vmin, calc(var(--u) * var(--hud-threat-size, 3.2))); font-weight: 800; letter-spacing: 1px;
+               padding: 0.12em 0.55em 0.08em; border-radius: 0.6em; background: rgba(43, 18, 64, 0.82);
+               border: 0.12em solid var(--ink); box-shadow: 0 0.14em 0 var(--ink); }
+.hud .threat:empty { display: none; }
+/* Solid red #ff4d6d at full opacity in every phase, on a dark ink pill so it reads over the pink hills: the
+   blink is the pill's red rim and glow switching on and off (never a fade of the text). */
+#ui .hud .threat.warn { color: #ff4d6d; opacity: 1; }
+.hud .threat.l1 { animation: threat-blink 0.7s steps(2, jump-none) infinite; }
+.hud .threat.l2 { animation: threat-blink 0.4s steps(2, jump-none) infinite; }
+.hud .threat.l3 { animation: threat-blink 0.22s steps(2, jump-none) infinite; }
+@keyframes threat-blink {
+  from { border-color: #ff4d6d; box-shadow: 0 0.14em 0 var(--ink), 0 0 0.5em rgba(255, 77, 109, 0.85); }
+  to { border-color: var(--ink); box-shadow: 0 0.14em 0 var(--ink); }
+}
+.hud .slot.rolling { background: var(--sun); }
+.hud .slot.rolling .icon { animation: roll 0.12s steps(2) infinite; }
+.hud .slot.empty { opacity: 0.55; }
+.hud .slot.empty .icon { border: calc(var(--u) * 0.4) dashed var(--lilac); border-radius: 50%; box-sizing: border-box; transform: scale(0.7); }
+@keyframes roll { 50% { transform: translateY(calc(var(--u) * -0.5)); } }
+.hud .drift { font-size: calc(var(--u) * 4); }
+.hud .speed { line-height: 1; }
+.hud .speed b { font-size: calc(var(--u) * 7.5); font-variant-numeric: tabular-nums; }
+.hud .speed small { font-size: max(12px, 1.5vmin, calc(var(--u) * 2.4)); margin-left: calc(var(--u) * 0.6); opacity: 0.9; }
+.t1 { color: #49b6ff; } .t2 { color: #ff9a2e; } .t3 { color: var(--pink); } .boost { color: var(--sun); } .slip { color: #8fe3ff; }
+.warn { color: #ff4d6d; } .go { color: var(--mint); } .final { color: var(--sun); }
+/* Free roam (?mode=free): a small FREE ROAM label stands in for the place, the lap and the race
+   time, with the controls under it for the first moments (there is no title screen to show them). */
+.hud .roam { display: none; }
+.hud.free .roam { display: block; }
+.hud.free .place, .hud.free .lap, .hud.free .tr { display: none; }
+.hud .roam b { display: block; font-size: calc(var(--u) * 4.2); line-height: 1.1; letter-spacing: 1px; color: var(--mint); }
+.hud .roam small { display: block; font-size: max(12px, 1.5vmin, calc(var(--u) * 1.9)); font-weight: 600; margin-top: calc(var(--u) * 0.4); }
+.hud .roam small:empty { display: none; }
+/* A short screen (a phone held sideways). */
+@media (max-height: 480px) {
+  .hud .bc { bottom: 14%; }
+  /* On a phone the kart sits around the 55 % line, so "GOOD START!" moves up into the banner band under
+     the item slot (free at the start: no lap banner on lap 1), clear of the kart and above "GO!". */
+  .hud .cue { top: calc(var(--u) * var(--hud-banner-top, 15)); }
+  /* The HUD unit's 5 px floor makes the 3-2-1 numeral taller than the gate's start lights are high on a
+     phone: at the tall-screen place it sat on the light housing and hid two of the lights. One player:
+     its line starts just under the housing instead. */
+  #ui:not(.two) .hud .mid.count { top: calc(1% * var(--hud-count-short-top, 30)); margin-top: 0; }
+  /* Over the line FINISH! and the place ride higher (the item slot above them has faded out), so the
+     player marker over the kart in the finish orbit stays clear of the place's foot. */
+  .hud .mid.finish { top: calc(var(--u) * var(--hud-finish-short-top, 10)); }
+  .hud .big { top: calc(var(--u) * var(--hud-finish-place-short-top, 19)); }
+}
+/* Top-left grouping: the controls line (free roam) and the driver's name used to touch. The hint wraps before the
+   item slot instead of running under it, and the name sits apart from whatever is above it. */
+.hud .roam small { max-width: calc(50vw - var(--u) * 10); line-height: 1.25; margin-top: calc(var(--u) * 0.7); }
+.hud .who { margin-top: calc(var(--u) * 1.1); }
+.hud.free .who { margin-top: calc(var(--u) * 1.8); }
+
+/* Online (a host's session): the next race starts by itself and there is no
+   title to quit to, so the restart and quit buttons are not offered. */
+html[data-online] [data-cmd="restart"],
+html[data-online] [data-cmd="title"] {
+  display: none;
+}

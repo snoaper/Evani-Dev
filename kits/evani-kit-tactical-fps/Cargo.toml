@@ -1,0 +1,43 @@
+[package]
+name = "evani-kit-tactical-fps"
+description = "Evani.Dev tactical-fps kit: Hexagon's rules (two teams, a turning ring, destructible concrete, core hold) with bots, drawn in greybox"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+# The `touch` feature is the on-screen controls layer (README "Touch controls"):
+# it sets the same actions the keys do, and only this game's download has it.
+# `pointer-lock`: mouse-look through the browser's pointer lock (README
+# "Pointer lock"); the engine releases it on Esc, blur, a hidden tab and exit.
+evani-core = { workspace = true, features = ["touch", "touch-look", "pointer-lock"] }
+# The fortress and the match are drawn in 3D (draw.rs), so the kit turns on
+# the renderer's 3D path (`forward`).
+# `kit-material`: the kit's own WGSL material function, which cuts the
+# concrete holes through colour, depth and shadow (cut.rs).
+# `view-model`: the held weapon in its own camera-space pass with its own
+# depth, so it never clips into walls (draw.rs).
+evani-render = { workspace = true, features = ["forward", "kit-material", "view-model"] }
+# data/arena.json and data/tuning.json are parsed at build (arena.rs,
+# tune.rs); both are workspace dependencies other kits already ship.
+serde.workspace = true
+serde_json.workspace = true
+# The match over the netcode (src/net): only with the `net` feature, which
+# the app turns on when evani.toml lists `net = true`.
+evani-net = { workspace = true, optional = true }
+
+[features]
+# The match runs through evani-net: inputs go out as net inputs, the server
+# steps the match and runs the bots, the player is predicted and reconciled,
+# remote soldiers are interpolated and hitscan is lag-compensated. Off: the
+# single-player build, unchanged.
+net = ["dep:evani-net"]
+# Dev only, never in evani.toml: a second local player over the loopback,
+# driven by a bot brain reading its own predicted state.
+net-dev = ["net"]
+
+[lints]
+workspace = true

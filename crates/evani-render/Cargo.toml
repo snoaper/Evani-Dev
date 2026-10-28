@@ -1,0 +1,302 @@
+[package]
+name = "evani-render"
+description = "Evani.Dev renderer: WebGPU device/surface, render graph, pipelines with shader slots, instanced meshes and sprites, tiers and adaptive quality"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+default = []
+# Test hooks on `window.__engine` (`slotRebuild`, `loseDevice`). Dev builds
+# turn it on through the sandbox's `live` feature; shipped games leave it off.
+hooks = ["dep:serde_json"]
+# Live capture readback (`capture.frame`, `bench.run`, `compare.ab`). Dev
+# builds turn it on through the sandbox's `live` feature; shipped games leave
+# it off, so none of it reaches their download.
+capture = ["evani-core/capture"]
+# The 3D path: the `forward` pass and its WGSL, the `depth` target, 4x MSAA
+# and the depth resolve, the built-in meshes, lighting and shading uniforms,
+# decals and world-space particles (CORE_REQUESTS `forward-optional`). 3D
+# kits turn it on in their Cargo.toml (`cargo xtask new-game` writes it);
+# 2D games leave it off and download none of it. A 3D draw in a build
+# without it is reported once in the ErrorLog.
+forward = []
+# One directional shadow map (resolution and PCF from the tier) drawn in a
+# depth-only `shadows` pass, sampled by the forward pass. Turned on by the
+# evani-fx `shadows` effect; without it the forward shader ships a one-line
+# stub and only blob shadows.
+shadows = ["forward"]
+# CPU frustum culling (S5-R2, `cull.rs`): mesh instances, decals and model
+# draws (every LOD tier, skinned ones by their bounding sphere) outside every
+# view's frustum, and outside the shadow map's light box when there is one,
+# are dropped before they are packed and uploaded. Turned on by 3D kits with
+# big worlds; without it none of it ships.
+frustum-cull = ["forward"]
+# Compute passes in the render graph (`PassKind::Compute`, buffer targets).
+# Turned on only by systems that need one (particles); without it the graph
+# has render passes only.
+compute = []
+# The shared GPU particle system (CORE_REQUESTS plan C): drains
+# `evani_core::particles::ParticleQueue` into a ring of spawn records sized
+# to the tier cap, a `particles.sim` compute pass evaluates them, and the
+# sprites and forward passes draw them. Turned on by the evani-fx
+# `particles` effect; without it the queue stays a no-op and no particle
+# WGSL ships. The world-space group (`Space::World3d`, forward pass) is
+# drawn only with `forward` too; screen-space groups need only this.
+particles = ["compute"]
+# Custom meshes from the `MeshLibrary` resource (spline roads and walls,
+# generated meshes): the renderer uploads them and packs up to 64 mesh kinds.
+# Games that only draw the built-in meshes leave it off. Needs `forward`.
+meshes = ["forward"]
+# Pixel-perfect canvas size for `render.pixel_art`: the backing store follows
+# the browser's exact device-pixel box (ResizeObserver
+# `devicePixelContentBoxSize`), so no row or column of art pixels is doubled
+# at a fractional devicePixelRatio. Turned on by pixel-art kits; other games
+# leave it off.
+pixel-art = []
+# Look- and kit-supplied sprite art: named sheets (`SpriteArt`, the look's
+# `sprites` generator) packed into the sprite atlas with gutters and a CPU
+# mip chain, smooth at any size. Turned on by a kit that draws named art;
+# games that only use the built-in shapes and the kit `SpriteSheet` leave it
+# off and download none of it.
+sprite-art = []
+# 2D dynamic lights (catalog effect `lights2d`, S5-R1): a few point lights
+# from the kit's `Lights2d` resource light the scene sprites in the sprites
+# pass, through per-sprite normal maps (a frame named `<name>.n` beside
+# `<name>`); sprites without one light as flat-facing. Turned on by the
+# evani-fx `lights2d` effect (it needs named sprite art); games without it
+# download none of it.
+lights2d = ["sprite-art"]
+# Pixel text, one of the two independent text features (the other is `msdf`):
+# one small bitmap font baked at startup into an engine sheet of the sprite
+# art (turns on `sprite-art`), and `text::draw` / `text::measure` for
+# `FontId::BITMAP` (`bitmap.rs`). Turned on by kits that draw pixel text;
+# games that don't download none of the font or the layout code. Does not
+# need `msdf`.
+text = ["sprite-art"]
+# Sharp, scalable text (the `ui` module), the other independent text feature:
+# MSDF fonts baked at build time (`[ui] fonts` in evani.toml), fetched as a
+# PNG atlas plus a small table and drawn through the sprite batcher with an
+# MSDF fragment variant (`msdf.rs`, `shaders/sprite_msdf.wgsl`). `text::draw`
+# uses it when the style names an MSDF font. Does not need `text`: without
+# it the bitmap font is not shipped and `FontId::BITMAP` draws nothing; nor
+# does it need `sprite-art` (a kit that draws named art turns that on itself).
+# Games without `ui` download none of it.
+msdf = [
+    "web-sys/Response",
+    "web-sys/Blob",
+    "web-sys/ImageBitmap",
+    "web-sys/ImageBitmapOptions",
+    "web-sys/PremultiplyAlpha",
+    "web-sys/ColorSpaceConversion",
+]
+# Textured, normal-mapped models (the game's `models` module, S3-3): the
+# model pipeline beside the mesh pipeline, materials, KTX2 and RGBA texture
+# upload and the tier's texture budget. Games without `models` download
+# none of it. Needs `forward`.
+models = ["forward", "dep:evani-gltf", "evani-core/texture-budget", "evani-core/stream", "dep:serde_json"]
+# Skinned models on the GPU (S3-9): linear blend skinning in the model
+# vertex shader (`shaders/model_skin.wgsl`), one read-only storage buffer of
+# 4x3 joint matrices for every character with a per-instance offset, joints
+# as u8x4 and weights as unorm8x4, skinned shadows and the sun cone baked in
+# bind pose. Turned on only through a game's `anim` module; games without it
+# download none of it.
+skinning = ["models"]
+# Surface relief on models (S3-10): a material's `extras.evani.relief`
+# height map (parallax occlusion: fine on High and Ultra, 2 steps elsewhere) and micro-detail recipe
+# (the look's `micro_detail` slot, every tier, faded below 1.5 px), in a
+# relief variant of the model fragment stage. Turned on only by games whose
+# models carry relief (with the look's `relief` feature); the rest download
+# none of it.
+relief = ["models"]
+# The lit surface pass (S5-R5b): models read their glTF metallic-roughness
+# and occlusion maps and a film kind (`extras.evani_surface.kind`: plain,
+# skin, eye) and draw with `model_lit_fs` (shaders/model_lit.wgsl): the
+# look's `specular` and `surface_params` slots, a sky/ground hemisphere with
+# reflections, the point lights and ambient occlusion when those are on,
+# and the film rig, skin and eye light the stylizedpbr film preset sets.
+# Off with `relief` (same material bindings; relief wins). Games without it
+# download none of it and fetch no metal-rough or occlusion maps.
+look-surface = ["models"]
+
+# Per-level asset groups (S7-7, `model/handle/level.rs`): `Models::prefetch(group)`
+# downloads a `level:<name>` group of `models/stream.json` ahead, in the background,
+# and `Models::release(group)` frees its models' GPU textures and buffers. Level
+# groups are left out of the background plan, so a level downloads only when the
+# game asks. Opt-in: a game that does not list it (or has no `models`) is byte for
+# byte what it was.
+level-groups = ["models"]
+
+# Point lights (S5-R3): `RenderWorld::draw_light` (`Light`: position, colour,
+# range, intensity), up to 8 a frame (the tier's `max_point_lights`, nearest
+# the camera first) added to lit meshes, models and skinned models in the
+# forward pass; unlit and HUD draws are unaffected. The light term is spliced
+# into the shaders at pipeline build, so games without it are byte for byte
+# what they were.
+point-lights = ["forward", "evani-core/point-lights"]
+# Clustered forward lighting (S5-R3): a compute pass sorts up to 256 lights
+# into 16x9 screen tiles x 16 depth slices and the shaders read each
+# fragment's cluster list. Falls back to the 8-light path when the tier cap is
+# 8 or less or the binning pipeline is missing.
+clustered = ["point-lights", "compute"]
+# Kit material (S5-E3): `KitMaterial` (a world resource) holds a kit's own
+# WGSL `kit_material(p, n, material) -> vec4` and a storage array of vec4
+# data it reads; the forward mesh pass multiplies the base colour by its rgb
+# and discards where its alpha is below 0.5, in colour, depth and the shadow
+# map (hole cut-outs). Spliced in at pipeline build; games without it are
+# byte for byte what they were. Meshes only (not models).
+kit-material = ["forward"]
+# First-person view model (S5-E3): `RenderWorld::draw_view_model` meshes in
+# camera space, drawn after the forward pass into the HDR target with their
+# own narrow field of view and a depth buffer of their own, so they never
+# clip into walls. Lit by the sun, shadows and point lights like the world;
+# cast no shadow. Games without it are byte for byte what they were.
+view-model = ["forward"]
+# Two sun shadow cascades (S5-R4): a near cascade at `render.shadow_cascade_split`
+# of today's shadow box plus the far cascade (today's box), side by side in one
+# depth atlas, each snapped to its own texel grid so nothing shimmers as the
+# camera moves, picked per fragment with a `render.shadow_cascade_blend` band.
+# On tiers with `shadow_cascades: 2` (High, Ultra); others keep one map. The
+# sampling code is chosen at compile time, so games without it are unchanged.
+shadow-cascades = ["shadows", "evani-core/shadow-cascades"]
+# Contact-hardening soft shadows (S5-R4): a blocker search, then a PCF filter
+# whose width follows the blocker distance (PCSS), tuned by the look's
+# `pcss_params` slot. Every tier with a shadow map; 16 taps on High and Ultra,
+# 8 elsewhere. Lite and Low keep their blob shadows.
+pcss = ["shadows"]
+# The name the stylizedpbr look's `soft-shadows` feature turns on.
+soft-shadows = ["pcss"]
+# Shared sky-ambient plumbing for `ibl` and `gtao` (S5-R5): an ambient
+# uniform and extra bindings in the forward frame group, spliced into the
+# shaders at pipeline build. Internal; turned on by either feature below.
+ambient = ["shadows"]
+# Image-based lighting from the procedural sky (S5-R5): SH9 irradiance from
+# the sky colours (`render.sky.*`) for diffuse ambient on every tier, and a
+# specular reflection term with an analytic split-sum environment BRDF: an
+# analytic blurred sky on tiers with `ibl_cube: 0`, a small runtime GGX
+# prefiltered sky cube elsewhere. No HDR or lookup-table file ships.
+ibl = ["ambient", "evani-core/ibl"]
+# Ground-truth ambient occlusion (S5-R5, after XeGTAO and Bevy's port): a
+# depth prepass, depth mips, a GTAO slice pass and a depth-aware denoise, all
+# fragment passes, at the tier's `gtao` quality (Medium: half-res 1x2, High:
+# 2x2, Ultra: 3x3; off below). Darkens only the ambient term.
+gtao = ["ambient", "evani-core/gtao"]
+# The pseudo-3D road of arcade racers (S6-5, `pseudo3d.rs`): a segment-
+# projected road with curves, hills, roadside sprites and a scrolling
+# backdrop, drawn as 2D quads at the start of the sprites pass (one
+# instanced draw, `shaders/pseudo3d.wgsl`), with live tunables
+# `render.pseudo3d.*`. Needs neither `forward` nor any other feature. Games
+# without it download none of it.
+pseudo3d = []
+# Measured on-screen importance of models (S7-3, `importance.rs`): a dev-only
+# tool. It records each model's projected screen share over a game's scripted
+# capture moments and its bench camera path, and writes
+# `apps/<id>/assets/importance.json` (`cargo xtask importance <id>`). It is
+# never in a game's `evani.toml` features, `cargo xtask build --ship` never
+# turns it on, and the ship guard fails a download that carries its marker,
+# so it costs 0 bytes in a shipped game. Native runs only.
+importance = ["models", "evani-core/capture"]
+
+# Per-game camera near and far planes (ChimpDuty intake, `camera_range.rs`):
+# `render.camera.near` (default 0.1 m, down to 0.005) and `render.camera.far`
+# (default 1000 m, up to 100 km) replace the fixed planes in every world
+# projection (frame uniforms, culling, GTAO). A game with fx turns on
+# evani-fx's `camera-range` instead, so decals, the outline and the fog follow
+# too. Games without it are byte for byte what they were.
+camera-range = ["forward"]
+
+# HDR background colour (ChimpDuty intake, `color_ext.rs`): `render.clear_color`
+# takes linear values up to 64, so a bright sky or horizon above 1 goes
+# through exposure and the tonemap like any lit surface. Games without it
+# keep the 0..1 colour, byte for byte.
+hdr-color = []
+# A fog colour of its own (`color_ext.rs`): `render.fog.own_color` (default
+# off, the fog keeps the background colour) and `render.fog.color`, HDR too
+# with `hdr-color`. Games without it are byte for byte what they were.
+fog-color = ["forward"]
+# First-person models (ChimpDuty intake, `model/vm.rs`): `Models::draw_view_model`
+# takes a loaded model in camera space, drawn in the view-model layer (its own
+# field of view, near plane and depth buffer) after the view-model meshes.
+# Static parts, finest level, no shadow. Games without it are byte for byte
+# what they were.
+view-model-models = ["view-model", "models"]
+# Stable soft shadows (ChimpDuty intake limit 5, shaders/shadows_pcss_stable.wgsl):
+# the PCSS lookup compares each tap with the receiver plane's depth (from the
+# surface normal), not the centre's, and uses a fixed tap pattern, so a floor
+# under a low sun no longer shadows itself into speckle under a lying body.
+# Same `pcss_params` slot. Games without it are byte for byte what they were.
+pcss-stable = ["pcss"]
+# Shadow fit for scenes seen from far away (`shadow_fit.rs`): `fx.shadows.fit`
+# (`fixed` default | `view`) sizes the shadow box from the camera's distance to
+# its target plus `fx.shadows.view_depth`, in whole `fx.shadows.fit_step`s so
+# the texel grid stays steady while zooming; `fx.shadows.auto_bias` (default
+# off) matches the normal offset and depth bias to the texel size. With both
+# at their defaults the shadow plan is the plain one; games without the
+# feature are byte for byte what they were.
+shadow-fit = ["shadows"]
+# Shader pre-warm (ChimpDuty intake limit 4, `prewarm.rs`): the canvas keeps
+# its loading state after the engine pipelines exist until every pipeline
+# build (MSAA variants, models, effects, the kit's material code set in its
+# first frames) is done and the GPU has confirmed it, capped at 6 s, so the
+# game never stalls on a late pipeline build right after it appears. Games
+# without it are byte for byte what they were.
+prewarm = []
+# Layered materials a model file delivers (glTF KHR_materials_sheen,
+# clearcoat, anisotropy and iridescence; crate evani-material-layers): cloth
+# sheen with an in-code weave and knit map, a clear coat, brushed-metal
+# anisotropy and thin-film iridescence, in a layered variant of the lit
+# surface pass (`model_layered_fs`, shaders/model_lit_layers.wgsl). Live
+# strengths `material.layers.*`; Lite and Low take the cheap path. Off with
+# `relief`, like the lit pass. Games without it are byte for byte what they
+# were.
+material-layers = ["look-surface", "dep:evani-material-layers"]
+# Character materials (evani-material-character): wet eyes, soft skin and
+# fur/hair shine on the lit surface pass, chosen per glTF material by
+# `extras.evani_kind`. Games without it are byte for byte what they were.
+char-materials = ["look-surface", "dep:evani-material-character"]
+# Kit surface (playground materials, `kit_surface.rs`): a kit's code may also
+# define `kit_surface(p, n, material, nr)`, which returns the colour and
+# cut-out like `kit_material` and writes a bent normal and a roughness. The
+# forward mesh pass then lights with that normal and adds a sun highlight and
+# a faint sky reflection for smooth surfaces. Spliced in at pipeline build
+# only when the kit code defines it, so kits without it draw as before.
+# Games without the feature are byte for byte what they were.
+kit-surface = ["kit-material"]
+
+[dependencies]
+evani-core.workspace = true
+evani-gltf = { workspace = true, optional = true }
+evani-material-layers = { workspace = true, optional = true }
+bytemuck.workspace = true
+serde_json = { workspace = true, optional = true }
+evani-material-character = { workspace = true, optional = true }
+
+# WebGPU only, and only in the browser: native builds (tests, tools) never
+# link a GPU backend, so there is no WebGL/Vulkan/Metal code path anywhere.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "HtmlElement",
+    "CssStyleDeclaration",
+    "Node",
+    "ResizeObserver",
+    "ResizeObserverEntry",
+    "DomRectReadOnly",
+] }
+
+[dev-dependencies]
+# Native tests only: validate the engine WGSL (with slot bodies spliced in).
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+serde_json.workspace = true
+
+[lints]
+workspace = true

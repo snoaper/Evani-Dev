@@ -1,0 +1,23 @@
+[package]
+name = "evani-material-character"
+description = "Evani.Dev character materials for close-up models: a wet eye (refracting cornea, procedural iris, limbal ring, catchlight), soft skin (curvature-driven pre-integrated scattering generated at load, pores and fine wrinkles) and fur/hair shine (two-lobe shifted strand highlight, soft coverage edges), chosen per glTF material by `extras.evani_kind`, tuned live through `material.eye.*`, `material.skin.*` and `material.hair.*`"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# An opt-in module: evani-render's `char-materials` feature is the only way
+# in. A game that doesn't turn it on links none of this crate, so its
+# download is byte for byte what it was. No features of its own on purpose:
+# the tier picks the quality at run time.
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

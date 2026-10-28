@@ -1,0 +1,27 @@
+[package]
+name = "evani-kit-base-building-rts"
+description = "Evani.Dev base-building RTS kit: Cinder Ridge, a one-versus-one skirmish with flow-field pathing, fog of war, an economy and a rival AI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+# The `touch` feature is the on-screen controls layer (README "Touch controls"):
+# it sets the same actions the keys and mouse do.
+evani-core = { workspace = true, features = ["touch"] }
+# The battlefield is 3D (built-in meshes and decals), so the renderer's 3D
+# path (`forward`) is on; `text` draws the in-canvas HUD (bitmap font).
+# The art pass (K5b) adds `point-lights` (crystal, hub beacon, foundry glow,
+# shot flashes) and `frustum-cull` (the scenery and backdrop ring are many
+# small parts, most off screen at any time).
+evani-render = { workspace = true, features = ["forward", "text", "point-lights", "frustum-cull"] }
+# JSON data files; both already ship inside evani-core, so the download
+# gains no library.
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

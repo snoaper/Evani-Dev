@@ -1,0 +1,28 @@
+# Benchmark B, vehicle 1 of 10: Sugarpeak Rally kart, base shape (Pip's kart).
+# Reference: the current kart racer kart (draw_kart), extracted without driver,
+# at rest (no steer, lean, squash or hop). Game scale: about 3.1 m long.
+make: kart
+style: toon_chunky
+parts:
+  chassis: { stance: low, boxy }
+  nose: { shape: wedge, raked }
+  side_pods: { size: medium }
+  bumper: { type: bar, wide }
+  engine_cover: { shape: block, exhausts: 2 }
+  wing: { type: flat, struts: 2, raised }
+  seat: { type: raked }
+  steering: { type: column }
+  rear_tyres: { size: oversized }
+relief:
+  tyres.outer: tread(block, depth 6mm, pitch 6cm)
+  chassis.edges: wear(chips, depth 1mm, density 0.2)
+must:
+  fit_box: [3.1, 2.21, 1.27] m
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_01_pip/side.png, front: ../ref/kart_01_pip/front.png, top: ../ref/kart_01_pip/top.png, chase: ../ref/kart_01_pip/chase.png, mesh: ../ref/kart_01_pip/mesh.glb }
+explore: auto
+return: 3
+seed: 201

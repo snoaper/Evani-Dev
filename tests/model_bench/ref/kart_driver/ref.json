@@ -1,0 +1,25 @@
+{
+  "chase": null,
+  "files": {
+    "front.png": "sha256:9288128a54edc87bd7aee439845cbfbc144ea62efbc0a07106bc73aa33f954c5",
+    "mesh.glb": "sha256:c53510abdce0f1f00d0f23095adae3cf2bd10e3ca22022ab3a774cdc4e677846",
+    "side.png": "sha256:2843fd7e93aba2fe8c240f08b9b4ca212f1214569b50f42ec0e8a42721bd281f",
+    "top.png": "sha256:f2e2001a8fa421d0b3a13d0a5ee65f1df23398ff7070235ae5e3c714345ef07c"
+  },
+  "frame_centre": [
+    0.0,
+    0.72,
+    -0.155853
+  ],
+  "frame_m": 1.6,
+  "id": "kart_driver",
+  "instances": 7,
+  "kit_commit": "b271e9b35ab5cacf08beb0fe0dc2c370229dfbf8",
+  "overrides": "instances 15-21 of the base kart",
+  "size_m": {
+    "height": 1.46,
+    "length": 1.063266,
+    "width": 0.84
+  },
+  "tool": "model-bench-ref 0.1.0"
+}

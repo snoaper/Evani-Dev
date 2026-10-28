@@ -1,0 +1,23 @@
+# Benchmark B, vehicle 5 of 10: Sugarpeak Rally rival kart (Zuzu: pointed nose, angled pods, tall exhausts).
+# Reference: the base kart with this rival's shape overrides (manifest.json),
+# made by the reference tool; if Chris picks option A (decision D4) the
+# reference is the base kart for all eight.
+make: kart
+like: bench/kart_01_pip
+style: toon_chunky
+parts:
+  nose: { shape: pointed }
+  side_pods: { angled }
+  engine_cover: { exhausts: 2, tall_exhausts }
+relief:
+  tyres.outer: tread(chevron, depth 4mm, pitch 2cm)
+  side_pods.outer: rivets(row, size 1.5cm, pitch 10cm)
+must:
+  wheels_clear_chassis_at_steer: 30 deg
+  seats: bench/kart_driver
+  symmetric: x
+  tri_budget: { low: 3k, medium: 8k, high: 20k, ultra: 60k }
+match: { side: ../ref/kart_05_zuzu/side.png, front: ../ref/kart_05_zuzu/front.png, top: ../ref/kart_05_zuzu/top.png, chase: ../ref/kart_05_zuzu/chase.png, mesh: ../ref/kart_05_zuzu/mesh.glb }
+explore: auto
+return: 3
+seed: 205

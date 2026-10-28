@@ -1,0 +1,45 @@
+# The match-3 demo's module manifest. `cargo xtask build match-3` turns this
+# into Cargo features of the evani-match-3 crate; anything not listed is not
+# built.
+name = "match-3"
+kit = "match-3"        # crate kits/evani-kit-match-3
+look = "cartoon2d"     # crate looks/evani-look-cartoon2d
+effects = ["juice", "particles", "shake", "bloom"]   # each is an evani-fx feature
+
+[modules]
+physics = "none"   # the catalog's physics for match-3: no physics module in the build
+net = false        # single player
+xr = false
+live = true        # dev only; `--ship` builds always drop it
+
+[review]
+try = [
+  "Press Play, then drag a piece onto a neighbour (or tap two neighbours) to make a line of three; on a phone, swipe.",
+  "Line up four for a Streak, an L or T for a Pop Bomb, five for a Prism; then swap two specials together.",
+  "Watch a cascade: pieces fall, new lines pop on their own and the callouts climb (Nice!, Great!, Superb!).",
+  "Collect the goal pieces before the moves run out: win and the left-over moves fire as Sugar Rush; run out and you lose.",
+  "Pause with Esc or the pause button, open Settings, switch Sparkles or Bouncy animation off and on, and change a key.",
+]
+# The signature moments of kits/match-3/target/moments.md, then the kit's
+# shuffle (`capture.frame {moment}`, kit src/moments.rs), each on a tier.
+moments = ["title@ultra", "match@low", "cascade@high", "bomb@ultra", "prism@medium", "sugar_rush@high", "win@ultra", "lose@low", "shuffle@high"]
+# The DOM HUD: the panel, the popups, the title screen and the result card.
+hud = ["#hud", "#floats", "#title", "#result"]
+world_edge = false   # a flat 2D board: no 3D ground to run out of
+# The kit's own shuffle moment (the playbook's "No dead boards" notice) is shot
+# on every showcase tier too.
+showcase_extra = ["shuffle"]
+# The run video: level 1 from its first move, the best bot playing on (kit
+# src/moments.rs `play`), so it shows swaps, cascades and specials.
+video = "play"
+
+# A playground for the Evani.app library: it must support free roam
+# (docs/PLAYGROUNDS.md). Free roam (`?mode=free`): moves cost nothing and
+# there are no goals, Sugar Rush, win or loss; the board keeps refilling.
+[playground]
+free_roam = true
+
+# Beside the shipped game, `build-facts.json` (docs/PUBLISHING.md "The statement"): the game's own licence and any third-party files.
+[statement]
+game_licence = "MIT"
+third_party = []

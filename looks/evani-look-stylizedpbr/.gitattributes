@@ -1,0 +1,2 @@
+# Keep the engine patch byte-exact (git apply needs LF).
+*.patch -text

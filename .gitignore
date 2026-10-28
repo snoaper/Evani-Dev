@@ -1,0 +1,28 @@
+# Build output
+/target
+**/dist
+**/node_modules/
+
+# Logs, process files and local environment
+*.log
+*.pid
+.env
+.env.*
+!.env.example
+
+# Local tool state and settings (never committed)
+.evani/
+.vibedeck/
+.claude/settings.local.json
+.claude/*.local.*
+.vscode/
+.idea/
+*.local.json
+
+# Local art sources and scratch
+/art-source/
+/_scratch/
+
+# OS files
+.DS_Store
+Thumbs.db

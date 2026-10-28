@@ -1,0 +1,6 @@
+{
+  "fx.bloom.intensity": 0.35,
+  "fx.bloom.knee": 0.25,
+  "fx.bloom.threshold": 1.5,
+  "look.cartoon2d.outline_px": 4
+}

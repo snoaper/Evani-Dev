@@ -1,0 +1,45 @@
+{
+  "class": "tower",
+  "version": 1,
+  "family": "structures",
+  "means": "a round stone watch tower: a flared base, a slightly tapering round body with slit windows and an arched door, a corbelled crown with battlements and a tall cone roof",
+  "source": "our own proportions for a chunky toon watch tower (about 3.7 m across the base, under 12 m tall)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 30, "typical": ["three_quarter", "front", "side"] },
+  "measures": {
+    "body.radius": { "default": 1.7, "min": 1.4, "max": 1.75, "step": 0.1, "means": "body radius at the foot" },
+    "body.height": { "default": 7.1, "min": 5, "max": 7.1, "step": 0.5, "means": "body height from the top of the base to the crown" },
+    "body.taper": { "default": 0, "min": 0, "max": 0.45, "step": 0, "fit": false, "means": "how much narrower the body is at the top" },
+    "base.flare": { "default": 0.08, "min": 0, "max": 0.2, "step": 0.07, "means": "how far the base flares out at the ground" },
+    "crown.count": { "default": 8, "min": 0, "max": 12, "step": 1, "count": true, "means": "merlons round the crown" },
+    "crown.merlon": { "default": 1, "min": 0.8, "max": 1.3, "step": 0.15, "means": "merlon size" },
+    "roof.height": { "default": 3.3, "min": 2.5, "max": 3.5, "step": 0.2, "means": "cone roof height" },
+    "windows.count": { "default": 3, "min": 0, "max": 8, "step": 1, "count": true, "means": "slit windows round the body" },
+    "windows.height": { "default": 1, "min": 0.7, "max": 1.4, "step": 0.15, "means": "slit window height" },
+    "door.count": { "default": 1, "min": 0, "max": 1, "step": 0, "count": true, "means": "1 for an arched door at the foot, 0 for none" }
+  },
+  "parts": [
+    { "name": "base", "role": "body", "solid": "body", "gen": "lathe", "params": { "profile": ["body.radius + base.flare", "0", "body.radius + base.flare", "0.2", "body.radius + 0.02", "1.0"] }, "at": ["0", "0", "0"] },
+    { "name": "body", "role": "body", "solid": "body", "gen": "lathe", "params": { "profile": ["body.radius", "0.9", "body.radius - body.taper", "0.9 + body.height"] }, "at": ["0", "0", "0"] },
+    { "name": "crown", "role": "body", "solid": "body", "gen": "lathe", "params": { "profile": ["body.radius - body.taper - 0.02", "0.75 + body.height", "body.radius", "0.95 + body.height", "body.radius", "1.3 + body.height"] }, "at": ["0", "0", "0"] },
+    { "name": "merlons", "role": "trim", "solid": "body", "gen": "rounded_box", "group": "crown", "count": "crown.count", "layout": "ring", "start": "22.5", "radius": "body.radius - 0.15 * crown.merlon", "params": { "size": ["0.6 * crown.merlon", "0.4 * crown.merlon + 0.05", "0.3 * crown.merlon"], "bevel": "0.04" }, "at": ["0", "1.3 + body.height + 0.2 * crown.merlon - 0.025", "0"] },
+    { "name": "roof", "role": "body", "solid": "body", "gen": "lathe", "params": { "profile": ["body.radius - 0.35", "1.25 + body.height", "body.radius - 0.4", "1.35 + body.height", "(body.radius - 0.4) * 0.70", "1.35 + body.height + 0.3 * roof.height", "(body.radius - 0.4) * 0.40", "1.35 + body.height + 0.6 * roof.height", "0.08", "1.3 + body.height + roof.height - 0.06", "0", "1.3 + body.height + roof.height"] }, "at": ["0", "0", "0"] },
+    { "name": "windows", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "count": "windows.count", "layout": "ring", "start": "60", "radius": "body.radius - 0.55 * body.taper", "params": { "size": ["0.24", "windows.height", "0.6"], "bevel": "0.04" }, "at": ["0", "0.9 + 0.55 * body.height", "0"] },
+    { "name": "door", "role": "detail", "solid": "body", "gen": "rounded_box", "op": "cut", "count": "door.count", "params": { "size": ["1.0", "1.74", "0.8"], "bevel": "0.03" }, "at": ["0", "0.93", "body.radius + 0.05"] },
+    { "name": "door_arch", "role": "detail", "solid": "body", "gen": "cylinder", "op": "cut", "group": "door", "count": "door.count", "params": { "radius": "0.51", "length": "0.8", "axis": "z", "bevel": "0.03" }, "at": ["0", "1.8", "body.radius - 0.02"] }
+  ],
+  "groups": {},
+  "variants": {
+    "body.shape": { "round": {} },
+    "crown.shape": { "battlements": {}, "plain": { "set": { "crown.count": 0 } } },
+    "roof.shape": { "cone": {} },
+    "windows.shape": { "slit": {} }
+  },
+  "counts": { "crown.count": "crown.count", "windows.count": "windows.count" },
+  "anchors": [
+    { "name": "roof_top", "at": "roof.top" },
+    { "name": "door", "at": "door.front" }
+  ],
+  "musts": { "connected": true, "stands": "ground" },
+  "collision": { "footprint": "cylinder" }
+}

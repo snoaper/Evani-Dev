@@ -1,0 +1,22 @@
+{
+  "id": "low",
+  "label": "Low",
+  "fps_target": 60,
+  "fps_max": null,
+  "fps_floor": 30,
+  "refresh_hz": null,
+  "target_resolution": null,
+  "render_scale": 0.75,
+  "dpr_cap": 1.25,
+  "max_draw_calls": 150,
+  "max_triangles": 100000,
+  "max_sprites": 5000,
+  "max_particles": 2000,
+  "max_texture_memory": 96,
+  "max_point_lights": 0,
+  "points": 7,
+  "stereo": false,
+  "auto_select": true,
+  "msaa": 1,
+  "effects_on": ["parallax", "vignette", "outline", "speedlines", "shake", "juice", "particles"]
+}

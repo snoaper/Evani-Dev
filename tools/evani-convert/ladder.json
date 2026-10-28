@@ -1,0 +1,21 @@
+{
+  "about": "The converter's starting settings per tier (S3-5). Each tier file holds a chain of levels of detail, most detailed first: ratio is gltfpack's -si target (share of triangles kept; 1 means the master's geometry, not simplified), error is its -se limit (share of the model's size the surface may move), min_screen the smallest projected height (fraction of the screen height) at which that level is still drawn. vp, vt and vn are gltfpack's position, UV and normal bits for the tier; vn is 8 or 16 only (gltfpack stores other widths in a wider integer that is not unit length, which the Khronos validator rejects). clip_error_m is the worst distance (metres) an animation clip baked for the tier (S3-7) may put a joint shell point from the master animation resampled at 30 Hz; --clip-error overrides it. The quality gate (S3-6) searches below these for each model; these are not catalog limits.",
+  "format": 1,
+  "tiers": {
+    "lite":   { "lods": [ { "ratio": 0.15, "error": 0.03, "min_screen": 0.2 }, { "ratio": 0.05, "error": 0.08, "min_screen": 0.0 } ], "vp": 14, "vt": 12, "vn": 8, "clip_error_m": 0.002 },
+    "low":    { "lods": [ { "ratio": 0.25, "error": 0.02, "min_screen": 0.2 }, { "ratio": 0.08, "error": 0.05, "min_screen": 0.0 } ], "vp": 14, "vt": 12, "vn": 8, "clip_error_m": 0.001 },
+    "medium": { "lods": [ { "ratio": 0.5, "error": 0.01, "min_screen": 0.2 }, { "ratio": 0.15, "error": 0.03, "min_screen": 0.0 } ], "vp": 14, "vt": 12, "vn": 8, "clip_error_m": 0.0005 },
+    "high":   { "lods": [ { "ratio": 0.75, "error": 0.005, "min_screen": 0.2 }, { "ratio": 0.25, "error": 0.02, "min_screen": 0.0 } ], "vp": 16, "vt": 14, "vn": 16, "clip_error_m": 0.0003 },
+    "ultra":  { "lods": [ { "ratio": 1.0, "error": 0.0, "min_screen": 0.2 }, { "ratio": 0.35, "error": 0.01, "min_screen": 0.0 } ], "vp": 16, "vt": 16, "vn": 16, "clip_error_m": 0.0002 },
+    "vr":     { "lods": [ { "ratio": 0.5, "error": 0.01, "min_screen": 0.2 }, { "ratio": 0.15, "error": 0.03, "min_screen": 0.0 } ], "vp": 14, "vt": 12, "vn": 8, "clip_error_m": 0.0003 }
+  },
+  "gate": {
+    "about": "The quality gate's ladders (S3-6, --gate). Each tier's ladder runs from the best rung (ratio 1, 16 bits, full screen-based textures) to the cheapest, with the tier's own setting above slotted in, so a tier whose own setting fails backs off to a better one; the best rung's score is the tier's format floor (see gate.rs FLOOR_SLACK): ratio is [-si, -se] for level 0 (level 1 is scaled by the same factor), texture_div divides the tier's texture size (never below texture_min), vp, vn and vt are gltfpack's vertex bits (vn 8 or 16 only, see about). The search is greedy in the order ratio, texture, vp, vn, vt, a binary search on each. The clip error joins once model-view can play clips (S3-8).",
+    "ratio": [ [1.0, 0.0], [0.75, 0.005], [0.5, 0.01], [0.35, 0.015], [0.25, 0.02], [0.15, 0.03], [0.1, 0.04], [0.05, 0.08] ],
+    "texture_div": [1, 2, 4, 8],
+    "texture_min": 64,
+    "vp": [16, 14, 12, 10],
+    "vn": [16, 8],
+    "vt": [16, 14, 12, 10]
+  }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "evani-look-photoreal"
+description = "Evani.Dev gritty photoreal look: desaturated documentary PBR materials, filmic tonemap with a colour-grade stage, height haze; asks for shadows and bloom"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

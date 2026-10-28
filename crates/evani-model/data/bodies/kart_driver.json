@@ -1,0 +1,17 @@
+{
+  "name": "bench/kart_driver",
+  "means": "the seated chibi driver taken from our own kart racer kit (draw_kart instances 15 to 21), at rest, relative to its hip: the point where the suit sits on the seat",
+  "source": "kits/evani-kit-kart-racer/src/draw.rs draw_kart (our code), seat top at y 0.64, z -0.30 in the kart frame",
+  "hip_width": 0.68,
+  "clearance": 0.01,
+  "parts": [
+    { "name": "suit", "gen": "rounded_box", "size": [0.68, 0.64, 0.46], "bevel": 0.055, "at": [0.0, 0.36, 0.0], "rot": [0, 0, 0] },
+    { "name": "arm.l", "gen": "rounded_box", "size": [0.17, 0.17, 0.62], "bevel": 0.02, "at": [0.31, 0.42, 0.36], "rot": [0, 16.04, 0] },
+    { "name": "arm.r", "gen": "rounded_box", "size": [0.17, 0.17, 0.62], "bevel": 0.02, "at": [-0.31, 0.42, 0.36], "rot": [0, 16.04, 0] },
+    { "name": "helmet", "gen": "ellipsoid", "size": [0.84, 0.8, 0.88], "at": [0.0, 0.96, 0.06], "rot": [0, 0, 0] },
+    { "name": "visor", "gen": "rounded_box", "size": [0.64, 0.25, 0.26], "bevel": 0.03, "at": [0.0, 0.96, 0.39], "rot": [0, 0, 0] },
+    { "name": "stripe", "gen": "ellipsoid", "size": [0.24, 0.84, 0.92], "at": [0.0, 0.97, 0.05], "rot": [0, 0, 0] },
+    { "name": "crest", "gen": "ellipsoid", "size": [0.24, 0.24, 0.24], "at": [0.0, 1.38, 0.0], "rot": [0, 0, 0] }
+  ],
+  "hands": ["arm.l", "arm.r"]
+}

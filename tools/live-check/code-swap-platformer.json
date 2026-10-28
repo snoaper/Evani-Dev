@@ -1,0 +1,11 @@
+{
+  "params": [],
+  "setup": [
+    { "wait_ms": 6000 }
+  ],
+  "trials": [
+    { "name": "platformer-sky-tint", "file": "kits/evani-kit-2d-platformer/src/draw.rs",
+      "from": "self.fill(rw, 0.0, y, vw, h, *c, layer::SKY);",
+      "to": "self.fill(rw, 0.0, y, vw, h, [c[0] * 0.25, c[1] * 0.45, c[2], c[3]], layer::SKY);", "expect": "patched", "timeout_s": 300 }
+  ]
+}

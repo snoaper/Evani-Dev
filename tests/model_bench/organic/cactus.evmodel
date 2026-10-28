@@ -1,0 +1,17 @@
+# Benchmark B, stylized organic 8 of 10: a ribbed cactus with two arms.
+make: cactus
+style: toon_chunky
+parts:
+  trunk: { tall, ribs: 8, rounded_top }
+  arms: { count: 2, uneven, upturned }
+  pot: remove
+relief:
+  trunk.outer: rivets(grid, size 8mm, pitch 6cm)
+must:
+  fit_box: [1.0, 1.4, 2.5] m
+  stands: ground
+  tri_budget: { low: 400, medium: 1k, high: 3k, ultra: 9k }
+match: { front: ../ref/cactus/front.png, side: ../ref/cactus/side.png }
+explore: auto
+return: 3
+seed: 308

@@ -1,0 +1,166 @@
+# Geocheck tags for Sugarpeak Rally (docs/GEOCHECK.md, "Intentional cases").
+# Each entry is a case that is meant to look the way it does; the report
+# still lists it, as tagged.
+#
+# The road, the grass shoulder and bank, the kerbs and the rails are
+# continuous swept meshes (src/trackmesh.rs, drawn through MeshLibrary), so
+# the seam overlaps of the old straight 4 m boxes are gone. The painted
+# lines are one decal mesh (draw_decal), as are the start strip and the
+# grid brackets.
+
+[[tag]]
+check = "moving"
+object = "goo*"
+reason = "the goo puddle is a hazard lying flat in the road; its blob sinks into the asphalt on purpose"
+
+[[tag]]
+check = "moving"
+object = "boost_flame*"
+reason = "the boost flame is a glowing effect behind the kart; it passes through kerbs and grass for a frame or two on bumps and slopes"
+
+# The mountain domes (the backdrop mountains and the hill ring) are pushed
+# into each other on purpose, so they read as one rolling range with no gaps.
+# The tag is pinned by place as well as by label: twelve spheres of radius
+# 4.76 km, centred 5 km out from the meadow centre (5, 17.5) every 30
+# degrees, together hold everything from about 250 m out (240 m in line with
+# a centre) and nothing nearer. The closest dome crossing is 267 m out; the
+# track lies within 135 m of the centre and its trees within 220 m, so an
+# overlap of anything by the track still shows.
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [5005.0, 0.0, 17.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [4335.1, 0.0, 2517.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [2505.0, 0.0, 4347.6]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [5.0, 0.0, 5017.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [-2495.0, 0.0, 4347.6]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [-4325.1, 0.0, 2517.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [-4995.0, 0.0, 17.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [-4325.1, 0.0, -2482.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [-2495.0, 0.0, -4312.6]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [5.0, 0.0, -4982.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [2505.0, 0.0, -4312.6]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+[[tag]]
+check = "overlap"
+object = "mountain_* (mesh 7)"
+at = [4335.1, 0.0, -2482.5]
+radius = 4760.0
+reason = "mountain domes of the backdrop and the hill ring pushed into each other on purpose, one rolling range (more than 240 m out from the meadow centre)"
+
+# The lemon hills of the ring use the plain candy material (labelled
+# kart_body), like the roadside gumdrops, so these three lemon-on-lemon
+# crossings far out in the ring are tagged by place.
+[[tag]]
+check = "overlap"
+at = [214.9, 6.8, 273.9]
+radius = 5.0
+reason = "two lemon hills of the hill ring pushed into each other on purpose, one rolling range"
+
+[[tag]]
+check = "overlap"
+at = [-91.3, 16.0, 331.3]
+radius = 5.0
+reason = "two lemon hills of the hill ring pushed into each other on purpose, one rolling range"
+
+[[tag]]
+check = "overlap"
+at = [-308.3, 5.8, 103.3]
+radius = 5.0
+reason = "two lemon hills of the hill ring pushed into each other on purpose, one rolling range"
+
+# The clouds fly 105 to 160 m up, 400 to 570 m out (scenery.rs). Pinned by
+# height: a sphere of radius 19.906 km centred 20 km over the meadow centre
+# holds what is higher than 94 m over the centre, rising to 102 m at 570 m
+# out, and nothing lower (no other part of the world flies that high).
+[[tag]]
+check = "floating"
+object = "kerb_white*"
+at = [5.0, 20000.0, 17.5]
+radius = 19906.0
+reason = "the clouds fly high over the meadow"
+
+[[tag]]
+check = "floating"
+at = [-80.6, 5.1, -59.8]
+radius = 3.0
+reason = "the start lights' housing hangs from the start banner (it is drawn with the race, so geocheck judges it apart from the banner)"
+
+# Tooling gap: geocheck's kart adapter (tools/evani-geocheck/src/cli/kart.rs,
+# limit) assumes one wall distance all round, half_width + verge -
+# kart_radius. On the inside of the two hairpins the rail comes in
+# (trackmesh::rail_lat) and so does the kit's wall (kart.rs, walls,
+# Track::side_cap): the karts stop at the drawn rail there.
+[[tag]]
+check = "collision"
+at = [71.5, 3.6, 47.9]
+radius = 3.0
+reason = "inside of a hairpin: the kit's wall follows the drawn rail in (Track::side_cap); geocheck's adapter assumes the constant wall distance"
+
+[[tag]]
+check = "collision"
+at = [106.0, 3.2, 27.6]
+radius = 3.0
+reason = "inside of a hairpin: the kit's wall follows the drawn rail in (Track::side_cap); geocheck's adapter assumes the constant wall distance"

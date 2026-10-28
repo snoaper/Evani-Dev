@@ -1,0 +1,59 @@
+[package]
+name = "evani-fx"
+description = "Evani.Dev effects framework: Effect trait, budget-driven toggling; each effect is a Cargo feature"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+[features]
+# Nothing by default: a game lists the effects it wants in evani.toml and
+# xtask turns them into these features. An effect that isn't listed is not
+# compiled, so its WGSL never reaches the download.
+default = []
+bloom = []
+vignette = []
+# Reads the scene depth, which only the 3D path (`forward`) draws.
+outline = ["evani-render/forward"]
+speedlines = []
+shake = []
+juice = []
+particles = ["evani-render/particles"]
+parallax = []
+shadows = ["evani-render/shadows"]
+# Fog is a body for the forward and model shaders' `fog` slot: it needs the 3D path.
+fog = ["evani-render/forward"]
+# Decals read the scene depth in 3D; a 2D game gets the pooled ring buffer only.
+decals = []
+grade = []
+# 2D dynamic lights: point lights and per-sprite normal maps in the sprites pass.
+lights2d = ["evani-render/lights2d"]
+# Per-game camera near and far planes (evani-render `camera-range`): decals,
+# the outline and the fog read `render.camera.near` / `render.camera.far`
+# instead of the fixed 0.1 m / 1000 m. A game with fx turns this one on (it
+# turns on the render one); games without it are byte for byte what they were.
+camera-range = ["evani-render/camera-range"]
+# Looks can ask for an effect on (ChimpDuty intake, `look_effects.rs`):
+# `LookContext::request_effect("fog")` starts a compiled-in effect on in tiers
+# with enough points (default 9: VR, Medium, High, Ultra), unless the look
+# also vetoes it; the budget still decides. Games without it are byte for
+# byte what they were.
+look-effects = []
+# Shadow fit for scenes seen from far away (evani-render `shadow-fit`): the
+# shadow box follows the camera's distance (`fx.shadows.fit = "view"`) and the
+# bias can follow the texel size (`fx.shadows.auto_bias`); both off by
+# default. Games without it are byte for byte what they were.
+shadow-fit = ["shadows", "evani-render/shadow-fit"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+
+[dev-dependencies]
+# Native tests only: parse and validate every WGSL file (with the slot
+# functions spliced in) so shader typos fail `cargo test`, not the browser.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,53 @@
+{
+  "name": "Hexagon fortress",
+  "a_in": 14.0,
+  "a_out": 38.0,
+  "divh": 0.3,
+  "slab": 0.5,
+  "fy": [0.0, 8.0, 16.0],
+  "top_wall": 6.0,
+  "rail_h": 1.05,
+  "rail_t": 0.3,
+  "lift_u": 33.5,
+  "lift_v": 12.0,
+  "lift_h": 1.5,
+  "door0": 26.0,
+  "door1": 29.5,
+  "door_h": 3.0,
+  "core_u": 22.0,
+  "core_r": 2.6,
+  "base": [0, 3],
+  "divs": [[1, 0, 1, 1, 0, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
+  "trim_in": [0.5, 1.5, 0.5],
+  "floor_rows": [18.5, 22.5, 26.5],
+  "floor_out_inset": 0.25,
+  "floor_slant": 0.58,
+  "lift_frame": 0.35,
+  "tile_size": 4.0,
+  "eye": 1.6,
+  "radius": 0.38,
+  "height": 1.8,
+  "hit_r": 0.45,
+  "hit_h": 1.85,
+  "cover": {
+    "structures": 9,
+    "structures_top_base": 6,
+    "max_height": [3, 3, 2]
+  },
+  "spawn": {
+    "u_even": 33.5,
+    "u_odd": 31.0,
+    "v0": -7.5,
+    "dv": 3.0,
+    "slots": 6
+  },
+  "nav": {
+    "sides": [[5, 0, 1], [2, 3, 4]],
+    "cross": [1, 4],
+    "door_s": 27.75,
+    "wander_u": [23.0, 33.0],
+    "wander_v": 7.0,
+    "car_u": 29.0
+  },
+  "bot_names": ["Ada", "Bram", "Cleo", "Dax", "Edda", "Finn", "Gale", "Hux", "Iris", "Juno", "Kip", "Lark"]
+}

@@ -1,0 +1,304 @@
+{
+  "id": "toon_chunky",
+  "version": 1,
+  "look": "toon",
+  "status": "uncalibrated draft (M1): ranges proposed by the builder from the kart racer's own karts; calibration sheets, the critic's proposal and Chris's approval come in M3 (docs/model_research/02)",
+  "description": "Chunky toon proportions for the catalog's toon look: few big masses, generous bevels, no thin hard edges, readable from the chase camera.",
+  "rules": {
+    "style.bevel": 0.25,
+    "style.blend": 0.015,
+    "style.min_feature_px": 2.0
+  },
+  "rules_mean": {
+    "style.bevel": "bevel radius as a share of a part's smallest dimension (times its roundness)",
+    "style.blend": "smooth-blend width at part joins, metres",
+    "style.min_feature_px": "parts thinner than this many pixels at the tier's view distance are thickened or dropped"
+  },
+  "modifiers": { "slightly": 0.5, "very": 2.0 },
+  "classes": {
+    "kart": {
+      "chassis": {
+        "values": {
+          "stance": { "measure": "chassis.ride_height", "words": { "very_low": [0.14, 0.18], "low": [0.19, 0.23], "medium": [0.23, 0.27], "high": [0.27, 0.31] } }
+        },
+        "flags": {
+          "boxy": [["chassis.roundness", -1]],
+          "rounded": [["chassis.roundness", 1]],
+          "tall": [["chassis.height", 1]],
+          "long": [["chassis.length", 1]],
+          "short": [["chassis.length", -1]],
+          "wide": [["chassis.width", 1]],
+          "narrow": [["chassis.width", -1]],
+          "chunky": [["chassis.height", 1], ["chassis.roundness", 0.5]]
+        }
+      },
+      "nose": {
+        "flags": {
+          "raked": [["nose.rake", 1]],
+          "rounded": [["nose.roundness", 1]],
+          "long": [["nose.length", 1]],
+          "short": [["nose.length", -1]],
+          "wide": [["nose.width", 1]],
+          "narrow": [["nose.width", -1]]
+        }
+      },
+      "side_pods": {
+        "values": {
+          "size": { "measure": "side_pods.scale", "words": { "small": [0.8, 0.9], "medium": [0.95, 1.05], "large": [1.12, 1.22] } }
+        },
+        "flags": {
+          "rounded": [["side_pods.roundness", 1]],
+          "boxy": [["side_pods.roundness", -1]],
+          "angled": [["side_pods.yaw", 1]]
+        }
+      },
+      "bumper": {
+        "flags": {
+          "wide": [["bumper.width", 1]],
+          "narrow": [["bumper.width", -1]],
+          "thick": [["bumper.height", 1], ["bumper.depth", 1]]
+        }
+      },
+      "engine_cover": {
+        "flags": {
+          "large": [["engine_cover.scale", 1]],
+          "small": [["engine_cover.scale", -1]],
+          "tall_exhausts": [["exhaust.length", 2]]
+        }
+      },
+      "wing": {
+        "flags": {
+          "raised": [["wing.y", 1]],
+          "lowered": [["wing.y", -1]],
+          "wide": [["wing.span", 1]],
+          "small": [["wing.span", -1], ["wing.chord", -1]]
+        }
+      },
+      "seat": { "flags": {} },
+      "steering": { "flags": {} },
+      "rear_tyres": {
+        "values": {
+          "size": { "measure": "rear_tyres.radius", "words": { "small": [0.31, 0.34], "normal": [0.33, 0.36], "oversized": [0.4, 0.44], "very_oversized": [0.46, 0.5] } }
+        },
+        "flags": {
+          "wide": [["rear_tyres.width", 1]],
+          "narrow": [["rear_tyres.width", -1]]
+        }
+      },
+      "front_tyres": {
+        "values": {
+          "size": { "measure": "front_tyres.radius", "words": { "small": [0.28, 0.31], "normal": [0.31, 0.35], "oversized": [0.35, 0.38] } }
+        },
+        "flags": {
+          "wide": [["front_tyres.width", 1]],
+          "narrow": [["front_tyres.width", -1]]
+        }
+      },
+      "tyres": {
+        "flags": {
+          "wide": [["front_tyres.width", 1], ["rear_tyres.width", 1]],
+          "chunky": [["front_tyres.width", 1], ["rear_tyres.width", 1]]
+        }
+      }
+    },
+    "crate": {
+      "body": { "flags": { "boxy": [["body.roundness", -1]], "rounded": [["body.roundness", 1]] } },
+      "slats": { "flags": { "chunky": [["slats.thick", 1], ["slats.fill", 0.5]], "thin": [["slats.thick", -1]] } },
+      "corner_braces": { "flags": { "thick": [["corner_braces.thick", 1]], "thin": [["corner_braces.thick", -1]] } }
+    },
+    "barrel": {
+      "body": {
+        "values": {
+          "bulge": { "measure": "body.bulge", "words": { "none": [0.0, 0.0], "slight": [0.03, 0.04], "medium": [0.055, 0.065], "strong": [0.08, 0.09] } }
+        },
+        "flags": { "tall": [["body.height", 1]], "short": [["body.height", -1]], "wide": [["body.radius", 1]], "narrow": [["body.radius", -1]] }
+      },
+      "hoops": { "flags": { "thick": [["hoops.proud", 1], ["hoops.width", 1]], "thin": [["hoops.proud", -1], ["hoops.width", -1]] } },
+      "lid": {
+        "values": {
+          "inset": { "measure": "lid.inset", "words": { "flush": [0.02, 0.02], "slight": [0.025, 0.035], "medium": [0.04, 0.05], "deep": [0.06, 0.07] } }
+        },
+        "flags": {}
+      }
+    },
+    "sign": {
+      "board": {
+        "values": {
+          "tilted": { "measure": "board.tilt", "words": { "none": [0.0, 0.0], "slight": [4.0, 8.0], "medium": [9.0, 13.0], "strong": [14.0, 18.0] } }
+        },
+        "flags": { "thick": [["board.thick", 1]], "thin": [["board.thick", -1]], "wide": [["board.width", 1]], "narrow": [["board.width", -1]], "tall": [["board.height", 1]], "rounded": [["board.roundness", 1]] }
+      },
+      "posts": { "flags": { "chunky": [["posts.size", 1]], "thin": [["posts.size", -1]] } },
+      "feet": { "flags": { "wide": [["feet.size", 1]] } }
+    },
+    "lamp_post": {
+      "base": { "flags": { "wide": [["base.width", 1]], "narrow": [["base.width", -1]] } },
+      "pole": { "flags": { "tall": [["pole.height", 1]], "short": [["pole.height", -1]], "tapered": [["pole.taper", 1]], "thick": [["pole.radius", 1]] } },
+      "arm": { "flags": { "long": [["arm.length", 1]], "short": [["arm.length", -1]] } },
+      "lamp": { "flags": { "chunky": [["lamp.scale", 1]], "small": [["lamp.scale", -1]] } }
+    },
+    "fence": {
+      "posts": {
+        "values": { "cap": { "measure": "posts.cap", "words": { "none": [0, 0], "rounded": [1, 1] } } },
+        "flags": { "chunky": [["posts.size", 1]], "thin": [["posts.size", -1]], "tall": [["posts.height", 1]], "short": [["posts.height", -1]] }
+      },
+      "rails": { "flags": { "thick": [["rails.height", 1], ["rails.thick", 1]] } },
+      "pickets": {
+        "values": {
+          "tips": { "measure": "pickets.tips", "words": { "flat": [0, 0], "pointed": [1, 1] } },
+          "uneven": { "measure": "pickets.uneven", "words": { "none": [0.0, 0.0], "slight": [0.015, 0.025], "medium": [0.03, 0.04], "strong": [0.045, 0.05] } }
+        },
+        "flags": { "wide": [["pickets.width", 1]], "narrow": [["pickets.width", -1]], "tall": [["pickets.height", 1]], "short": [["pickets.height", -1]] }
+      }
+    },
+    "bench": {
+      "seat": { "flags": { "curved": [["seat.tilt", 1]], "deep": [["seat.depth", 1]], "long": [["seat.length", 1]], "short": [["seat.length", -1]] } },
+      "back": {
+        "values": { "reclined": { "measure": "back.recline", "words": { "none": [0.0, 0.0], "slight": [8.0, 12.0], "medium": [14.0, 18.0], "strong": [20.0, 24.0] } } },
+        "flags": { "tall": [["back.height", 1]] }
+      },
+      "legs": { "flags": { "chunky": [["legs.thick", 1]], "thin": [["legs.thick", -1]] } },
+      "armrests": { "flags": { "high": [["armrests.height", 1]], "low": [["armrests.height", -1]] } }
+    },
+    "door": {
+      "frame": { "flags": { "thick": [["frame.thick", 1]], "deep": [["frame.depth", 1]], "wide": [["frame.width", 1]], "narrow": [["frame.width", -1]] } },
+      "leaf": {
+        "values": { "braces": { "measure": "leaf.braces", "words": { "none": [0, 0], "z": [1, 1] } } },
+        "flags": { "thick": [["leaf.thick", 1]] }
+      },
+      "handle": { "flags": {} },
+      "hinges": { "flags": { "chunky": [["hinges.size", 1]], "small": [["hinges.size", -1]] } }
+    },
+    "chest": {
+      "base": { "flags": { "boxy": [["base.roundness", -1]], "rounded": [["base.roundness", 1]], "tall": [["base.height", 1]], "wide": [["base.width", 1]], "deep": [["base.depth", 1]] } },
+      "lid": { "flags": { "chunky": [["lid.height", 1]], "low": [["lid.height", -1]] } },
+      "bands": { "flags": { "thick": [["bands.width", 1], ["bands.proud", 1]], "thin": [["bands.width", -1], ["bands.proud", -1]] } },
+      "lock": {
+        "values": { "size": { "measure": "lock.scale", "words": { "small": [0.75, 0.85], "medium": [0.95, 1.05], "large": [1.2, 1.3] } } },
+        "flags": {}
+      }
+    },
+    "sword": {
+      "blade": {
+        "values": {
+          "tip": { "measure": "blade.tip", "words": { "blunt": [0.15, 0.25], "rounded_point": [0.48, 0.54], "point": [0.56, 0.58] } },
+          "fuller": { "measure": "blade.fuller", "words": { "none": [0.0, 0.0], "shallow": [0.002, 0.003], "deep": [0.004, 0.005] } }
+        },
+        "flags": { "broad": [["blade.width", 1]], "narrow": [["blade.width", -1]], "long": [["blade.length", 1]], "short": [["blade.length", -1]], "thick": [["blade.thick", 1]] }
+      },
+      "guard": { "flags": { "curled_ends": [["guard.curls", 1]], "wide": [["guard.width", 1]], "narrow": [["guard.width", -1]] } },
+      "grip": { "flags": { "wrapped": [["grip.wraps", 1]], "long": [["grip.length", 1]], "thick": [["grip.radius", 1]] } },
+      "pommel": { "flags": { "large": [["pommel.size", 1]], "small": [["pommel.size", -1]] } }
+    },
+    "shield": {
+      "face": {
+        "values": { "domed": { "measure": "face.dome", "words": { "flat": [0.0, 0.01], "slight": [0.025, 0.035], "medium": [0.045, 0.055], "strong": [0.065, 0.075] } } },
+        "flags": { "large": [["face.radius", 1]], "small": [["face.radius", -1]], "thick": [["face.thick", 1]] }
+      },
+      "rim": { "flags": { "thick": [["rim.thick", 1]], "thin": [["rim.thick", -1]] } },
+      "boss": { "flags": { "large": [["boss.scale", 1]], "small": [["boss.scale", -1]] } },
+      "straps": { "flags": {} }
+    },
+    "lollipop": {
+      "candy": { "flags": { "thick": [["candy.thick", 1]], "thin": [["candy.thick", -1]], "large": [["candy.radius", 1]], "small": [["candy.radius", -1]] } },
+      "stick": { "flags": { "long": [["stick.length", 1]], "short": [["stick.length", -1]], "thin": [["stick.radius", -1]], "thick": [["stick.radius", 1]] } },
+      "base": { "flags": { "wide": [["base.size", 1]] } }
+    },
+    "gumdrop": {
+      "body": { "flags": { "squat": [["body.height", -1]], "tall": [["body.height", 1]], "soft": [["body.edge", 1]], "sharp": [["body.edge", -1]], "wide": [["body.radius", 1]] } }
+    },
+    "candy_cane": {
+      "shaft": { "flags": { "thick": [["shaft.radius", 1]], "thin": [["shaft.radius", -1]], "straight": [], "tall": [["shaft.height", 1]], "short": [["shaft.height", -1]] } },
+      "hook": {
+        "values": { "open": { "measure": "hook.radius", "words": { "tight": [0.2, 0.22], "slight": [0.24, 0.26], "medium": [0.28, 0.29], "wide": [0.3, 0.3] } } },
+        "flags": { "round": [], "long": [["hook.drop", 1]], "short": [["hook.drop", -1]] }
+      }
+    },
+    "mushroom": {
+      "stem": {
+        "values": {
+          "bulge": { "measure": "stem.bulge", "words": { "none": [0.0, 0.0], "slight": [0.02, 0.03], "medium": [0.04, 0.05], "strong": [0.06, 0.07] } },
+          "curve": { "measure": "stem.curve", "words": { "none": [0.0, 0.0], "slight": [4.0, 6.0], "medium": [8.0, 10.0], "strong": [12.0, 14.0] } }
+        },
+        "flags": { "thick": [["stem.radius", 1]], "thin": [["stem.radius", -1]], "tall": [["stem.height", 1]], "short": [["stem.height", -1]] }
+      },
+      "cap": {
+        "values": { "rim": { "measure": "cap.rim", "words": { "none": [0.0, 0.0], "rolled": [0.045, 0.055] } } },
+        "flags": { "wide": [["cap.radius", 1]], "narrow": [["cap.radius", -1]], "tall": [["cap.height", 1]], "flat": [["cap.height", -1]] }
+      },
+      "gills": { "flags": { "shallow": [["gills.depth", -1]], "deep": [["gills.depth", 1]] } },
+      "spots": { "flags": { "raised": [["spots.raise", 1]], "flat": [["spots.raise", -1]] } }
+    },
+    "cloud": {
+      "puffs": { "flags": { "round": [], "flat_bottom": [], "long": [["puffs.length", 1]], "short": [["puffs.length", -1]], "tall": [["puffs.height", 1]] } }
+    },
+    "rock": {
+      "body": {
+        "values": { "lumpy": { "measure": "body.noise", "words": { "none": [0.0, 0.0], "slight": [0.01, 0.02], "medium": [0.025, 0.035], "strong": [0.04, 0.05] } } },
+        "flags": { "faceted": [["body.facets", 1]], "flat_bottom": [], "tall": [["body.height", 1]], "low": [["body.height", -1]], "long": [["body.length", 1]] }
+      }
+    },
+    "tree": {
+      "trunk": {
+        "values": { "bend": { "measure": "trunk.bend", "words": { "none": [0.0, 0.0], "slight": [0.12, 0.18], "medium": [0.25, 0.32], "strong": [0.4, 0.45] } } },
+        "flags": { "thick": [["trunk.radius", 1]], "thin": [["trunk.radius", -1]], "tapered": [["trunk.taper", 1]], "tall": [["trunk.height", 1]], "short": [["trunk.height", -1]] }
+      },
+      "branches": { "flags": { "chunky": [["branches.radius", 1]], "thin": [["branches.radius", -1]] } },
+      "canopy": { "flags": { "round": [], "large": [["canopy.size", 1]], "small": [["canopy.size", -1]] } }
+    },
+    "cactus": {
+      "trunk": { "flags": { "tall": [["trunk.height", 1]], "short": [["trunk.height", -1]], "rounded_top": [], "thick": [["trunk.radius", 1]] } },
+      "arms": { "flags": { "uneven": [["arms.uneven", 1]], "upturned": [], "long": [["arms.rise", 1]], "chunky": [["arms.radius", 1]] } },
+      "pot": { "flags": {} }
+    },
+    "bush": {
+      "clumps": {
+        "values": { "uneven": { "measure": "clumps.uneven", "words": { "none": [0.0, 0.0], "slight": [0.03, 0.04], "medium": [0.07, 0.09], "strong": [0.11, 0.12] } } },
+        "flags": { "round": [], "flat_bottom": [], "large": [["clumps.size", 1]] }
+      }
+    },
+    "character_body": {
+      "head": {
+        "values": { "size": { "measure": "head.size", "words": { "small": [0.42, 0.44], "normal": [0.47, 0.49], "large": [0.53, 0.55], "very_large": [0.58, 0.6] } } },
+        "flags": { "round": [["head.depth", 1]], "flat": [["head.depth", -1]] }
+      },
+      "torso": { "flags": { "short": [["torso.height", -1]], "tall": [["torso.height", 1]], "rounded": [], "wide": [["torso.width", 1]], "narrow": [["torso.width", -1]], "chunky": [["torso.width", 1], ["torso.depth", 1]] } },
+      "arms": { "flags": { "short": [["arms.length", -1]], "long": [["arms.length", 1]], "chunky": [["arms.radius", 1]], "thin": [["arms.radius", -1]] } },
+      "legs": { "flags": { "short": [["legs.length", -1]], "long": [["legs.length", 1]], "chunky": [["legs.radius", 1]], "thin": [["legs.radius", -1]] } },
+      "hands": { "flags": { "large": [["hands.size", 1]], "small": [["hands.size", -1]] } },
+      "feet": { "flags": { "large": [["feet.size", 1]], "small": [["feet.size", -1]] } }
+    },
+    "house": {
+      "walls": { "flags": { "boxy": [["walls.bevel", -1]], "rounded": [["walls.bevel", 1]], "leaning": [["walls.lean", 1]], "tall": [["walls.height", 1]], "low": [["walls.height", -1]], "wide": [["walls.width", 1]], "long": [["walls.length", 1]] } },
+      "roof": {
+        "values": { "overhang": { "measure": "roof.overhang", "words": { "none": [0.05, 0.05], "small": [0.15, 0.2], "medium": [0.28, 0.32], "large": [0.45, 0.5] } } },
+        "flags": { "steep": [["roof.pitch", 1]], "shallow": [["roof.pitch", -1]] }
+      },
+      "chimney": {
+        "values": { "crooked": { "measure": "chimney.crook", "words": { "none": [0.0, 0.0], "slight": [3.0, 5.0], "medium": [7.0, 9.0], "strong": [11.0, 13.0] } } },
+        "flags": { "chunky": [["chimney.size", 1]], "thin": [["chimney.size", -1]], "tall": [["chimney.height", 1]], "short": [["chimney.height", -1]] }
+      },
+      "door": { "flags": { "wide": [["door.width", 1]], "narrow": [["door.width", -1]], "tall": [["door.height", 1]] } },
+      "windows": { "flags": { "large": [["windows.size", 1]], "small": [["windows.size", -1]] } }
+    },
+    "tower": {
+      "body": {
+        "values": { "tapered": { "measure": "body.taper", "words": { "none": [0.0, 0.0], "slight": [0.12, 0.18], "medium": [0.25, 0.3], "strong": [0.4, 0.45] } } },
+        "flags": { "tall": [["body.height", 1]], "short": [["body.height", -1]], "wide": [["body.radius", 1]], "narrow": [["body.radius", -1]] }
+      },
+      "base": { "flags": { "flared": [["base.flare", 1]], "straight": [["base.flare", -1]] } },
+      "crown": { "flags": { "chunky": [["crown.merlon", 1]] } },
+      "roof": { "flags": { "tall": [["roof.height", 1]], "short": [["roof.height", -1]] } },
+      "windows": { "flags": { "tall": [["windows.height", 1]], "short": [["windows.height", -1]] } }
+    },
+    "building": {
+      "body": { "flags": { "tall": [["body.height", 1]], "short": [["body.height", -1]], "wide": [["body.width", 1]], "narrow": [["body.width", -1]], "deep": [["body.length", 1]], "boxy": [["body.bevel", -1]], "rounded": [["body.bevel", 1]] } },
+      "roof": {
+        "values": { "overhang": { "measure": "roof.overhang", "words": { "none": [0.0, 0.0], "small": [0.1, 0.15], "medium": [0.25, 0.3], "large": [0.45, 0.5] } } },
+        "flags": { "thick": [["roof.thick", 1]], "thin": [["roof.thick", -1]] }
+      },
+      "door": { "flags": { "wide": [["door.width", 1]], "tall": [["door.height", 1]] } },
+      "windows": { "flags": { "large": [["windows.size", 1]], "small": [["windows.size", -1]] } }
+    }
+  }
+}

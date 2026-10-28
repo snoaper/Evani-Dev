@@ -1,0 +1,47 @@
+{
+  "class": "character_body",
+  "version": 1,
+  "family": "organic",
+  "means": "a chibi body standing in a neutral pose: a big head on a short rounded torso, short chunky legs on boots and short arms hanging slightly out with mitten hands; no face detail",
+  "source": "our own chibi proportions (about 1.3 m tall, head about 45% of the height), sized to sit in the kart racer's karts",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 4, "typical": ["front", "three_quarter", "side"] },
+  "clip_floor": true,
+  "blend": "0.04",
+  "measures": {
+    "head.size": { "default": 0.48, "min": 0.42, "max": 0.6, "step": 0.03, "means": "head height and width" },
+    "head.depth": { "default": 0.9, "min": 0.8, "max": 1, "step": 0.05, "fit": false, "means": "head depth as a share of its size" },
+    "torso.width": { "default": 0.42, "min": 0.36, "max": 0.52, "step": 0.04, "means": "torso width" },
+    "torso.height": { "default": 0.5, "min": 0.4, "max": 0.6, "step": 0.05, "means": "torso height" },
+    "torso.depth": { "default": 0.35, "min": 0.3, "max": 0.42, "step": 0.03, "means": "torso depth" },
+    "legs.length": { "default": 0.3, "min": 0.2, "max": 0.4, "step": 0.05, "means": "ground to hip, less the boot" },
+    "legs.radius": { "default": 0.08, "min": 0.06, "max": 0.11, "step": 0.015, "means": "leg radius" },
+    "arms.length": { "default": 0.25, "min": 0.15, "max": 0.35, "step": 0.05, "means": "shoulder to wrist" },
+    "arms.radius": { "default": 0.065, "min": 0.05, "max": 0.09, "step": 0.012, "means": "arm radius" },
+    "hands.size": { "default": 1, "min": 0.8, "max": 1.3, "step": 0.15, "means": "mitten scale (relative to the arm thickness)" },
+    "feet.size": { "default": 1, "min": 0.8, "max": 1.2, "step": 0.1, "means": "boot scale" }
+  },
+  "parts": [
+    { "name": "feet", "role": "body", "solid": "body", "gen": "rounded_box", "split": "x", "params": { "size": ["0.18 * feet.size", "0.14 * feet.size", "0.3 * feet.size"], "bevel": "0.05 * feet.size" }, "at": ["0.11", "0.07 * feet.size", "0.05"] },
+    { "name": "legs", "role": "body", "solid": "body", "gen": "tube", "split": "x", "params": { "radius": "legs.radius", "points": ["0.1", "0.08", "0", "0.1", "0.1 + legs.length", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "torso", "role": "body", "solid": "body", "gen": "ellipsoid", "params": { "size": ["torso.width", "torso.height", "torso.depth"] }, "at": ["0", "0.05 + legs.length + torso.height / 2", "0"] },
+    { "name": "head", "role": "body", "solid": "body", "gen": "ellipsoid", "params": { "size": ["head.size", "head.size", "head.depth * head.size"] }, "at": ["0", "legs.length + torso.height + head.size / 2", "0"] },
+    { "name": "arms", "role": "body", "solid": "body", "gen": "tube", "split": "x", "params": { "radius": "arms.radius", "points": ["torso.width / 2 - 0.05", "0.05 + legs.length + torso.height - 0.12", "0", "torso.width / 2 + arms.radius + 0.02", "0.05 + legs.length + torso.height - 0.12 - 0.06", "0", "torso.width / 2 + arms.radius + 0.02 + arms.length * sin(5)", "0.05 + legs.length + torso.height - 0.12 - 0.06 - arms.length * cos(5)", "0"] }, "at": ["0", "0", "0"] },
+    { "name": "hands", "role": "body", "solid": "body", "gen": "ellipsoid", "split": "x", "params": { "size": ["2.6 * arms.radius * hands.size", "3.0 * arms.radius * hands.size", "1.9 * arms.radius * hands.size"] }, "rot": ["0", "0", "5"], "at": ["torso.width / 2 + arms.radius + 0.02 + (arms.length + 0.08) * sin(5)", "0.05 + legs.length + torso.height - 0.12 - 0.06 - (arms.length + 0.08) * cos(5)", "0"] }
+  ],
+  "groups": {},
+  "variants": {
+    "hands.shape": { "mitten": {}, "ball": { "gen": "ellipsoid", "params": { "size": ["2.6 * arms.radius * hands.size", "2.6 * arms.radius * hands.size", "2.6 * arms.radius * hands.size"] } } },
+    "feet.shape": { "boot": {}, "round": { "gen": "ellipsoid", "params": { "size": ["0.2 * feet.size", "0.14 * feet.size", "0.28 * feet.size"] } } },
+    "head.shape": { "round": {} }
+  },
+  "counts": {},
+  "anchors": [
+    { "name": "hand.l", "at": "hands.l.centre" },
+    { "name": "hand.r", "at": "hands.r.centre" },
+    { "name": "head_top", "at": "head.top" },
+    { "name": "hips", "at": "torso.bottom" }
+  ],
+  "musts": { "connected": true, "stands": "ground", "symmetric": "x" },
+  "collision": { "footprint": "capsule" }
+}

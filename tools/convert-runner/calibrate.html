@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Dev picture test</title>
+  <!-- The quality gate's blind test (STAGE3_PLAN S3-6, decision 4), served by
+       tools/convert-runner/run.mjs --calibrate. The page never sees the scores
+       or which picture is the original: it only shows two pictures and saves
+       "same" or "different" for each pair. -->
+  <style>
+    html, body { margin: 0; background: #2a2d33; color: #f1f2f4; font: 500 15px/1.4 "Segoe UI", system-ui, sans-serif; }
+    header { position: sticky; top: 0; z-index: 2; background: #1d1f24; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    header h1 { font-size: 16px; margin: 0 12px 0 0; }
+    #count { opacity: 0.8; font-variant-numeric: tabular-nums; }
+    button { font: inherit; border-radius: 8px; border: 1px solid #6b7280; background: #3a3f48; color: #fff; padding: 8px 14px; cursor: pointer; min-height: 40px; }
+    button.on { background: #e8eaee; color: #1d1f24; border-color: #e8eaee; }
+    button.answer { background: #2f5d3a; border-color: #4f8a5c; }
+    button.answer.diff { background: #6a3434; border-color: #9a5151; }
+    #help { padding: 10px 16px; max-width: 900px; opacity: 0.9; }
+    #stage { padding: 0 16px 24px; overflow: auto; }
+    /* 1:1: never scaled, so every pixel is seen as rendered. */
+    #pic { image-rendering: pixelated; display: block; max-width: none; }
+    #done { display: none; padding: 40px 16px; font-size: 18px; }
+    #err { color: #ffb4b4; padding: 0 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Picture test</h1>
+    <span id="count"></span>
+    <button id="p1" class="on">Picture 1</button>
+    <button id="p2">Picture 2</button>
+    <button id="same" class="answer">They look the same</button>
+    <button id="diff" class="answer diff">I can see a difference</button>
+  </header>
+  <p id="help">Each pair is two pictures of the same model. Switch between Picture 1 and Picture 2 (or press the space bar) as often as you like, then say whether you can see any difference. There is no right answer and no time limit. Your answers are saved after every pair, so you can stop and come back.</p>
+  <p id="err"></p>
+  <div id="stage"><img id="pic" alt="the picture being compared"></div>
+  <div id="done">All pairs are done. Thank you: your answers are saved, and you can close this page.</div>
+  <script>
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    let order = [];      // [{ id, first, second, shown_first }]
+    let answers = [];    // [{ id, answer, shown_first, ms }]
+    let i = 0;
+    let showing = 1;
+    let started = 0;
+
+    function shuffle(a) {
+      for (let k = a.length - 1; k > 0; k--) {
+        const j = Math.floor(Math.random() * (k + 1));
+        [a[k], a[j]] = [a[j], a[k]];
+      }
+      return a;
+    }
+
+    function show(n) {
+      showing = n;
+      const p = order[i];
+      $('pic').src = '/img/' + encodeURIComponent(n === 1 ? p.first : p.second);
+      $('p1').className = n === 1 ? 'on' : '';
+      $('p2').className = n === 2 ? 'on' : '';
+    }
+
+    function next() {
+      while (i < order.length && answers.some((a) => a.id === order[i].id)) i++;
+      if (i >= order.length) {
+        $('stage').style.display = 'none';
+        $('help').style.display = 'none';
+        document.querySelectorAll('header button').forEach((b) => (b.disabled = true));
+        $('done').style.display = 'block';
+        $('count').textContent = `${order.length} of ${order.length} pairs`;
+        return;
+      }
+      $('count').textContent = `Pair ${answers.length + 1} of ${order.length}`;
+      // Preload the second picture so switching is instant.
+      new Image().src = '/img/' + encodeURIComponent(order[i].second);
+      started = performance.now();
+      show(1);
+    }
+
+    async function answer(kind) {
+      const p = order[i];
+      answers.push({ id: p.id, answer: kind, shown_first: p.shown_first, ms: Math.round(performance.now() - started) });
+      try {
+        const r = await fetch('/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ answers }) });
+        if (!r.ok) throw new Error('the answer was not saved (' + r.status + ')');
+        $('err').textContent = '';
+      } catch (e) {
+        $('err').textContent = 'Could not save: ' + e.message + '. Keep the page open and try the next pair; it saves everything again.';
+      }
+      i++;
+      next();
+    }
+
+    $('p1').onclick = () => show(1);
+    $('p2').onclick = () => show(2);
+    $('same').onclick = () => answer('same');
+    $('diff').onclick = () => answer('different');
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (i < order.length) show(showing === 1 ? 2 : 1);
+      }
+    });
+
+    (async () => {
+      try {
+        const [pairs, saved] = await Promise.all([
+          fetch('/pairs').then((r) => r.json()),
+          fetch('/answers').then((r) => (r.ok ? r.json() : { answers: [] })),
+        ]);
+        answers = (saved.answers || []).filter((a) => pairs.pairs.some((p) => p.id === a.id));
+        // Shuffled pairs, and a random side for each: neither the order nor
+        // the side says which picture is which.
+        order = shuffle(pairs.pairs.slice()).map((p) => {
+          const swap = Math.random() < 0.5;
+          return { id: p.id, first: swap ? p.b : p.a, second: swap ? p.a : p.b, shown_first: swap ? 'b' : 'a' };
+        });
+        if (!order.length) throw new Error('there are no pairs to show yet');
+        next();
+      } catch (e) {
+        $('err').textContent = 'The test could not start: ' + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>

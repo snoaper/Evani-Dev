@@ -1,0 +1,35 @@
+# Cinder Ridge's module manifest. `cargo xtask build base-building-rts` turns this into
+# Cargo features of the evani-base-building-rts crate; anything not listed is not built.
+name = "base-building-rts"
+kit = "base-building-rts"      # crate kits/evani-kit-base-building-rts
+look = "stylizedpbr" # crate looks/evani-look-stylizedpbr (art pass K5b)
+# Contact shadows tell where units stand; no bloom, vignette or blur (strategy
+# clarity first, SPEC "Look and effects").
+effects = ["shadows"]
+
+[modules]
+physics = "simple"   # "simple" | "rigid" | "none" (the catalog's choice for this genre)
+net = false
+xr = false
+live = true          # dev only; `--ship` builds always drop it
+# Stage 3, off until a game needs them (README "evani.toml"): models = true for
+# .glb models, anim = true for skinned/animated ones (implies models), ui = true for
+# fonts and menus. `cargo xtask check` errors when assets need a module you didn't list.
+# models = true
+# anim = true
+# ui = true
+
+# What a reviewer should try in the demo (`cargo xtask review` puts it on the card).
+[review]
+try = [
+  "Click or press Enter on the title. Your teal hub and four workers stand in the south; drag a box round the workers and right-click the amber crystals: they should mine and carry crystal back, and the counter should go up.",
+  "Select the hub and press E: a worker should be trained. Press B with a worker selected and click open ground: a foundry should rise.",
+  "Select troopers from the foundry (E), press G, then F and click across the river: the army should spread through a ford and fight what it meets.",
+  "Watch the fog: unexplored ground is dark, ground you have seen stays dimmed, and the rival's units only show where your units can see.",
+  "Narrow the window to a phone shape and touch the screen: the touch buttons (Build, Train, Heavy, Attack, Stop, Army, + and -) and the pan stick should appear.",
+]
+
+# A playground for the Evani.app library: it must support free roam
+# (docs/PLAYGROUNDS.md). Remove this table if the game isn't for the library.
+[playground]
+free_roam = true

@@ -1,0 +1,31 @@
+[package]
+name = "evani-xtask"
+description = "Evani.Dev build tool: evani.toml -> Cargo features -> Trunk build, size report per module (`cargo xtask ...`)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Native dev tool only; never part of a game download.
+[dependencies]
+toml.workspace = true
+flate2.workspace = true
+brotli.workspace = true
+# `cargo xtask publish`: the package manifest (path -> SHA-256 -> size); the
+# version evani-geocheck and evani-lookguard already use, nothing new is built.
+sha2 = { version = "=0.10.9", default-features = false }
+# `ui` fonts (fonts.rs): GPOS pair kerning (msdf-atlas-gen reads only the
+# old `kern` table), and the atlas PNG re-encoded at high compression.
+ttf-parser = { version = "=0.25.1", default-features = false, features = ["std", "opentype-layout"] }
+png = { version = "=0.18.1", default-features = false }
+# `cargo xtask bench`: the tier list and the shared result type and table.
+evani-core.workspace = true
+evani-bench = { path = "../../apps/bench" }
+serde_json.workspace = true
+# `init-ai`, `doctor`, `check`, `new-game`, `ai-eval`: the AI guidance and the
+# check gate (docs/AI_GUIDANCE.md); also the shared evani.toml crate check.
+evani-guide = { path = "../evani-guide" }
+
+[lints]
+workspace = true

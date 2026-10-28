@@ -1,0 +1,35 @@
+{
+  "class": "cloud",
+  "version": 1,
+  "family": "organic",
+  "means": "a toon cloud: one big middle puff and a row of smaller puffs along its length, softly blended and cut flat underneath",
+  "source": "our own proportions for a chunky toon cloud (about 4 m long, 1.6 m tall)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 15.0, "typical": ["side", "three_quarter", "front"] },
+  "clip_floor": true,
+  "blend": "0.2",
+  "measures": {
+    "puffs.count": { "default": 6, "min": 2, "max": 9, "step": 1, "count": true, "means": "puffs, the middle one included" },
+    "puffs.size": { "default": 1.9, "min": 1.2, "max": 1.95, "step": 0.15, "means": "width of the middle puff" },
+    "puffs.height": { "default": 1.68, "min": 1.0, "max": 1.7, "step": 0.12, "means": "height of the middle puff before the cut" },
+    "puffs.length": { "default": 3.9, "min": 2.0, "max": 3.95, "step": 0.2, "means": "overall length" },
+    "puffs.sink": { "default": 0.1, "min": 0.0, "max": 0.4, "step": 0.08, "means": "how far the puffs reach below the flat bottom" },
+    "puffs.uneven": { "default": 0.08, "min": 0.0, "max": 0.15, "step": 0, "fit": false, "means": "random shift of each side puff" }
+  },
+  "parts": [
+    { "name": "main", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "params": { "size": ["puffs.size", "puffs.height", "1.5"] },
+      "at": ["0", "puffs.height / 2 - puffs.sink", "0"] },
+    { "name": "side_puffs", "role": "body", "solid": "body", "gen": "ellipsoid",
+      "count": "puffs.count - 1", "spread": "(puffs.length - 1.15 - 0.1) / max(1, puffs.count - 2)", "spread_axis": "z",
+      "jitter": ["puffs.uneven", "puffs.uneven", "0.03"],
+      "params": { "size": ["0.8 * puffs.size", "0.72 * puffs.height", "1.1"] },
+      "at": ["0", "0.36 * puffs.height - puffs.sink", "0"] }
+  ],
+  "groups": { "puffs": ["main", "side_puffs"] },
+  "variants": {},
+  "counts": { "puffs.count": "puffs.count" },
+  "anchors": [ { "name": "top", "at": "main.top" } ],
+  "musts": { "connected": true, "stands": "none" },
+  "collision": { "footprint": "box" }
+}

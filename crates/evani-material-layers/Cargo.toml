@@ -1,0 +1,22 @@
+[package]
+name = "evani-material-layers"
+description = "Evani.Dev layered materials a model file delivers through glTF KHR_materials_sheen, clearcoat, anisotropy and iridescence: cloth sheen with an in-code weave and knit map, a clear coat, brushed-metal anisotropy and thin-film iridescence, read into a compact per-material record, with live strengths and a cheap path for phones"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# No [features] table on purpose: games reach this crate only through
+# evani-render's `material-layers` feature (an optional dependency there),
+# so a game that doesn't list it never compiles or downloads any of it.
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate the layer BRDF WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

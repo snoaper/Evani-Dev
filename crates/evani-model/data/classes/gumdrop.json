@@ -1,0 +1,35 @@
+{
+  "class": "gumdrop",
+  "version": 1,
+  "family": "organic",
+  "means": "a giant gumdrop: a soft base edge, nearly straight sides up to the shoulder, then a quarter ellipse to the top",
+  "source": "our own proportions for a chunky toon gumdrop (about 1 m across)",
+  "default_style": "toon_chunky",
+  "view": { "distance_m": 5.0, "typical": ["three_quarter", "front", "top"] },
+  "measures": {
+    "body.radius": { "default": 0.48, "min": 0.3, "max": 0.49, "step": 0.03, "means": "radius at the base" },
+    "body.height": { "default": 0.9, "min": 0.6, "max": 1.1, "step": 0.06, "means": "height" },
+    "body.shoulder": { "default": 0.45, "min": 0.3, "max": 0.55, "step": 0.04, "means": "share of the height where the sides start to round over" },
+    "body.edge": { "default": 0.05, "min": 0.02, "max": 0.1, "step": 0.02, "means": "rounding of the base edge" }
+  },
+  "parts": [
+    { "name": "body", "role": "body", "solid": "body", "gen": "lathe",
+      "params": { "profile": [
+        "body.radius - body.edge", "0",
+        "body.radius - 0.2929 * body.edge", "0.2929 * body.edge",
+        "body.radius", "body.edge",
+        "body.radius - 0.04", "body.shoulder * body.height",
+        "(body.radius - 0.04) * 0.92388", "body.shoulder * body.height + (1 - body.shoulder) * body.height * 0.38268",
+        "(body.radius - 0.04) * 0.70711", "body.shoulder * body.height + (1 - body.shoulder) * body.height * 0.70711",
+        "(body.radius - 0.04) * 0.38268", "body.shoulder * body.height + (1 - body.shoulder) * body.height * 0.92388",
+        "0", "body.height"
+      ] },
+      "at": ["0", "0", "0"] }
+  ],
+  "groups": {},
+  "variants": { "body.shape": { "dome": {} } },
+  "counts": {},
+  "anchors": [ { "name": "top", "at": "body.top" } ],
+  "musts": { "connected": true, "stands": "ground", "symmetric": "x" },
+  "collision": { "footprint": "cylinder" }
+}

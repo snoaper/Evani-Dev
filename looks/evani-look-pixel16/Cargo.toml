@@ -1,0 +1,20 @@
+[package]
+name = "evani-look-pixel16"
+description = "Evani.Dev 16-bit pixel look: 15-bit colour ramps, per-layer parallax tints, banded sky, crisp whole-pixel scaling, exact-colour tonemap; asks for parallax"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate the tonemap slot body as real WGSL.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

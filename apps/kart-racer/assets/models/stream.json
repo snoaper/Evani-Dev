@@ -1,0 +1,32 @@
+{
+  "assets": [
+    {
+      "group": "later",
+      "hash": "2efe5b21c5b3372e",
+      "kind": "model",
+      "name": "proof-barrel.glb",
+      "priority": 10,
+      "size": 21568,
+      "url": "proof-barrel.glb"
+    },
+    {
+      "group": "later",
+      "hash": "f1af5c634ca88362",
+      "kind": "model",
+      "name": "proof-crate.glb",
+      "priority": 10,
+      "size": 17088,
+      "url": "proof-crate.glb"
+    },
+    {
+      "group": "later",
+      "hash": "d17596697a20e6e2",
+      "kind": "model",
+      "name": "proof-kart.glb",
+      "priority": 10,
+      "size": 66072,
+      "url": "proof-kart.glb"
+    }
+  ],
+  "version": 2
+}

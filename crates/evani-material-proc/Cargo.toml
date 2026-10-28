@@ -1,0 +1,41 @@
+[package]
+name = "evani-material-proc"
+description = "Evani.Dev procedural surface materials for box-built worlds (plaster, sandstone, concrete, wood and painted-metal crates, paving, trims, stencil signs) through the kit-material hook, with per-face baked ambient occlusion, convex-edge wear and live material params; feature `sky` adds a Preetham sky dome with clouds"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# An opt-in module: a game lists it as an optional dependency behind its own
+# feature, and only then do evani-render's `forward` and `kit-material`
+# features (which this crate needs) turn on. A game that doesn't list it
+# downloads none of it. It only uses the public kit-material hook, so the
+# engine is untouched. Nothing here is game-specific: a game describes its
+# world as boxes with surface ids and regions.
+[features]
+default = []
+# The Preetham sky dome with drifting clouds (src/sky.rs, shaders/sky.wgsl),
+# drawn when the look has a `sky` material, its sun following
+# `render.light.direction` unless `sky.follow_light` is off. Without it the
+# shader carries no sky code.
+sky = []
+# Relief surfaces (src/relief, shaders/relief*.wgsl): baked brick, cobble,
+# tile and plank relief with wet, puddle and moss layers, lit through
+# evani-render's opt-in `kit-surface` hook (bent normal, roughness, GGX sun
+# highlight). Without it nothing of this is compiled or shipped.
+relief = ["evani-render/kit-surface"]
+# Debug views of the weather masks (proof builds only).
+relief-debug = ["relief"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward", "kit-material"] }
+
+[dev-dependencies]
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+# The daylight preset's sky-matched tints are checked against the dome.
+evani-look-photoreal.workspace = true
+
+[lints]
+workspace = true

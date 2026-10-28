@@ -1,0 +1,31 @@
+[package]
+name = "evani-net"
+description = "Evani.Dev multiplayer module: netcode core, lockstep with a referee, host port, referee ABI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# Every part beyond the snapshot core is its own switch, so a game takes only
+# what it uses and games that list none of them are byte for byte unchanged.
+[features]
+# Deterministic input-only netcode with a referee (src/lockstep.rs).
+lockstep = []
+# The neutral headless referee ABI `evani-referee/1` (src/referee.rs): a game's
+# referee crate exports it with `export_referee!`; no imports, no clock.
+referee = ["lockstep"]
+# The page side of `evani-net/1` (src/port.rs, web/port.js): bytes over a
+# MessagePort the host page (or an in-page adapter) hands over; the game
+# opens no network of its own. wasm only.
+port = ["dep:wasm-bindgen", "dep:js-sys"]
+
+[dependencies]
+evani-core.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true, optional = true }
+js-sys = { workspace = true, optional = true }
+
+[lints]
+workspace = true

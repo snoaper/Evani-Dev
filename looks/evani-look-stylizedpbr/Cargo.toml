@@ -1,0 +1,37 @@
+[package]
+name = "evani-look-stylizedpbr"
+description = "Evani.Dev stylized PBR look (catalog `stylizedpbr`): smooth wrapped light, roughness/metal specular, occlusion maps, strong rim, saturated palette; optional PCSS soft shadows, fur shells and fins, biplanar detail. Ported from ChimpDuty."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+# Strict features: each one only adds WGSL text and code; with none on, the
+# crate ships the smooth look, specular, occlusion and rim (always part of
+# stylizedpbr) and nothing else. None of them changes evani-render: the
+# engine half that draws them is S5-R5 (src/hooks.rs, r5/).
+[features]
+default = []
+# The lit shader writes its baked occlusion into the hdr alpha as 2 - occ,
+# for an ambient-occlusion pass that divides it out (no double darkening).
+gtao = []
+# Soft shadows: pcss.wgsl replaces the engine's PCF shadow lookup.
+pcss = []
+# Fur shells and fins (fur_surface.wgsl + fur_shells.wgsl, fins and clump bake).
+fur = []
+# Biplanar tiling detail layer (biplanar.wgsl and the weave bake).
+biplanar = []
+# The film preset (src/film.rs, presets/film.json): key/fill/kick rig,
+# hemisphere, contrast, skin and eyes, and `FilmLook`. Models need
+# evani-render's `look-surface` to show the rig, skin and eyes.
+film = []
+
+# Same dependency rule as the other looks: evani-core and serde_json only.
+[dependencies]
+evani-core.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
