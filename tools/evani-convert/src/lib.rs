@@ -17,12 +17,15 @@
 //! docs/MODEL_FORMAT.md "Clips"), baked within the tier's `clip_error_m`.
 
 pub mod bc7;
+pub mod carry;
 pub mod clips;
 pub mod fixture;
 pub mod gate;
 pub mod glb;
+pub mod groundtex;
 pub mod layers;
 pub mod look;
+pub mod materials;
 pub mod merge;
 pub mod metric;
 pub mod normals;
@@ -50,7 +53,7 @@ pub const LADDER: &str = include_str!("../ladder.json");
 const IMAGES_MJS: &str = include_str!("images.mjs");
 const BLEND_PY: &str = include_str!("blend_export.py");
 
-pub const USAGE: &str = "cargo xtask convert <file.glb|.gltf|.blend|<name>.<tier>.glb> [--id <id>] [--look <look> [--snap-palette]] [--min-distance <m>] [--tiers low,medium,high,ultra] [--clip-error <m>] [--out <folder>] [--keep-work] [--gate] [--gate-pairs <folder>]\n       cargo xtask convert --calibration <folder>          (the blind test page for the gate's thresholds)\n       cargo xtask convert --calibration-result <folder>   (thresholds suggested from the answers)";
+pub const USAGE: &str = "cargo xtask convert <file.glb|.gltf|.blend|<name>.<tier>.glb> [--id <id>] [--look <look> [--snap-palette]] [--min-distance <m>] [--tiers low,medium,high,ultra] [--clip-error <m>] [--out <folder>] [--materials <map.json>] [--keep-work] [--gate] [--gate-pairs <folder>]\n       cargo xtask convert --calibration <folder>          (the blind test page for the gate's thresholds)\n       cargo xtask convert --calibration-result <folder>   (thresholds suggested from the answers)";
 
 #[derive(Clone, Debug)]
 pub struct Options {
@@ -62,6 +65,10 @@ pub struct Options {
     /// With `look`: also move untextured base colours to the look's palette
     /// (within a CIELAB distance, listed in the report).
     pub snap_palette: bool,
+    /// Material catalogue (P10b): a JSON map of material name in the model to
+    /// catalogue id; the model's materials are filled from the catalogue
+    /// (see materials.rs). Materials that already name a row are filled too.
+    pub materials: Option<PathBuf>,
     pub min_distance: Option<f64>,
     /// Empty: the defaults (or, for Evani.Model files, the tiers present).
     pub tiers: Vec<String>,
@@ -80,7 +87,7 @@ pub struct Options {
 
 impl Options {
     pub fn new(root: &Path, input: &Path) -> Options {
-        Options { input: input.to_path_buf(), id: None, look: None, snap_palette: false, min_distance: None, tiers: Vec::new(), out: None, root: root.to_path_buf(), keep_work: false, clip_error: None, gate: false, gate_pairs: None }
+        Options { input: input.to_path_buf(), id: None, look: None, snap_palette: false, materials: None, min_distance: None, tiers: Vec::new(), out: None, root: root.to_path_buf(), keep_work: false, clip_error: None, gate: false, gate_pairs: None }
     }
 
     pub fn parse(root: &Path, args: &[String]) -> Result<Options, String> {
@@ -93,6 +100,7 @@ impl Options {
                 "--id" => o.id = Some(val("--id")?),
                 "--look" => o.look = Some(val("--look")?),
                 "--snap-palette" => o.snap_palette = true,
+                "--materials" => o.materials = Some(PathBuf::from(val("--materials")?)),
                 "--min-distance" => {
                     let v = val("--min-distance")?;
                     o.min_distance = Some(v.parse::<f64>().ok().filter(|d| *d > 0.0).ok_or_else(|| format!("--min-distance {v}: a distance in metres above 0"))?);
@@ -294,7 +302,8 @@ pub fn convert(opt: &Options) -> Result<Outcome, String> {
             let blender = blender(&opt.root).ok_or_else(|| {
                 format!("skipped: {} is a .blend file and Blender {} is not installed\nfix: run `cargo xtask doctor --fix --blender` (or set EVANI_BLENDER to blender.exe), then convert again", input.display(), evani_guide::extools::pin("blender").map_or("", |p| p.version))
             })?;
-            let tmp = opt.root.join(".evani").join("convert-tmp").join(id_from(&stem));
+            // `.evani/convert-tmp`, or under EVANI_STATE_DIR (a read-only engine pack).
+            let tmp = evani_guide::state_dir(&opt.root).join("convert-tmp").join(id_from(&stem));
             mkdir(&tmp)?;
             let glb_path = tmp.join(format!("{}.glb", id_from(&stem)));
             export_blend(&blender, &input, &glb_path, &tmp)?;
@@ -305,6 +314,9 @@ pub fn convert(opt: &Options) -> Result<Outcome, String> {
     };
 
     let evani_model = is_evani_model(&src_doc.json);
+    if evani_model && opt.materials.is_some() {
+        return Err("--materials applies to .glb, .gltf and .blend sources, not Evani.Model's per-tier files (name the materials in the model before it is exported)".into());
+    }
     let model_stem = if evani_model { evani_model_stem(&stem) } else { stem.clone() };
     let id = match &opt.id {
         Some(i) => i.clone(),
@@ -359,8 +371,30 @@ fn f(x: f64) -> String {
     if s.contains('.') { s } else { format!("{s}.0") }
 }
 
-fn quant_args(l: &TierLadder) -> Vec<String> {
-    vec!["-vp".into(), l.vp.to_string(), "-vt".into(), l.vt.to_string(), "-vn".into(), l.vn.to_string()]
+fn quant_args(l: &TierLadder, float_uv: bool) -> Vec<String> {
+    let mut a: Vec<String> = vec!["-vp".into(), l.vp.to_string(), "-vt".into(), l.vt.to_string(), "-vn".into(), l.vn.to_string()];
+    if float_uv {
+        a.push("-vtf".into());
+    }
+    a
+}
+
+/// Does a primitive carry texture coordinates under a material with no
+/// texture? gltfpack quantizes texture coordinates to `-vt` bits and puts
+/// the undo (a KHR_texture_transform scale of 2^(16 - bits)) on the
+/// material's textures; a material without textures has nowhere to carry
+/// it, so its coordinates ship 4 to 16 times too small. The character
+/// materials (an eye's azimuthal map, hair locks) and the layered finishes'
+/// weave read their coordinates with no texture: the head's irises vanished
+/// on every converted tier (material-view critic round 2). Such models keep
+/// float coordinates (`-vtf`).
+pub(crate) fn untextured_uv(j: &Value) -> bool {
+    const SLOTS: [&str; 5] = ["/pbrMetallicRoughness/baseColorTexture", "/pbrMetallicRoughness/metallicRoughnessTexture", "/normalTexture", "/occlusionTexture", "/emissiveTexture"];
+    let mats = j.get("materials").and_then(Value::as_array).cloned().unwrap_or_default();
+    j.get("meshes").and_then(Value::as_array).into_iter().flatten().flat_map(|m| m.get("primitives").and_then(Value::as_array).into_iter().flatten()).any(|p| {
+        let textured = p.get("material").and_then(Value::as_u64).and_then(|m| mats.get(m as usize)).is_some_and(|m| SLOTS.iter().any(|s| m.pointer(s).is_some()));
+        p.pointer("/attributes/TEXCOORD_0").is_some() && !textured
+    })
 }
 
 /// Does a material with a normal map draw a primitive without tangents?
@@ -404,6 +438,7 @@ impl Geometry<'_> {
     /// twin when `twin`. Returns the levels made and the twin.
     fn pack(&mut self, tier: &str, lad: &TierLadder, packed: &Path, twin: bool) -> Result<(Vec<Rung>, Option<PathBuf>), String> {
         let cx = self.cx;
+        let float_uv = Doc::read_file(self.clean).is_ok_and(|d| untextured_uv(&d.json));
         let run = |args: &[String], what: &str| -> Result<Option<PathBuf>, String> {
             if twin {
                 return pack(cx, args, packed, what).map(Some);
@@ -423,7 +458,7 @@ impl Geometry<'_> {
                 args.extend(["-si".into(), f(r.ratio), "-se".into(), f(r.error), "-sv".into()]);
             }
             args.extend(["-kn", "-ke", "-kv", "-tr"].map(String::from));
-            args.extend(quant_args(lad));
+            args.extend(quant_args(lad, float_uv));
             run(&args, &format!("gltfpack ({tier})"))?
         } else {
             let mut levels = Vec::new();
@@ -444,14 +479,25 @@ impl Geometry<'_> {
                     levels.push(d.clone());
                 }
             }
-            let merged = merge::merge(&cx.id, &levels)?;
+            let mut merged = merge::merge(&cx.id, &levels)?;
+            // Slivers the tier's position bits could turn over are laid flat
+            // while the levels are still float (the report checks the
+            // result: no corner may face away from all its triangles).
+            normals::snap_slivers(&mut merged, lad.vp)?;
+            // Stray triangles the simplifier folded over against their
+            // neighbours (the geometry check's `inverted` test), judged as
+            // the tier's position bits will round them, are unfolded.
+            normals::unfold_triangles(&mut merged, lad.vp)?;
+            // A normal a coarse level inherited that points against all its
+            // triangles is replaced by the triangles' own.
+            normals::repair_flipped_normals(&mut merged, lad.vp)?;
             // Beside the levels (their image URIs are relative to the work folder).
             let stem = packed.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             let mp = cx.work.join(format!("{stem}.merged.glb"));
             write(&mp, &merged.to_glb()?)?;
             let mut args: Vec<String> = vec!["-i".into(), s(&mp)];
             args.extend(["-kn", "-ke", "-kv", "-tr"].map(String::from));
-            args.extend(quant_args(lad));
+            args.extend(quant_args(lad, float_uv));
             run(&args, &format!("gltfpack compress ({tier})"))?
         };
         Ok((rungs, made))
@@ -524,6 +570,25 @@ fn convert_general(cx: &Ctx, opt: &Options, src: &Path, doc: &Doc, ext: &str) ->
     }
     let inputs: InputList = vec![("input".into(), src.to_path_buf())];
 
+    // Catalogue materials (P10b): `--materials <map.json>` names materials of
+    // the model after catalogue rows, and a material that already names one
+    // (`extras.evani_material`) is filled too. This runs before look matching
+    // and the clean, so materials that differ only in their block are never
+    // merged and every tier file carries the numbers. The master stays the
+    // untouched input.
+    let mut with_materials: Option<Doc> = None;
+    if opt.materials.is_some() || materials::has(&doc.json) {
+        let map = match &opt.materials {
+            Some(p) => materials::load_map(p)?,
+            None => Default::default(),
+        };
+        let cat = materials::load_catalog(&cx.root)?;
+        let mut d = if ext == "gltf" { Doc::read_file(&master)? } else { doc.clone() };
+        notes.extend(materials::apply(&mut d, &map, &cat)?);
+        with_materials = Some(d);
+    }
+    let doc: &Doc = with_materials.as_ref().unwrap_or(doc);
+
     // Look matching (S3-12): the input cut down to what the look shows. The
     // master stays the original, so the gate scores the matched tier files
     // against it.
@@ -536,7 +601,7 @@ fn convert_general(cx: &Ctx, opt: &Options, src: &Path, doc: &Doc, ext: &str) ->
     // extras, which the clean would prune: park it in a free slot for the
     // clean and the packing (always, with or without --look).
     let looked = matched.is_some();
-    let mut matched = matched;
+    let mut matched = matched.or_else(|| with_materials.clone());
     if look::has_relief_height(&doc.json) {
         let mut d = match matched.take() {
             Some(m) => m,
@@ -606,6 +671,20 @@ fn convert_general(cx: &Ctx, opt: &Options, src: &Path, doc: &Doc, ext: &str) ->
         (None, None) => master.clone(),
     };
 
+    // The studio's per-vertex tags (`_EVANI_PART`, `_EVANI_COAT`) ride
+    // through the clean and the packing parked in colour slots (carry.rs).
+    let carried = carry::has(&doc.json);
+    let clean_input = if carried {
+        let mut d = Doc::read_file(&clean_input)?;
+        let n = carry::park(&mut d)?;
+        let p = cx.work.join("parked.glb");
+        write(&p, &d.to_glb()?)?;
+        notes.push(format!("studio tags: `{}` and `{}` kept on {n} primitive(s) in every tier (parked in COLOR_0/COLOR_1 through gltfpack; in the tier files `{}` is unorm8 x4, the region index in its first channel)", carry::PART, carry::COAT, carry::PART));
+        p
+    } else {
+        clean_input
+    };
+
     // Clean: dedup, prune, weld (and tangents for normal maps without them).
     let clean = clean_file(cx, &clean_input, tangents, Some(&mut notes))?;
     let clean_doc = Doc::read_file(&clean)?;
@@ -642,6 +721,9 @@ fn convert_general(cx: &Ctx, opt: &Options, src: &Path, doc: &Doc, ext: &str) ->
         let (rungs, _) = g.pack(tier, &lad, out, false)?;
         let mut d = Doc::read_file(out)?;
         look::unpark_relief(&mut d.json)?;
+        if carried {
+            carry::unpark(&mut d.json);
+        }
         // As the tier file's metadata, less the texture sets and clips (the candidate has neither).
         let mut evani = doc.json.pointer("/extras/evani").cloned().filter(Value::is_object).unwrap_or_else(|| json!({ "format": 1, "class": cx.id }));
         evani["tier"] = Value::from(tier);
@@ -702,6 +784,9 @@ fn convert_general(cx: &Ctx, opt: &Options, src: &Path, doc: &Doc, ext: &str) ->
         let mut d = Doc::read_file(&packed)?;
         rewrite_images(&mut d.json, &uses, &encoded)?;
         look::unpark_relief(&mut d.json)?;
+        if carried && carry::unpark(&mut d.json) == 0 {
+            return Err(format!("{tier}: the studio tags were parked but the packed file has none (gltfpack dropped COLOR_0/COLOR_1)"));
+        }
         let mut evani = doc.json.pointer("/extras/evani").cloned().filter(Value::is_object).unwrap_or_else(|| json!({ "format": 1, "class": cx.id }));
         evani["tier"] = Value::from(tier.clone());
         if let Some(l) = geometry.borrow().lods_json(&rungs) {
@@ -1195,7 +1280,8 @@ fn convert_evani_model(cx: &Ctx, opt: &Options, input: &Path, stem: &str) -> Res
         };
         let mut args: Vec<String> = vec!["-i".into(), s(&pack_src)];
         args.extend(["-kn", "-ke", "-kv"].map(String::from));
-        args.extend(quant_args(&lad));
+        let float_uv = Doc::read_file(&pack_src).is_ok_and(|d| untextured_uv(&d.json));
+        args.extend(quant_args(&lad, float_uv));
         let twin = pack(cx, &args, &packed, &format!("gltfpack compress ({tier})"))?;
         let mut t_out = TierOut { tier: tier.clone(), file: format!("{}.{tier}.glb", cx.id), note: Some(note), twin: Some(twin), ..TierOut::default() };
 
@@ -1288,6 +1374,20 @@ fn export_blend(blender: &Path, input: &Path, out: &Path, tmp: &Path) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Texture coordinates under a material with no texture keep floats:
+    /// gltfpack's undo for quantized coordinates rides on textures only.
+    #[test]
+    fn untextured_coordinates_stay_float() {
+        let prim = |m: u64| json!({ "attributes": { "POSITION": 0, "TEXCOORD_0": 1 }, "material": m });
+        let eye = json!({ "materials": [{ "name": "eye" }], "meshes": [{ "primitives": [prim(0)] }] });
+        assert!(untextured_uv(&eye));
+        assert!(quant_args(&TierLadder { lods: Vec::new(), vp: 14, vt: 12, vn: 8, clip_error_m: 0.001 }, true).contains(&"-vtf".to_string()));
+        let painted = json!({ "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 } } }], "meshes": [{ "primitives": [prim(0)] }] });
+        assert!(!untextured_uv(&painted));
+        let plain = json!({ "materials": [{}], "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "material": 0 }] }] });
+        assert!(!untextured_uv(&plain));
+    }
 
     #[test]
     fn nature_kinds_ride_in_the_root_extras() {

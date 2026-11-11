@@ -370,7 +370,9 @@ impl Converter {
     pub fn new(root: &Path) -> Self {
         let st = State {
             root: root.to_path_buf(),
-            dir: root.join(".evani").join("convert"),
+            // `<root>/.evani/convert`, or `<EVANI_STATE_DIR>/convert` for a
+            // read-only engine pack (docs/ENGINE_PACK.md).
+            dir: evani_guide::state_dir(root).join("convert"),
             busy: Mutex::new(None),
             latest: Mutex::new(None),
             runner: Mutex::new(default_runner()),

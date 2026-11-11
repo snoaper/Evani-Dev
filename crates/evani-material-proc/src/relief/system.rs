@@ -25,6 +25,10 @@ use crate::ProcWorld;
 use crate::draw::{decal_slot, sky_slot, world_slot};
 use crate::shader::NO_SLOT;
 
+/// Bakes kept for reuse: every pattern at the three tier sizes (Lite, Low,
+/// the rest), with room for a few param changes.
+const BAKE_CACHE: usize = 24;
+
 /// The relief (a world resource next to [`ProcWorld`]).
 #[derive(Debug, Clone)]
 pub struct Relief {
@@ -34,6 +38,9 @@ pub struct Relief {
     bakes: Vec<SurfaceBake>,
     /// What each bake was made from.
     baked: Vec<(Pattern, u32)>,
+    /// Bakes made before, newest last (at most [`BAKE_CACHE`]): a tier switch
+    /// back to a size baked before reuses it instead of baking on the frame.
+    cache: Vec<((Pattern, u32), SurfaceBake)>,
     block: Vec<[f32; 4]>,
     params: Option<ReliefParams>,
     params_seen: Option<u64>,
@@ -47,16 +54,44 @@ pub struct Relief {
     sent: Option<usize>,
     /// Patterns rebaked so far (for tests and the live tools).
     pub rebakes: u32,
+    /// Started by [`install`]: the bakes are made one pattern a frame by
+    /// [`Relief::stage`], and nothing reaches the GPU until they are all in.
+    staging: bool,
+    /// Tier sizes still to bake into the cache once staged, one a frame.
+    warm: Vec<(Pattern, u32)>,
 }
 
 impl Relief {
-    /// Bake every pattern for the full tier.
+    /// Bake every pattern for the full tier, and at the Lite and Low sizes
+    /// into the cache, so no tier switch bakes on the frame (Low's first visit
+    /// stalled the viewer 125 ms, 2026-10-25).
     pub fn new(config: ReliefConfig) -> Self {
+        let mut r = Self::new_staged(config);
+        r.staging = false;
+        r.warm.clear();
+        r.rebake();
+        for t in ["lite", "low"] {
+            let size = tier_bake_size(r.config.bake_size, t);
+            for p in r.config.patterns() {
+                r.cached_bake(&p, size);
+            }
+        }
+        r
+    }
+
+    /// The same bakes made over the first frames instead of at once (the
+    /// start-up task held the page 0.3-0.5 s baking every pattern at three
+    /// sizes, 2026-10-29): [`Relief::stage`] bakes one pattern a frame for
+    /// the current tier and only then builds the block and lets the system
+    /// send code and data, so the finished look is the same; the Lite, Low
+    /// and full sizes are then baked into the cache, one a frame.
+    pub fn new_staged(config: ReliefConfig) -> Self {
         let mut r = Relief {
             config,
             tier: None,
             bakes: Vec::new(),
             baked: Vec::new(),
+            cache: Vec::new(),
             block: Vec::new(),
             params: None,
             params_seen: None,
@@ -65,9 +100,60 @@ impl Relief {
             dirty: true,
             sent: None,
             rebakes: 0,
+            staging: true,
+            warm: Vec::new(),
         };
-        r.rebake();
+        for t in ["high", "low", "lite"] {
+            let size = tier_bake_size(r.config.bake_size, t);
+            for p in r.config.patterns() {
+                r.warm.push((p, size));
+            }
+        }
         r
+    }
+
+    /// Whether the bakes are still being made (the system sends nothing).
+    pub fn staging(&self) -> bool {
+        self.staging
+    }
+
+    /// One frame of [`Relief::new_staged`]: bake one missing pattern of the
+    /// current tier (true: still staging), else, once, build the block from
+    /// the bakes; after that bake one cache size a frame.
+    pub fn stage(&mut self) -> bool {
+        if !self.staging {
+            while let Some(w) = self.warm.pop() {
+                if !self.cache.iter().any(|(key, _)| *key == w) {
+                    self.cached_bake(&w.0, w.1);
+                    break;
+                }
+            }
+            return false;
+        }
+        let size = tier_bake_size(self.config.bake_size, self.tier_id());
+        let missing = self.config.patterns().into_iter().find(|p| !self.cache.iter().any(|(key, _)| *key == (*p, size)));
+        if let Some(p) = missing {
+            self.cached_bake(&p, size);
+            return true;
+        }
+        self.staging = false;
+        self.rebake();
+        false
+    }
+
+    /// The bake of `p` at `size`: from the cache, else baked now and kept.
+    fn cached_bake(&mut self, p: &Pattern, size: u32) -> SurfaceBake {
+        let want = (*p, size);
+        if let Some((_, b)) = self.cache.iter().find(|(key, _)| *key == want) {
+            return b.clone();
+        }
+        let b = bake(p, size);
+        if self.cache.len() >= BAKE_CACHE {
+            self.cache.remove(0);
+        }
+        self.cache.push((want, b.clone()));
+        self.rebakes += 1;
+        b
     }
 
     pub fn config(&self) -> &ReliefConfig {
@@ -97,7 +183,9 @@ impl Relief {
     pub fn set_config(&mut self, config: ReliefConfig) {
         if config != self.config {
             self.config = config;
-            self.rebake();
+            if !self.staging {
+                self.rebake();
+            }
         }
     }
 
@@ -105,7 +193,9 @@ impl Relief {
     pub fn set_tier(&mut self, tier: &str) {
         if self.tier.as_deref() != Some(tier) {
             self.tier = Some(tier.to_string());
-            self.rebake();
+            if !self.staging {
+                self.rebake();
+            }
         }
     }
 
@@ -120,7 +210,7 @@ impl Relief {
             if self.baked.get(k) == Some(&want) {
                 continue;
             }
-            let b = bake(p, size);
+            let b = self.cached_bake(p, size);
             if k < self.bakes.len() {
                 self.bakes[k] = b;
                 self.baked[k] = want;
@@ -128,7 +218,6 @@ impl Relief {
                 self.bakes.push(b);
                 self.baked.push(want);
             }
-            self.rebakes += 1;
             baked_any = true;
         }
         let mode = tier_mode(self.tier_id());
@@ -164,7 +253,7 @@ impl Relief {
 /// Add the relief after `evani_material_proc::install`: bake, register the
 /// params and add the system.
 pub fn install(ctx: &mut PluginContext, config: ReliefConfig) -> Result<(), String> {
-    let mut r = Relief::new(config);
+    let mut r = Relief::new_staged(config);
     {
         let mut reg = ctx.world.res_mut::<ParamRegistry>();
         r.register_params(&mut reg).map_err(|e| e.to_string())?;
@@ -202,6 +291,9 @@ pub fn run(world: &mut World) {
         rel.set_tier(&t);
     }
     rel.sync_params(world.try_res::<ParamRegistry>().as_deref());
+    if rel.stage() {
+        return;
+    }
     let Some(mut km) = world.try_res_mut::<KitMaterial>() else {
         return;
     };

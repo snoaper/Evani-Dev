@@ -1,0 +1,32 @@
+{
+  "assets": [
+    {
+      "format": "glb",
+      "hash": "d2e40655ba6d1055",
+      "kind": "mesh",
+      "name": "models/horse/horse.high.glb",
+      "size": 374180,
+      "tier": "high",
+      "url": "horse.high.glb"
+    },
+    {
+      "format": "glb",
+      "hash": "5485d4eb6e34c157",
+      "kind": "mesh",
+      "name": "models/horse/horse.low.glb",
+      "size": 154712,
+      "tier": "low",
+      "url": "horse.low.glb"
+    },
+    {
+      "format": "glb",
+      "hash": "7d472385fe451238",
+      "kind": "mesh",
+      "name": "models/horse/horse.ultra.glb",
+      "size": 464968,
+      "tier": "ultra",
+      "url": "horse.ultra.glb"
+    }
+  ],
+  "version": 1
+}

@@ -504,8 +504,10 @@ fn digit_segments(n: usize) -> &'static [usize] {
 /// Everything the end of the race adds to the frame: the confetti and the
 /// lit gate for a finished human (the gate lights are drawn by the start
 /// light code), and on the podium stage the podium with its drivers and the
-/// rain of sweets. `budget` is the tier's per-frame triangle limit.
-pub fn draw(race: &RaceView, site: &Site, mats: &[Mat; 16], budget: u32, time: f32, shadows: bool, rw: &mut RenderWorld) {
+/// rain of sweets. `budget` is the tier's per-frame triangle limit;
+/// `kart_meshes` the candy meshes the racers are drawn with.
+#[allow(clippy::too_many_arguments)]
+pub fn draw(race: &RaceView, site: &Site, mats: &[Mat; 16], kart_meshes: &crate::candy::KartMeshes, budget: u32, time: f32, shadows: bool, rw: &mut RenderWorld) {
     let n = confetti_count(budget);
     match stage(race.phase, race.phase_time, race.players) {
         Stage::Race => {
@@ -524,7 +526,7 @@ pub fn draw(race: &RaceView, site: &Site, mats: &[Mat; 16], budget: u32, time: f
         }
         Stage::Podium => {
             let t = (race.phase_time - CELEBRATE_S).max(0.0);
-            draw_podium(race, site, mats, t, shadows, rw);
+            draw_podium(race, site, mats, kart_meshes, t, shadows, rw);
             let l = podium_launch(site);
             for i in 0..n {
                 if let Some(s) = sweet(i, n, t + EMIT_S + 0.5, &l) {
@@ -553,7 +555,7 @@ fn burst(race: &RaceView, since: f32, n: usize, mats: &[Mat; 16], rw: &mut Rende
 
 /// The podium: blocks with numerals, a candy-cane arch behind them and the
 /// top three drivers cheering on their blocks.
-fn draw_podium(race: &RaceView, site: &Site, mats: &[Mat; 16], t: f32, shadows: bool, rw: &mut RenderWorld) {
+fn draw_podium(race: &RaceView, site: &Site, mats: &[Mat; 16], kart_meshes: &crate::candy::KartMeshes, t: f32, shadows: bool, rw: &mut RenderWorld) {
     let f = Frame { pos: site.pos, yaw: site.yaw, s: 1.0 };
     let bc = MeshId::BEVEL_CUBE;
     let body = mats[role::KART_BODY];
@@ -593,7 +595,9 @@ fn draw_podium(race: &RaceView, site: &Site, mats: &[Mat; 16], t: f32, shadows: 
             if !shadows {
                 rw.draw_blob([top[0], site.pos[1] + b.height + 0.13, top[2]], 1.1);
             }
-            draw_driver(top, site.yaw, spec.color, spec.suit, t + b.place as f32 * 0.37, b.place == 0, mats, rw);
+            let racer = race.karts[*kart].spec;
+            let mut p = crate::candy::Paint { rw: &mut *rw, mats, ids: kart_meshes, full: true, time: t };
+            crate::candy::podium_racer(&mut p, top, site.yaw, spec.color, spec.suit, racer, t + b.place as f32 * 0.37, b.place == 0);
         }
     }
     // A candy-cane arch behind the blocks.
@@ -619,43 +623,6 @@ fn draw_podium(race: &RaceView, site: &Site, mats: &[Mat; 16], t: f32, shadows: 
         let m = if k % 2 == 0 { red } else { white };
         f.part(rw, MeshId::CYLINDER, [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, z], lq, [0.56, len * 1.08, 0.56], m, [1.0; 3]);
     }
-}
-
-/// One driver standing on a block, cheering: round legs and an egg-shaped
-/// torso in the kart colour, arms up in the contrasting suit, a round helmet in the
-/// kart colour lightened with a visor, a stripe and a crest, so the head
-/// reads as a volume with bands.
-#[allow(clippy::too_many_arguments)]
-fn draw_driver(pos: [f32; 3], yaw: f32, col: [f32; 3], suit: Option<[f32; 3]>, t: f32, winner: bool, mats: &[Mat; 16], rw: &mut RenderWorld) {
-    let f = Frame { pos, yaw, s: 1.2 };
-    let body = mats[role::KART_BODY];
-    let dark = mats[role::WHEEL];
-    let bc = MeshId::BEVEL_CUBE;
-    let lighter = [0.35 + col[0] * 0.65, 0.35 + col[1] * 0.65, 0.35 + col[2] * 0.65];
-    let deeper = [col[0] * 0.72, col[1] * 0.72, col[2] * 0.72];
-    let suit = suit.unwrap_or([0.25 + col[0] * 0.5, 0.25 + col[1] * 0.5, 0.25 + col[2] * 0.5]);
-    // Round legs on rounded boots, a short belted hip and an egg-shaped
-    // torso: soft toy volumes, not boxes.
-    for x in [0.21f32, -0.21] {
-        f.part(rw, MeshId::CYLINDER, [x, 0.42, 0.0], NO_ROT, [0.3, 0.62, 0.3], body, deeper);
-        f.part(rw, MeshId::LOW_SPHERE, [x, 0.1, 0.07], NO_ROT, [0.36, 0.22, 0.52], dark, [1.0; 3]);
-    }
-    f.part(rw, MeshId::CYLINDER, [0.0, 0.76, 0.0], NO_ROT, [0.66, 0.2, 0.46], body, suit);
-    f.part(rw, MeshId::SPHERE, [0.0, 1.08, 0.0], NO_ROT, [0.82, 0.84, 0.58], body, col);
-    // Arms up and out, waving; the winner punches straight up.
-    for (j, side) in [1.0f32, -1.0].into_iter().enumerate() {
-        let wave = 0.22 * (t * 6.0 + j as f32 * 2.2).sin();
-        let a = if winner { 0.18 + wave * 0.5 } else { 0.55 + wave };
-        let arm_q = quat_axis_angle([0.0, 0.0, 1.0], -side * a);
-        let shoulder = [side * 0.5, 1.28];
-        let (sa, ca) = (a.sin(), a.cos());
-        f.part(rw, MeshId::CYLINDER, [shoulder[0] + side * sa * 0.34, shoulder[1] + ca * 0.34, 0.0], arm_q, [0.2, 0.68, 0.2], body, suit);
-        f.part(rw, MeshId::LOW_SPHERE, [shoulder[0] + side * sa * 0.74, shoulder[1] + ca * 0.74, 0.0], NO_ROT, [0.28, 0.28, 0.28], body, [0.95; 3]);
-    }
-    f.part(rw, MeshId::SPHERE, [0.0, 1.84, 0.0], NO_ROT, [0.92, 0.88, 0.96], body, lighter);
-    f.part(rw, bc, [0.0, 1.84, 0.36], NO_ROT, [0.66, 0.26, 0.26], body, [0.1, 0.13, 0.26]);
-    f.part(rw, MeshId::LOW_SPHERE, [0.0, 1.86, -0.02], NO_ROT, [0.24, 0.92, 0.98], body, suit);
-    f.part(rw, MeshId::LOW_SPHERE, [0.0, 2.34, -0.04], NO_ROT, [0.28, 0.28, 0.28], body, suit);
 }
 
 #[cfg(test)]
@@ -828,7 +795,14 @@ mod tests {
         use crate::KartRacerPlugin;
         use evani_core::App;
         let mats = crate::draw::resolve_materials(&evani_core::plugin::LookData::default());
-        let tris = |rw: &RenderWorld| -> u32 { rw.meshes.iter().map(|m| evani_render::mesh::triangles_of(m.mesh)).sum() };
+        // The racers' candy meshes as placeholders, counted as built.
+        let kart_meshes = crate::candy::KartMeshes::placeholder();
+        let tris = |rw: &RenderWorld| -> u32 {
+            rw.meshes
+                .iter()
+                .map(|m| crate::candy::KartMeshes::placeholder_mesh(m.mesh).map_or_else(|| evani_render::mesh::triangles_of(m.mesh), |k| k.triangles()))
+                .sum()
+        };
         assert_eq!(
             evani_render::mesh::triangles_of(MeshId::CUBE) + 2 * evani_render::mesh::triangles_of(MeshId::CONE),
             SWEET_TRIANGLES
@@ -846,7 +820,7 @@ mod tests {
                     let mut rw = RenderWorld::default();
                     for k in [0.0f32, 1.0, 3.0] {
                         rw.clear();
-                        draw(&race, &site, &mats, limit, k, shadows, &mut rw);
+                        draw(&race, &site, &mats, &kart_meshes, limit, k, shadows, &mut rw);
                         let t = tris(&rw);
                         assert!(t < limit / 4, "{name} on {limit}: {t} triangles");
                         assert!(rw.meshes.len() as u32 <= cap, "{name} on {limit}: {} instances", rw.meshes.len());

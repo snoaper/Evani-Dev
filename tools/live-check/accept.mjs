@@ -49,6 +49,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
+import { waitDevToolsUrl } from './devtools-port.mjs';
 
 const MODE = process.argv[2];
 const args = {};
@@ -150,15 +151,7 @@ async function openChrome() {
   if (!exe) throw new Error('no Chrome or Edge found (pass --chrome)');
   const profile = mkdtempSync(join(tmpdir(), 'evani-accept-'));
   const chrome = spawn(exe, ['--headless=new', '--mute-audio', `--user-data-dir=${profile}`, '--remote-debugging-port=0', '--no-first-run', '--no-default-browser-check', '--enable-unsafe-webgpu', '--enable-webgpu-developer-features', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--window-size=1280,720', 'about:blank'], { stdio: 'ignore', windowsHide: true });
-  let ws = null;
-  for (let i = 0; i < 200 && !ws; i++) {
-    const f = join(profile, 'DevToolsActivePort');
-    if (existsSync(f)) {
-      const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-      if (p && path) ws = `ws://127.0.0.1:${p}${path}`;
-    }
-    if (!ws) await sleep(100);
-  }
+  let ws = await waitDevToolsUrl(profile);
   if (!ws) throw new Error('Chrome did not open its debugging port');
   const cdp = await Cdp.connect(ws);
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });

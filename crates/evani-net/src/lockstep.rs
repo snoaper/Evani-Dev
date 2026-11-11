@@ -100,6 +100,16 @@ pub trait LockstepGame: 'static {
     fn held(input: Self::Input) -> Self::Input {
         input
     }
+    /// A player's guess for the seats whose inputs it has not got yet, on a
+    /// tick it predicts `ahead` ticks past the confirmed one. `frame`
+    /// arrives with every seat on [`LockstepGame::held`] of its last
+    /// confirmed input; change any seat (the player's own, `own`, is
+    /// overwritten with its real input afterwards). Called on the predicted
+    /// copy just before it steps, never on the referee or a confirmed copy,
+    /// so a guess only changes the picture until the real inputs arrive.
+    /// Default: keep the held inputs (a game whose bots drive by its own
+    /// rules can guess them better).
+    fn guess(&self, _frame: &mut Frame<Self::Input>, _own: Option<usize>, _ahead: u64) {}
     /// Advance one tick.
     fn step(&mut self, frame: &Frame<Self::Input>);
     /// The whole simulation state, exactly.
@@ -1133,9 +1143,13 @@ impl<G: LockstepGame> LockstepClient<G> {
             self.pred_dirty = true;
             self.check_hash(hash);
         }
-        // Inputs the referee has (or whose ticks are confirmed) need no resend.
-        let done = self.in_ack.max(self.conf_tick);
-        while self.mine.front().is_some_and(|e| e.0 <= done) {
+        // Inputs the referee has need no resend (`packet` skips them), but the
+        // prediction replays every tick after the confirmed one with our own
+        // inputs: keep each until its tick is confirmed. Dropping them at the
+        // referee's ack (ahead of the confirmed tick by the input lead) made
+        // every rollback replay those ticks with the last confirmed input, so
+        // a steering change snapped the kart back and forth online.
+        while self.mine.front().is_some_and(|e| e.0 <= self.conf_tick) {
             self.mine.pop_front();
         }
         Ok(())
@@ -1248,11 +1262,16 @@ impl<G: LockstepGame> LockstepClient<G> {
             n => n,
         };
         let mut ran = 0u32;
+        let held: Vec<G::Input> = self.last.inputs.iter().map(|&i| G::held(i)).collect();
         let mut frame = Frame {
             tick: 0,
             humans: self.last.humans,
-            inputs: self.last.inputs.iter().map(|&i| G::held(i)).collect(),
+            inputs: held.clone(),
         };
+        let own = self.seat.map(usize::from);
+        // Our own input on a tick we hold none for (skipped by a catch-up
+        // jump): the one before, as the prediction always did.
+        let mut own_last = own.and_then(|s| held.get(s).copied());
         while self.pred_tick < target {
             if budget == 0 {
                 // The rest waits for the next ticks.
@@ -1263,10 +1282,13 @@ impl<G: LockstepGame> LockstepClient<G> {
             ran += 1;
             let t = self.pred_tick + 1;
             frame.tick = t;
-            if let Some(s) = self.seat.map(usize::from)
+            frame.inputs.clone_from(&held);
+            self.pred.guess(&mut frame, own, t - self.conf_tick);
+            if let Some(s) = own
                 && let Some(slot) = frame.inputs.get_mut(s)
             {
-                *slot = self.mine_at(t).unwrap_or(*slot);
+                *slot = self.mine_at(t).or(own_last).unwrap_or(*slot);
+                own_last = Some(*slot);
             }
             self.pred.step(&frame);
             self.pred_tick = t;
@@ -1559,6 +1581,47 @@ mod tests {
             }
             assert_eq!(g.hash(), n.referee.hash(), "client {k} diverged (confirmed at {at})");
         }
+    }
+
+    /// A player's own inputs that the referee has acked but not yet stepped
+    /// must still be replayed in a rollback: with them dropped at the ack,
+    /// every view re-ran those ticks with the last confirmed input, so a
+    /// changed input (a steering key) snapped the player's own kart.
+    #[test]
+    fn a_rollback_replays_own_inputs_the_referee_acked_but_has_not_stepped() {
+        let cond = LinkConditions {
+            latency_ticks: 5,
+            jitter_ticks: 0,
+            loss_permille: 0,
+        };
+        let mut n: Net = net(1, 0, cond);
+        // A key pressed and released every 7 ticks.
+        let key = |_: usize, t: u64| if (t / 7).is_multiple_of(2) { 3 } else { -3 };
+        let mut shown: Vec<(u64, i64)> = Vec::new();
+        run_with(&mut n, 200, key, |_, _| false, |_, _, c| {
+            if c.synced() {
+                shown.push((c.display_tick(), c.display().pos[0]));
+            }
+        });
+        // The referee's own dot at every tick, from its whole history.
+        let mut truth = std::collections::HashMap::new();
+        let mut g = fresh::<4>();
+        assert_eq!(n.referee.frames.front().map(|f| f.tick), Some(1));
+        for f in &n.referee.frames {
+            g.step(f);
+            truth.insert(f.tick, g.pos[0]);
+        }
+        // After the first second (pacing settles, the first inputs were late),
+        // what the player saw is exactly what the referee ran.
+        let mut compared = 0;
+        for (t, pos) in shown.iter().filter(|s| s.0 > 60) {
+            if let Some(&want) = truth.get(t) {
+                assert_eq!(*pos, want, "tick {t}: shown {pos}, referee {want}");
+                compared += 1;
+            }
+        }
+        assert!(compared > 100, "compared {compared} ticks");
+        assert!(n.clients[0].stats().rollbacks > 30);
     }
 
     #[test]

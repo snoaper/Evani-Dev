@@ -22,12 +22,13 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     }
     var uv = in.uv;
     if (s.tnear < FAR_T) {
-        // Bend only onto what lies behind the surface, never onto something
-        // in front of it.
+        // Bend only onto what lies behind the surface and is itself seen
+        // through it (seen_through), never onto something in front of it or
+        // beside it.
         let size = vec2<f32>(textureDimensions(depth_tex));
         let bent = clamp(in.uv + s.off, vec2<f32>(0.0), vec2<f32>(1.0));
-        let zb = textureLoad(depth_tex, vec2<i32>(bent * size), 0);
-        if (scene_dist(zb) > s.tnear) {
+        let zb = textureLoad(depth_tex, min(vec2<i32>(bent * size), vec2<i32>(size) - 1), 0);
+        if (scene_dist(zb) > s.tnear && seen_through(s.idx, bent, zb)) {
             uv = bent;
         }
     }

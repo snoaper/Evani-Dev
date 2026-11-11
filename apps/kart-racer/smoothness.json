@@ -1,0 +1,27 @@
+{
+  "game": "kart-racer",
+  "title": "Sugarpeak Rally: smoothness",
+  "about": "The smoothness harness's config for this game (docs/SMOOTHNESS.md). The chase camera's target follows the player's drawn kart, so the camera target is the probe; world space, because the camera follows it on screen.",
+  "probe": { "kind": "camera_target" },
+  "metric": "world",
+  "min_speed": 4,
+  "width": 1280,
+  "height": 720,
+  "duration_s": 20,
+  "warmup_s": 5,
+  "start": [{ "at": 0, "click": "[data-cmd=start1]" }],
+  "script": [
+    { "at": 0, "down": ["KeyW"] },
+    { "at": 1.2, "down": ["KeyA"] },
+    { "at": 1.6, "up": ["KeyA"] },
+    { "at": 3.0, "down": ["KeyD"] },
+    { "at": 3.4, "up": ["KeyD"] }
+  ],
+  "repeat_s": 4,
+  "net": {
+    "referee_package": "evani-kart-racer-referee",
+    "host_args": ["--laps", "3", "--seed", "77"],
+    "ready": "(document.documentElement.getAttribute('data-online') || '').startsWith('player')",
+    "start": []
+  }
+}

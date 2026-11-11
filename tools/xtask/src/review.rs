@@ -449,7 +449,7 @@ pub fn onoff_check(markers: &[String], m: &Manifest, own: &[String], engine: &[S
     if m.physics.is_some() {
         wanted_modules.push("physics".into());
     }
-    for (on, name) in [(m.net, "net"), (m.xr, "xr"), (m.live, "live"), (m.models, "models"), (m.anim, "anim"), (m.ui, "ui")] {
+    for (on, name) in [(m.net, "net"), (m.xr, "xr"), (m.live, "live"), (m.models, "models"), (m.anim, "anim"), (m.ui, "ui"), (m.grass, "grass"), (m.procedural.is_some(), "procedural")] {
         if on {
             wanted_modules.push(name.into());
         }
@@ -522,6 +522,7 @@ pub fn listed_engine_crates(root: &Path, m: &Manifest, game_cargo_tomls: &[Strin
         let listed = match *key {
             "nature" => m.nature.is_some(),
             "proc" => m.proc.is_some(),
+            "procedural" => m.procedural.is_some(),
             _ => false,
         };
         if listed {
@@ -571,6 +572,30 @@ fn render_features(cargo_toml: &str) -> Vec<String> {
         .filter_map(toml::Value::as_str)
         .map(str::to_string)
         .collect()
+}
+
+/// The engine material crates (folder names under `crates/`) whose markers a
+/// game may ship because its evani.toml lists them: `[materials]` (recipes and
+/// conditions, cloth, skin/hair/eye, the nature recipes) and `[modules]
+/// materials` (the viewer's families). Read from the app features the
+/// manifest turns on, so the card and the build agree. A game that lists none
+/// gets none, and their markers stay unlisted parts.
+pub fn material_crates(m: &Manifest) -> Vec<&'static str> {
+    let f = m.features();
+    let on = |names: &[&str]| f.iter().any(|x| names.contains(&x.as_str()));
+    let mut out = Vec::new();
+    for (names, krate) in [
+        (&["material-recipes", "material-catalogue"][..], "evani-material-recipes"),
+        (&["material-layers"][..], "evani-material-layers"),
+        (&["char-materials", "material-characters"][..], "evani-material-character"),
+        (&["material-nature"][..], "evani-material-nature"),
+        (&["material-playground"][..], "evani-material-proc"),
+    ] {
+        if on(names) {
+            out.push(krate);
+        }
+    }
+    out
 }
 
 // ---- reference image prompt, what to try ------------------------------------------
@@ -837,10 +862,12 @@ pub enum AutoCheck {
     Critic,
     /// Item 29: a playground supports free roam (declared, in the kit, tested).
     FreeRoam,
+    /// Item 30: a tier switch never stops the frames for long (no shader rebuild).
+    TierSwitch,
 }
 
 impl AutoCheck {
-    pub const ALL: [AutoCheck; 20] = [
+    pub const ALL: [AutoCheck; 21] = [
         AutoCheck::BuildAndSize,
         AutoCheck::Bench,
         AutoCheck::Docs,
@@ -861,6 +888,7 @@ impl AutoCheck {
         AutoCheck::UiText,
         AutoCheck::Critic,
         AutoCheck::FreeRoam,
+        AutoCheck::TierSwitch,
     ];
 
     /// Phrases (lowercase). An item belongs to the check if it contains any
@@ -887,6 +915,7 @@ impl AutoCheck {
             AutoCheck::UiText => &[&["ui text rule (2d):"]],
             AutoCheck::Critic => &[&["independent critic:"]],
             AutoCheck::FreeRoam => &[&["free roam:"]],
+            AutoCheck::TierSwitch => &[&["tier switch:"]],
         }
     }
 
@@ -913,6 +942,7 @@ impl AutoCheck {
             AutoCheck::UiText => "UI text rule (2D)",
             AutoCheck::Critic => "critic",
             AutoCheck::FreeRoam => "free roam",
+            AutoCheck::TierSwitch => "tier switch",
         }
     }
 
@@ -1966,6 +1996,8 @@ fn gather_shots(root: &Path, app: &str, app_dir: Option<&Path>, out: &Path, a: &
     if canvas_hud {
         cmd.args(["--canvas-hud", "1"]);
     }
+    // Item 30: the tier switches, measured before any other capture.
+    cmd.args(["--tier-switch", &kitchecks::TIER_SWITCHES.join(","), "--tier-switch-max-ms", &kitchecks::TIER_SWITCH_MAX_MS.to_string()]);
     if let Some(dpr) = m.review_phone_dpr {
         cmd.args(["--phone-dpr", &dpr.to_string()]);
     }
@@ -2028,12 +2060,23 @@ pub(crate) fn engine_dirty(root: &Path) -> bool {
     git_out(root, &args).is_some_and(|s| !s.is_empty())
 }
 
-/// The main line: the given ref, else `main` when it exists, else `m1-foundation`.
+/// The main line: the given ref, else `main` when it exists, else
+/// `m1-foundation`; but a `main` that `m1-foundation` already contains is a
+/// stale branch (joins go to `m1-foundation`), so the newer line wins.
 fn main_ref(root: &Path, given: Option<&str>) -> String {
     if let Some(g) = given {
         return g.to_string();
     }
-    if git_out(root, &["rev-parse", "--verify", "--quiet", "main"]).is_some() { "main".into() } else { "m1-foundation".into() }
+    let has = |r: &str| git_out(root, &["rev-parse", "--verify", "--quiet", r]).is_some();
+    let (has_main, has_m1) = (has("main"), has("m1-foundation"));
+    let main_in_m1 = has_main && has_m1 && git_out(root, &["merge-base", "--is-ancestor", "main", "m1-foundation"]).is_some();
+    pick_main_line(has_main, main_in_m1).into()
+}
+
+/// Which branch is the main line: `main` unless it is missing or
+/// `m1-foundation` already contains it (a stale `main`).
+fn pick_main_line(has_main: bool, main_in_m1: bool) -> &'static str {
+    if has_main && !main_in_m1 { "main" } else { "m1-foundation" }
 }
 
 /// The black and white renders of every scripted camera, read from `out`
@@ -2097,6 +2140,11 @@ pub struct KitInputs {
     pub stage: u32,
     /// `None`: not a playground; else what keeps it from free roam (empty: nothing).
     pub playground: Option<Vec<String>>,
+    /// `None`: a game; `Some`: the app says `kind = "tool"`, with the tool
+    /// rules it breaks (empty: a real tool, so the entity count is skipped).
+    pub tool: Option<Vec<String>>,
+    /// The capture's tier-switch measurements (`summary.tier_switch`).
+    pub tier_switch: Option<Value>,
 }
 
 /// The process checks (items 11 on), each from its own function in
@@ -2111,7 +2159,7 @@ pub fn process_info(i: ProcessInputs<'_>) -> ProcessInfo {
         .map(|c| {
             let v = match c {
                 AutoCheck::TierCostOrder => checks::tier_cost_order(&tier_gpu, &tier_gpu_source),
-                AutoCheck::Architecture => i.probe.map_or_else(no_capture, |p| checks::architecture(i.kit, &p.arch)),
+                AutoCheck::Architecture => i.probe.map_or_else(no_capture, |p| checks::architecture(i.kit, &p.arch, k.tool.as_deref())),
                 AutoCheck::CaptureHud => i.probe.map_or_else(no_capture, |p| checks::capture_hud(i.hud_declared, &p.captures)),
                 AutoCheck::WorldEdge if !i.world_edge_applies => {
                     Verdict::pass("Not applicable: evani.toml sets `[review] world_edge = false` (the game has no 3D ground to fall off).")
@@ -2133,6 +2181,7 @@ pub fn process_info(i: ProcessInputs<'_>) -> ProcessInfo {
                 AutoCheck::UiText => kitchecks::geocheck_area(k.geocheck.as_ref(), "popups", "UI text rule", k.is_2d),
                 AutoCheck::Critic => critic::critic_verdict(k.critic.as_ref(), k.critic_rounds, k.stage),
                 AutoCheck::FreeRoam => kitchecks::free_roam(k.playground.as_deref()),
+                AutoCheck::TierSwitch => kitchecks::tier_switch(k.tier_switch.as_ref()),
                 AutoCheck::BuildAndSize | AutoCheck::Bench | AutoCheck::Docs => Verdict::fail("not a process check"),
             };
             (c, v)
@@ -2314,6 +2363,9 @@ fn review_game(root: &Path, app: &crate::AppDir, place: &Place, a: &ReviewArgs) 
         .filter_map(|p| std::fs::read_to_string(p).ok())
         .collect();
     own.extend(listed_engine_markers(&root, &ship, &game_tomls));
+    // The material crates the game lists bring their own module and shaders.
+    let material_dirs: Vec<PathBuf> = material_crates(&ship).iter().map(|c| root.join("crates").join(c)).collect();
+    own.extend(markers_under(&material_dirs));
     let onoff = onoff_check(&size.markers, &ship, &own, &engine);
 
     // 2. Bench.
@@ -2452,6 +2504,9 @@ fn review_game(root: &Path, app: &crate::AppDir, place: &Place, a: &ReviewArgs) 
         };
         (evani_guide::playground::parse(&t) != Ok(None)).then(|| problems.into_iter().map(|p| format!("{} (fix: {})", p.what, p.fix)).collect())
     });
+    let tool = read(&root.join("apps").join(&app_name).join("evani.toml")).and_then(|t| {
+        evani_guide::appkind::parse(&t).is_ok_and(|k| k.is_tool()).then(|| evani_guide::appkind::problems(&root, &app_name, &m.kit, &t).into_iter().map(|p| p.what).collect())
+    });
     let kit_inputs = KitInputs {
         pack,
         moments: plan.moments.clone(),
@@ -2471,6 +2526,8 @@ fn review_game(root: &Path, app: &crate::AppDir, place: &Place, a: &ReviewArgs) 
         critic_rounds: critic_rounds.len(),
         stage,
         playground,
+        tool,
+        tier_switch: summary.as_ref().and_then(|v| v.get("tier_switch")).cloned(),
     };
     let process_info = process_info(ProcessInputs {
         kit: &m.kit,
@@ -2574,6 +2631,32 @@ mod tests {
 
     fn s(v: &[&str]) -> Vec<String> {
         v.iter().map(|x| x.to_string()).collect()
+    }
+
+    /// Guard (material-view critic rounds 7 and 8: a Low proof taken with
+    /// three spheres hidden while their sun cones baked): the capture waits
+    /// for every page status the engine and the game write, and the renderer
+    /// writes the baking one.
+    #[test]
+    fn captures_wait_for_stand_ins_and_baking_models() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let capture = std::fs::read_to_string(root.join("tools/live-check/capture.mjs")).expect("capture.mjs");
+        let ready = capture.lines().find(|l| l.contains("ready: (n === null")).expect("the ready rule");
+        for attr in ["(b === null || b === '0')", "(k === null || k === '0')", "!standIn"] {
+            assert!(ready.contains(attr), "the capture's ready rule lacks {attr}");
+        }
+        assert!(capture.contains("getAttribute('data-evani-baking')") && capture.contains("getAttribute('data-evani-building')"));
+        let models = std::fs::read_to_string(root.join("crates/evani-render/src/gpu/models.rs")).expect("models.rs");
+        assert!(models.contains("set_attribute(\"data-evani-baking\""), "the renderer reports models hidden while baking");
+    }
+
+    #[test]
+    fn a_stale_main_inside_m1_foundation_is_not_the_main_line() {
+        // material-view's card compared its engine with a `main` left at
+        // 22 Oct, which m1-foundation already contained: a false FAIL.
+        assert_eq!(pick_main_line(true, true), "m1-foundation");
+        assert_eq!(pick_main_line(true, false), "main");
+        assert_eq!(pick_main_line(false, false), "m1-foundation");
     }
 
     /// The review's captures hide every dev-only page element the live build
@@ -2770,6 +2853,47 @@ try = ["Orbit the camera", "Toggle bloom"]
         assert!(bridge.contains("\"--session\" => a.session"));
     }
 
+    /// Chrome may hold its port file open while it writes it (EBUSY on
+    /// Windows failed a geocheck run, 2026-10-25): every script reads it
+    /// through the one helper that retries.
+    #[test]
+    fn every_script_reads_chromes_port_file_through_the_shared_helper() {
+        let root = workspace_root();
+        let helper = std::fs::read_to_string(root.join("tools/live-check/devtools-port.mjs")).unwrap();
+        assert!(helper.contains("'EBUSY', 'EPERM', 'EACCES'") && helper.contains("export async function waitDevToolsUrl"));
+        let mut users = 0;
+        for dir in ["tools/live-check", "tools/bench-runner"] {
+            for e in std::fs::read_dir(root.join(dir)).unwrap().flatten() {
+                let p = e.path();
+                if p.extension().is_none_or(|x| x != "mjs") || p.file_name().is_some_and(|n| n == "devtools-port.mjs") {
+                    continue;
+                }
+                let t = std::fs::read_to_string(&p).unwrap();
+                assert!(!t.contains("DevToolsActivePort"), "{}: reads Chrome's port file itself; use waitDevToolsUrl from tools/live-check/devtools-port.mjs", p.display());
+                users += usize::from(t.contains("await waitDevToolsUrl(profile"));
+            }
+        }
+        assert!(users >= 12, "{users} scripts use the helper");
+    }
+
+    /// Item 30: the tier switches are measured first, before the moments or
+    /// path captures switch tiers (the browser caches a compiled shader, so a
+    /// later run would hide a freeze), and the review asks for them.
+    #[test]
+    fn the_tier_switch_runs_before_every_other_capture() {
+        let js = std::fs::read_to_string(workspace_root().join("tools/live-check/capture.mjs")).unwrap();
+        let at = |s: &str| js.find(s).unwrap_or_else(|| panic!("capture.mjs lacks {s}"));
+        assert!(at("const tierSwitch = PLAN ? {} : await runTierSwitch();") < at("    if (MOMENTS) {"));
+        assert!(at("const tierSwitch = PLAN ? {} : await runTierSwitch();") < at("    if (TIMES) {"));
+        assert_eq!(js.matches("...tierSwitch,").count(), 2, "both review modes report it");
+        // The frame hook the switch times frames with goes in whenever there
+        // is a switch (a shot plan that settles needs it too).
+        assert!(js.contains("if (TIER_SWITCH.length || PLAN?.settle) await s('Page.addScriptToEvaluateOnNewDocument', { source: FRAME_HOOK });"));
+        let src = std::fs::read_to_string(workspace_root().join("tools/xtask/src/review.rs")).unwrap();
+        assert!(src.contains("cmd.args([\"--tier-switch\", &kitchecks::TIER_SWITCHES.join(\",\")"));
+        assert_eq!(kitchecks::TIER_SWITCHES, ["lite", "ultra", "lite", "low", "high"]);
+    }
+
     #[test]
     fn bench_lines_follow_tier_order_and_show_failures() {
         let r = runner(vec![
@@ -2871,6 +2995,35 @@ try = ["Orbit the camera", "Toggle bloom"]
         assert!(r.missing.contains(&"evani.module.xr".to_string()));
         assert!(r.missing.contains(&"evani.shader.vignette*".to_string()));
         assert!(!r.pass(), "a listed effect whose shader is not in the wasm fails");
+    }
+
+    #[test]
+    fn listed_materials_allow_their_crates_only() {
+        let m = Manifest::parse(SANDBOX).unwrap().ship();
+        assert!(material_crates(&m).is_empty(), "a game that lists no materials allows none");
+        let mut r = m.clone();
+        r.materials.recipes = vec!["wood".into()];
+        assert_eq!(material_crates(&r), ["evani-material-recipes"]);
+        let mut c = m.clone();
+        c.materials.conditions = vec!["wet".into()];
+        assert_eq!(material_crates(&c), ["evani-material-recipes"], "a condition alone brings the recipe stage");
+        let mut fams = m.clone();
+        fams.material_families = vec!["catalogue".into(), "layers".into(), "characters".into(), "nature".into()];
+        assert_eq!(
+            material_crates(&fams),
+            ["evani-material-recipes", "evani-material-layers", "evani-material-character", "evani-material-nature"]
+        );
+        // Listing nature allows its module marker; without it, the same marker is an unlisted part.
+        let marks = s(&["evani.module.render", "evani.module.material_nature", "evani.shader.nature"]);
+        let own_nature = s(&["evani.module.material_nature", "evani.shader.nature"]);
+        let mut bare = m.clone();
+        bare.effects.clear();
+        bare.physics = None;
+        bare.net = false;
+        bare.xr = false;
+        bare.models = false;
+        assert!(onoff_check(&marks, &bare, &own_nature, &[]).pass());
+        assert_eq!(onoff_check(&marks, &bare, &[], &[]).extra, ["evani.module.material_nature", "evani.shader.nature"]);
     }
 
     #[test]
@@ -2979,26 +3132,27 @@ try = ["Orbit the camera", "Toggle bloom"]
     fn the_real_kit_process_has_auto_checks() {
         let md = std::fs::read_to_string(workspace_root().join("docs/KIT_PROCESS.md")).unwrap();
         let items = parse_done_when(&md);
-        assert_eq!(items.len(), 29, "{items:?}");
-        assert_eq!(items.iter().map(|(n, _)| *n).collect::<Vec<_>>(), (1..=29).collect::<Vec<_>>());
+        assert_eq!(items.len(), 30, "{items:?}");
+        assert_eq!(items.iter().map(|(n, _)| *n).collect::<Vec<_>>(), (1..=30).collect::<Vec<_>>());
         let kinds: Vec<Option<AutoCheck>> = items.iter().map(|(_, t)| auto_check_for(t)).collect();
         assert_eq!(kinds[0], Some(AutoCheck::BuildAndSize));
         assert_eq!(kinds[2], Some(AutoCheck::Bench));
         assert_eq!(kinds[6], Some(AutoCheck::Docs));
-        // Items 11 to 29 map one to one, in order, onto the process checks,
+        // Items 11 to 30 map one to one, in order, onto the process checks,
         // apart from the hand-checked two build passes (17) and human fix
-        // rounds (28); 29 is free roam for playgrounds.
+        // rounds (28); 29 is free roam for playgrounds, 30 the tier switch.
         let process: Vec<AutoCheck> = AutoCheck::ALL.into_iter().filter(|c| c.is_process()).collect();
-        assert_eq!(process.len(), 17);
+        assert_eq!(process.len(), 18);
         assert_eq!((kinds[16], kinds[27]), (None, None), "items 17 and 28 are hand checks");
         assert_eq!(kinds[10..].iter().flatten().copied().collect::<Vec<_>>(), process);
         assert_eq!(kinds[28], Some(AutoCheck::FreeRoam));
+        assert_eq!(kinds[29], Some(AutoCheck::TierSwitch));
         // Every item's text matches exactly one check's hook, never two.
         for (n, t) in &items {
             let hits: Vec<AutoCheck> = AutoCheck::ALL.into_iter().filter(|c| auto_check_for_only(*c, t)).collect();
             assert!(hits.len() <= 1, "item {n} matches {hits:?}: {t}");
         }
-        assert!(items[28].1.len() < 200, "the last item must not swallow the explanation below it: {}", items[28].1);
+        assert!(items[29].1.len() < 300, "the last item must not swallow the explanation below it: {}", items[29].1);
         // The visual quality, placeholder and Stage 3 hero-asset bars (8–10),
         // the two build passes (17) and human fix rounds (28) are hand checks.
         assert_eq!(kinds.iter().filter(|k| k.is_none()).count(), 9);
@@ -3036,7 +3190,7 @@ try = ["Orbit the camera", "Toggle bloom"]
             let hits: Vec<_> = said.iter().filter(|(_, t)| auto_check_for(t) == Some(c)).collect();
             assert!(hits.len() <= 1, "{c:?} matches {hits:?}");
         }
-        assert!(AutoCheck::ALL.iter().filter(|c| c.is_process()).count() == 17);
+        assert!(AutoCheck::ALL.iter().filter(|c| c.is_process()).count() == 18, "18 process checks since the tier switch (item 30)");
         assert_eq!(auto_check_for("Free roam: a playground supports free roam."), Some(AutoCheck::FreeRoam));
     }
 
@@ -3048,6 +3202,23 @@ try = ["Orbit the camera", "Toggle bloom"]
         auto.set(AutoCheck::WorldEdge, false, "menu shows the edge");
         let c = checklist(&items, &auto);
         assert_eq!(c.iter().map(|i| i.status).collect::<Vec<_>>(), [CheckStatus::Pass, CheckStatus::Manual, CheckStatus::Fail]);
+    }
+
+    #[test]
+    fn the_run_video_waits_for_the_page_to_draw() {
+        // The review's run video failed with "the screencast sent no frames"
+        // when it started while the page was still building pipelines after
+        // the showcase's tier change (1 to 3 frames in 20 s and more; the
+        // settled page draws 60). capture.mjs must wait until the page draws
+        // again before it starts the screencast, and say what the page did
+        // when a video still gets no frames.
+        let js = std::fs::read_to_string(workspace_root().join("tools/live-check/capture.mjs")).unwrap();
+        let video = js.find("moment: VIDEO_MOMENT })").expect("the video's capture.frame");
+        let cast = js[video..].find("'Page.startScreencast'").map(|i| video + i).expect("the video's screencast");
+        assert!(js[video..cast].contains("await waitForFrames("), "the video records before the page draws again");
+        let fps: f64 = js.split("const VIDEO_SETTLE_FPS = ").nth(1).and_then(|r| r.split(';').next()).and_then(|v| v.trim().parse().ok()).expect("VIDEO_SETTLE_FPS");
+        assert!(fps >= 10.0, "a settled page draws at least 10 frames a second, not {fps}");
+        assert!(js.contains("the screencast sent no frames (page over the same"), "a failed video says what the page drew");
     }
 
     #[test]
@@ -3218,7 +3389,7 @@ try = ["Orbit the camera", "Toggle bloom"]
     fn process_checks_all_pass_on_good_measurements() {
         let probe = checks::probe_from(&probe_json(12, false, true), "example");
         let p = process_for(Ok(&probe), vec![("boot".into(), Ok(clear_edge()))], true, current_engine());
-        assert_eq!(p.results.len(), 17);
+        assert_eq!(p.results.len(), 18);
         assert!(p.results.iter().take(5).all(|(_, v)| v.pass), "{:?}", p.results);
         assert_eq!(p.tier_gpu.len(), 5);
         assert_eq!(p.page_shots, [("boot".to_string(), "page-boot.png".to_string())]);
@@ -3285,7 +3456,7 @@ try = ["Orbit the camera", "Toggle bloom"]
         c.process = process_for(Ok(&probe), vec![("boot".into(), Ok(clear_edge()))], true, HandOver { dirty: true, ..current_engine() });
         let top = top_section(&c);
         assert!(top.contains("- **Hand-over:** FAIL. Published size 221.2 KB; engine commit abc1234"), "{top}");
-        assert!(top.contains("- **Process checks:** 3 of 13 passed; failed: captures and HUD, hand-over, target pack; not run: showcase captures,"), "{top}");
+        assert!(top.contains("- **Process checks:** 3 of 14 passed; failed: captures and HUD, hand-over, target pack; not run: showcase captures,"), "{top}");
         assert!(top.contains("; not applicable: camera framing (2D), bot level checks (2D), UI text rule (2D), free roam.") && top.contains("- **Critic:** not run after 0 of 3 rounds."), "{top}");
         let md = render_markdown(&c);
         for want in [
@@ -3301,7 +3472,7 @@ try = ["Orbit the camera", "Toggle bloom"]
         let j = card_json(&c);
         assert_eq!(j["handover"]["engine"], "abc1234");
         assert_eq!(j["handover"]["dirty"], true);
-        assert_eq!(j["process"]["checks"].as_array().map(Vec::len), Some(17));
+        assert_eq!(j["process"]["checks"].as_array().map(Vec::len), Some(18));
         assert_eq!(j["process"]["checks"][15]["result"], "not_run");
         assert_eq!(j["process"]["world_edge"][0]["camera"], "boot");
         assert_eq!(j["process"]["captures"][0]["overlay_visible"], true);

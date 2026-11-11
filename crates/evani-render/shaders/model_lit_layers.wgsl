@@ -11,8 +11,8 @@
 // material with no layer flag draws exactly as model_lit_fs does.
 // Layer order (three.js): base, then sheen, then clear coat.
 // Tiers: the frame's path word picks full (stretched GGX anisotropy, thin
-// film, a three-tap weave with relief) or cheap (a Kajiya-Kay band mixed in,
-// no thin film, a one-tap weave).
+// film) or cheap (a Kajiya-Kay band mixed in, no thin film); the three-tap
+// weave with its relief is the same on both.
 
 struct LayerMat {
     // Sheen colour (linear) and sheen roughness.
@@ -90,13 +90,13 @@ fn model_layered_fs(in: ModelOut, @builtin(front_facing) facing: bool) -> @locat
     // tile has no mips).
     let wuv = uv * (ly_mat.cloth.w * ly_frame.w.y);
     let foot = max(length(duvx), length(duvy)) * (ly_mat.cloth.w * ly_frame.w.y) * 64.0;
+    // Three taps on every tier: the thread relief is what makes a weave read
+    // as cloth, so Low keeps it (critic round 2 of material-view: smeared
+    // bands on Low, a quilted grid on Ultra; a material keeps its picture on
+    // every tier).
     let w0 = textureSampleLevel(ly_weave_map, map_sampler, wuv, 0.0);
-    var wu = w0;
-    var wv = w0;
-    if (full) {
-        wu = textureSampleLevel(ly_weave_map, map_sampler, wuv + vec2<f32>(1.0 / 64.0, 0.0), 0.0);
-        wv = textureSampleLevel(ly_weave_map, map_sampler, wuv + vec2<f32>(0.0, 1.0 / 64.0), 0.0);
-    }
+    let wu = textureSampleLevel(ly_weave_map, map_sampler, wuv + vec2<f32>(1.0 / 64.0, 0.0), 0.0);
+    let wv = textureSampleLevel(ly_weave_map, map_sampler, wuv + vec2<f32>(0.0, 1.0 / 64.0), 0.0);
     var base = tex * model_mat.base * vec4<f32>(in.color.rgb, 1.0);
     if ((!front && model_mat.flags.y < 0.5) || (model_mat.flags.x > 0.5 && base.a < model_mat.emissive_cutoff.w)) {
         discard;
@@ -114,19 +114,18 @@ fn model_layered_fs(in: ModelOut, @builtin(front_facing) facing: bool) -> @locat
     let g = ng * side;
     let tb = ly_tbn(n, vec4<f32>(in.tangent.xyz, in.tangent.w), dpx, dpy, duvx, duvy);
 
-    // Cloth weave: brightness (centred on 0.5) on the base colour and, on
-    // the full path, the thread relief on the normal.
+    // Cloth weave: brightness (centred on 0.5) on the base colour and the
+    // thread relief on the normal, on every path. It fades out where a
+    // texel of the tile falls under about half a pixel.
     let weave_on = ly_has(flags, 16u) || ly_has(flags, 32u);
-    let wk = select(0.0, clamp(ly_frame.w.x, 0.0, 2.0) * (1.0 - smoothstep(0.75, 1.5, foot)), weave_on);
+    let wk = select(0.0, clamp(ly_frame.w.x, 0.0, 2.0) * (1.0 - smoothstep(1.2, 2.4, foot)), weave_on);
     if (wk > 0.0) {
         let knit = ly_has(flags, 32u);
         let s0 = select(w0.rg, w0.ba, knit);
         base = vec4<f32>(base.rgb * max(1.0 + (s0.x - 0.5) * 1.3 * wk, 0.0), base.a);
-        if (full) {
-            let hu = select(wu.g, wu.a, knit) - s0.y;
-            let hv = select(wv.g, wv.a, knit) - s0.y;
-            n = normalize(n - (tb[0] * hu + tb[1] * hv) * (0.9 * wk));
-        }
+        let hu = select(wu.g, wu.a, knit) - s0.y;
+        let hv = select(wv.g, wv.a, knit) - s0.y;
+        n = normalize(n - (tb[0] * hu + tb[1] * hv) * (0.9 * wk));
     }
 
     var rough = clamp(surface.pbr.y * mr.g, 0.04, 1.0);
@@ -233,13 +232,22 @@ fn model_layered_fs(in: ModelOut, @builtin(front_facing) facing: bool) -> @locat
         let ccr = clamp(ly_mat.coat.y, 0.03, 1.0);
         let ndv_c = max(dot(g, v), 1e-3);
         let ndl_c = max(dot(g, l), 0.0);
-        let coat = ly_coat_direct(ccr, max(dot(g, h), 0.0), max(dot(l, h), 0.0));
+        // The sun as the coat mirrors it: a disc of the light's size
+        // (ly_frame.w.w, the cosine of its angular radius) with a sharp
+        // edge, widened by the coat's own roughness; a glossy coat shows a
+        // crisp, bright reflection over the base's soft highlight (critic
+        // round 3 of material-view: one soft lobe read as plain paint). The
+        // same on every tier. The coat's reflection of the sky keeps its
+        // own roughness.
         let fcc = ly_schlick1(0.04, 1.0, ndv_c);
-        let coat_k = select(3.14159265, look_k, look_k > 0.0);
         let rc = reflect(-v, g);
+        let cos_light = select(0.99254615, ly_frame.w.w, ly_frame.w.w > 0.0);
+        let soft = (1.0 - cos_light) * (0.12 + 4.0 * ccr * ccr);
+        let disc = smoothstep(cos_light - soft, cos_light + soft, dot(rc, l));
+        let coat = disc * ly_coat_direct(ccr, 1.0, max(dot(l, h), 0.0)).y * LY_COAT_DISC;
         let rc2 = ccr * ccr;
         let coat_env = lit_env(normalize(mix(rc, g, rc2)), ccr) * (fcc * max(sp0.z, 1.0) * ao * mix(1.0, blob, 0.5));
-        c = c * (1.0 - cc * fcc) + (sun_rgb * (coat.x * ndl_c * coat_k * vis * direct_occ) + coat_env) * cc;
+        c = c * (1.0 - cc * fcc) + (sun_rgb * (coat * min(ndl_c * 4.0, 1.0) * vis * direct_occ) + coat_env) * cc;
     }
 
     let k = clamp(1.0 - vis, 0.0, 1.0) * clamp(frame.shadow_tint.w, 0.0, 1.0);

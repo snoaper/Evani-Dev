@@ -9,6 +9,10 @@
 //! | 2 | `[nboxes, region_base, nregions, ao_rec_base]` |
 //! | 3-6 | the sky dome (feature `sky`: `SkyParams::records`; zero until the draw system fills them) |
 //! | 7 | `[tune base, tune count, AO strength, AO warmth]` ([`crate::params::Tuning::header`]) |
+//! | 8 | feature `sky-horizon` only: `[cloud fade low, fade high, layer curve, haze]` (`CloudHorizon::record`) |
+//! | 9-11 | feature `sky-horizon` only: the clouds' look, the clear sky's tone, the clouds' light (`[up bias, body shade, volume on, seed]`) |
+//! | 12-13 | feature `sky-horizon` only: the cloud volume (`CloudVolume::record`, `look_record`) |
+//! | 14-19 | feature `sky-discs` only: the sun and moon discs, the low sun's warmth and the light on the moon (`SkyDiscs::records`) |
 //! | tune | 2 per surface id from the tune base: `[colour multiplier rgb, wear]`, `[grime, streaks, 0, 0]` |
 //! | regions | 2 each: `[x0, z0, x1, z1]`, `[wall, floor, variant, 0]` (the last is a catch-all) |
 //! | boxes | 9 each: `[centre, flags]`, `[quat]`, `[half, seed]`, 6 faces `[ao index or -1, nu, nv, surface + 256 * edges]` |
@@ -30,8 +34,49 @@ pub const LIST_GROW: f32 = 0.04;
 pub const FACE_EPS: f32 = 0.03;
 /// The smallest dominant normal component for a face match.
 pub const NORMAL_MIN: f32 = 0.7;
-/// Records in the header.
+/// Records in the header (one more with feature `sky-horizon`: the
+/// [`SKY_HORIZON`] record).
+#[cfg(not(feature = "sky-horizon"))]
 pub const HEADER: usize = 8;
+/// Records in the header (six more with feature `sky-horizon`: the
+/// [`SKY_HORIZON`], [`SKY_CLOUD_LOOK`], [`SKY_TONE`], [`SKY_CLOUD_LIGHT`],
+/// [`SKY_CUMULUS`] and [`SKY_CUMULUS_LOOK`] records).
+#[cfg(all(feature = "sky-horizon", not(feature = "sky-discs")))]
+pub const HEADER: usize = 14;
+/// Records in the header (eleven more with feature `sky-discs`: the
+/// [`SKY_DISCS`] records).
+#[cfg(feature = "sky-discs")]
+pub const HEADER: usize = 25;
+/// The first of the eleven header records with the sun and moon discs
+/// (feature `sky-discs`: `SkyDiscs::records`; zero until the draw system
+/// fills them, which leaves the dome's own sun disc).
+#[cfg(feature = "sky-discs")]
+pub const SKY_DISCS: usize = 14;
+/// The header record with the cloud volume's layer (feature `sky-horizon`:
+/// `CloudVolume::record`: base and depth in km, heap size in km, cirrus).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_CUMULUS: usize = 12;
+/// The header record with the cloud volume's look (feature `sky-horizon`:
+/// `CloudVolume::look_record`: billows, surface softness, base shade,
+/// powder).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_CUMULUS_LOOK: usize = 13;
+/// The header record with the clouds' horizon settings (feature
+/// `sky-horizon`: `CloudHorizon::record`; zero until the draw system fills it).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_HORIZON: usize = 8;
+/// The header record with the clouds' own look (feature `sky-horizon`:
+/// `CloudHorizon::look_record`).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_CLOUD_LOOK: usize = 9;
+/// The header record with the clear sky's tone (feature `sky-horizon`:
+/// `CloudHorizon::tone_record`).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_TONE: usize = 10;
+/// The header record with how the clouds are lit (feature `sky-horizon`:
+/// `CloudHorizon::light_record`).
+#[cfg(feature = "sky-horizon")]
+pub const SKY_CLOUD_LIGHT: usize = 11;
 /// The header record with the AO tuning and where the tune records start.
 pub const TUNE_HEADER: usize = 7;
 /// The first tune record (right after the header).

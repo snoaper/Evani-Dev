@@ -8,8 +8,8 @@ mod frame;
 #[cfg(feature = "hooks")]
 mod hooks;
 #[cfg(feature = "particles")]
-mod particles; #[cfg(feature = "msdf")] mod msdf; #[cfg(feature = "pseudo3d")] mod pseudo3d;
-mod pipelines; #[cfg(feature = "models")] mod models; #[cfg(feature = "relief")] mod models_relief; #[cfg(all(feature = "look-surface", not(feature = "relief")))] mod models_surface; #[cfg(feature = "point-lights")] mod lights; #[cfg(feature = "ambient")] mod ambient; #[cfg(feature = "gtao")] mod gtao; #[cfg(all(feature = "material-layers", not(feature = "relief")))] mod models_layers;
+mod particles; #[cfg(feature = "trails")] mod trails; #[cfg(feature = "msdf")] mod msdf; #[cfg(feature = "pseudo3d")] mod pseudo3d;
+mod pipelines; #[cfg(feature = "models")] mod models; #[cfg(feature = "relief")] mod models_relief; #[cfg(all(feature = "look-surface", not(feature = "relief")))] mod models_surface; #[cfg(feature = "point-lights")] mod lights; #[cfg(feature = "ambient")] mod ambient; #[cfg(feature = "gtao")] mod gtao; #[cfg(all(feature = "material-layers", not(feature = "relief")))] mod models_layers; #[cfg(all(feature = "material-recipes", not(feature = "relief")))] mod models_recipes; #[cfg(all(feature = "char-materials", not(feature = "relief")))] mod char_live;
 mod timing; #[cfg(all(feature = "lights2d", not(feature = "msdf")))] mod lights2d;
 
 use std::cell::{Cell, RefCell};
@@ -344,10 +344,16 @@ impl Renderer {
 }
 
 /// Count a device loss (or failed recovery) in `DeviceStatus`; auto-revert
-/// in live watches it, shipped games just count.
+/// in live watches it, shipped games just count. The page sees the count as
+/// `<html data-evani-gpu-lost="n">` (tests and a page's own banner read it).
 fn bump_lost(world: &World) {
+    let mut n = 1;
     if let Some(mut d) = world.try_res_mut::<evani_core::capture::DeviceStatus>() {
         d.lost_count = d.lost_count.saturating_add(1);
+        n = d.lost_count;
+    }
+    if let Some(el) = web_sys::window().and_then(|w| w.document()).and_then(|d| d.document_element()) {
+        let _ = el.set_attribute("data-evani-gpu-lost", &n.to_string());
     }
 }
 
@@ -419,7 +425,7 @@ async fn init(canvas: web_sys::HtmlCanvasElement) -> Result<Init, String> {
         .await
         .map_err(|e| format!("adapter: {e}"))?;
     let timestamps = adapter.features().contains(wgpu::Features::TIMESTAMP_QUERY);
-    #[cfg(not(feature = "models"))] let (device, queue) = adapter
+    #[cfg(not(any(feature = "models", feature = "kit-textures")))] let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor {
             label: Some("evani"),
             required_features: if timestamps {
@@ -433,7 +439,7 @@ async fn init(canvas: web_sys::HtmlCanvasElement) -> Result<Init, String> {
             trace: Default::default(),
         })
         .await
-        .map_err(|e| format!("device: {e}"))?; #[cfg(feature = "models")] let (device, queue) = models::request_device(&adapter, timestamps).await?;
+        .map_err(|e| format!("device: {e}"))?; #[cfg(feature = "models")] let (device, queue) = models::request_device(&adapter, timestamps).await?; #[cfg(all(feature = "kit-textures", not(feature = "models")))] let (device, queue) = pipelines::kit_textures::request_device(&adapter, timestamps).await?;
     let mut adapter_label = adapter.get_info().name;
     if adapter_label.trim().is_empty() {
         adapter_label = browser_adapter_label().await.unwrap_or_default();

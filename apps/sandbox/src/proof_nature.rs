@@ -222,7 +222,9 @@ mod tests {
         let n = app.world.res::<NatureSurfaces>().clone();
         assert_eq!(n.len(), surfaces().len());
         for k in Kind::ALL {
-            if k == Kind::WaterEllipse {
+            // A glow is a lantern's halo on Lite and Low; the garden's lamp
+            // has its own.
+            if k == Kind::WaterEllipse || k == Kind::Glow {
                 continue;
             }
             assert!(surfaces().iter().any(|s| s.kind == k), "no {k:?}");

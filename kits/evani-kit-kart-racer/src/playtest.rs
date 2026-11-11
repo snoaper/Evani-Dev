@@ -29,6 +29,7 @@ use evani_core::App;
 use crate::ai::{self, AiState};
 use crate::items::{Item, ItemBox, Slot};
 use crate::kart::Kart;
+use crate::music::{Cue, FINAL_LAP_RATE, Song};
 use crate::race::{Phase, Race, RaceView, Request};
 use crate::track::Track;
 use crate::{ctx, KartRacerPlugin, Tune};
@@ -87,6 +88,10 @@ struct Outcome {
     clock: f32,
     /// The player's finish time minus the best rival's (seconds; negative: ahead).
     gap: Option<f32>,
+    /// The music's cues in the order they came (each change once).
+    cues: Vec<Cue>,
+    /// The race theme played on the final lap at the faster rate.
+    fast_final_lap: bool,
 }
 
 /// One race with one local player driven by the bot. `race_no` picks the
@@ -114,7 +119,18 @@ fn play_with(style: Style, race_no: u64, overrides: &[(&str, f32)]) -> Outcome {
     let mut rng = Pcg32::new(0xB07, race_no);
     let mut item_down = false;
     let mut good_start = false;
+    let mut cues: Vec<Cue> = Vec::new();
+    let mut fast_final_lap = false;
     for frame in 0..MAX_FRAMES {
+        {
+            let st = a.world.res::<crate::draw::DrawState>();
+            if let Some(c) = st.music.cue()
+                && cues.last() != Some(&c)
+            {
+                cues.push(c);
+            }
+            fast_final_lap |= st.music.playing().is_some_and(|(s, rate, _)| s == Song::Race && rate == FINAL_LAP_RATE);
+        }
         let (_, c, _) = ctx(&a.world).expect("kit built");
         // Read the race and decide this frame's pad state.
         let (steer, throttle, brake, drift, item, ended, me) = {
@@ -173,6 +189,8 @@ fn play_with(style: Style, race_no: u64, overrides: &[(&str, f32)]) -> Outcome {
                 good_start,
                 clock: r.clock,
                 gap,
+                cues,
+                fast_final_lap,
             };
         }
         // A fresh press for each item use: release first if still held.
@@ -194,6 +212,8 @@ fn play_with(style: Style, race_no: u64, overrides: &[(&str, f32)]) -> Outcome {
         good_start,
         clock,
         gap: None,
+        cues,
+        fast_final_lap,
     }
 }
 
@@ -254,6 +274,11 @@ fn playtest_win_podium_finish() {
         assert!(o.good_start, "the bot missed the start boost: {o:?}");
         let place = o.place.expect("the player finished");
         assert!(place < 3, "the bot finished {} ({o:?})", place + 1);
+        // The music follows: the start jingle, the race theme, the final-lap
+        // fanfare into the faster theme, then the win jingle.
+        let cues: Vec<Cue> = o.cues.iter().copied().skip_while(|c| *c == Cue::Title).collect();
+        assert_eq!(cues, [Cue::Countdown, Cue::Race, Cue::FinalLap, Cue::Results(Some(true))], "{o:?}");
+        assert!(o.fast_final_lap, "{o:?}");
         eprintln!("playtest_win: race {n}: place {} after {:.1} s, {} frames", place + 1, o.clock, o.frames);
     }
 }
@@ -268,6 +293,8 @@ fn playtest_lose_off_the_podium() {
         assert!(o.ended, "softlock: the race did not end in {MAX_FRAMES} frames ({o:?})");
         assert!(!o.good_start, "{o:?}");
         assert!(o.place.is_none_or(|p| p >= 3), "the timid bot reached the podium: {o:?}");
+        // Off the podium the placed jingle plays, not the win.
+        assert_eq!(o.cues.last(), Some(&Cue::Results(Some(false))), "{o:?}");
         eprintln!("playtest_lose: race {n}: place {:?} after {:.1} s, {} frames", o.place.map(|p| p + 1), o.clock, o.frames);
     }
 }

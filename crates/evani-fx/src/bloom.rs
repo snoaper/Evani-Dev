@@ -224,7 +224,7 @@ impl Effect for Bloom {
                     .owner("fx.bloom")
                     .bake(BakeTarget::Look),
             )?,
-        });
+        }); #[cfg(feature = "bloom-emitters")] emitters::register(ctx)?;
         Ok(())
     }
 
@@ -314,7 +314,7 @@ impl PostEffect for Bloom {
                 &[
                     texel[0],
                     texel[1],
-                    v(p.map(|p| p.threshold), 1.0),
+                    { let t = v(p.map(|p| p.threshold), 1.0); #[cfg(feature = "bloom-emitters")] let t = emitters::threshold(reg, t); t },
                     v(p.map(|p| p.knee), 0.5),
                     v(p.map(|p| p.clamp), 64.0),
                     0.0,
@@ -520,3 +520,76 @@ mod tests {
         assert_eq!(chain(390.0, 844.0).0, chain(844.0, 390.0).0);
         assert!(chain(390.0, 844.0).0 < 4);
     }}
+
+/// Bloom on emitters only (feature `bloom-emitters`, critic round 3 of
+/// material-view: a sunlit blue sphere and the lamp's shade in daylight
+/// bloomed, because the day threshold sat under what the sun alone gives a
+/// bright face). `fx.bloom.lit_floor` (0 = off) keeps the threshold at least
+/// that many times the brightest a white face gets from the sun and the
+/// ambient (`render.light.*`, `render.ambient`), so lit surfaces never bloom
+/// while anything that glows brighter than sunlight does, at noon or at
+/// night. Declared last: no line above moves.
+#[cfg(feature = "bloom-emitters")]
+pub mod emitters {
+    use evani_core::params::{BakeTarget, ParamDef, ParamRegistry, ParamValue};
+    use evani_core::plugin::{PluginContext, PluginError};
+
+    pub const LIT_FLOOR: &str = "fx.bloom.lit_floor";
+
+    pub fn register(ctx: &mut PluginContext) -> Result<(), PluginError> {
+        ctx.param_f32(
+            ParamDef::f32(LIT_FLOOR, 0.0)
+                .range(0.0, 4.0)
+                .step(0.05)
+                .unit("x lit white")
+                .describe("Bloom only what outshines the light: the threshold is at least this many times the brightest a white face gets from the sun and the ambient (0 = off).")
+                .owner("fx.bloom")
+                .bake(BakeTarget::Look)
+                .gpu(),
+        )?;
+        Ok(())
+    }
+
+    /// The brightest a white face lit by the sun head on and the ambient
+    /// gets (linear, the bright pass's max-channel measure).
+    pub fn lit_white(intensity: f32, color: [f32; 3], ambient: [f32; 3]) -> f32 {
+        let m = |c: [f32; 3]| c[0].max(c[1]).max(c[2]).max(0.0);
+        intensity.max(0.0) * m(color) + m(ambient)
+    }
+
+    /// `threshold`, raised to the lit floor.
+    pub fn threshold(reg: &ParamRegistry, threshold: f32) -> f32 {
+        let get = |n: &str| reg.id(n).and_then(|id| reg.value(id));
+        let k = match get(LIT_FLOOR) {
+            Some(ParamValue::F32(k)) if k > 0.0 => k,
+            _ => return threshold,
+        };
+        let f = |n: &str| match get(n) {
+            Some(ParamValue::F32(x)) => x,
+            _ => 1.0,
+        };
+        let v = |n: &str| match get(n) {
+            Some(ParamValue::Vec3(x) | ParamValue::Color(x)) => x,
+            _ => [1.0; 3],
+        };
+        threshold.max(k * lit_white(f("render.light.intensity"), v("render.light.color"), v("render.ambient")))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        /// Guard: under the viewer's studio sun (2.8, warm white, ambient
+        /// 0.34) a sunlit white face never reaches the threshold, the day
+        /// lamp's glow (3.0) stays under it, and at night (sun 0.22) the
+        /// same glow is well over it.
+        #[test]
+        fn lit_faces_never_bloom_and_emitters_do() {
+            let day = 1.2 * lit_white(2.8, [1.0, 0.96, 0.9], [0.34, 0.34, 0.36]);
+            assert!(day > 2.8 + 0.36, "a sunlit white face: {day}");
+            assert!(day > 3.0, "the lamp's shade by day: {day}");
+            let night = 1.2 * lit_white(0.22, [0.45, 0.56, 0.95], [0.022, 0.03, 0.06]);
+            assert!(night < 1.1 && 3.0 > night * 2.0, "the lamp at night: {night}");
+        }
+    }
+}

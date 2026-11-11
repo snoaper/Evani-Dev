@@ -520,6 +520,8 @@ dependencies = [
  "evani-kit-2d-platformer",
  "evani-live",
  "evani-look-pixel16",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
@@ -548,6 +550,8 @@ dependencies = [
  "evani-kit-base-building-rts",
  "evani-live",
  "evani-look-stylizedpbr",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
@@ -575,11 +579,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "evani-cargo-xtask"
+version = "0.1.0"
+
+[[package]]
 name = "evani-combat"
 version = "0.1.0"
 dependencies = [
  "evani-core",
  "evani-physics",
+]
+
+[[package]]
+name = "evani-construct"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
@@ -593,6 +608,7 @@ dependencies = [
  "evani-guide",
  "evani-look-toon",
  "evani-material-layers",
+ "evani-material-recipes",
  "evani-model",
  "flate2",
  "serde_json",
@@ -636,10 +652,12 @@ name = "evani-geocheck"
 version = "0.1.0"
 dependencies = [
  "evani-core",
+ "evani-gltf",
  "evani-kit-example",
  "evani-kit-kart-racer",
  "evani-look-basic",
  "evani-look-toon",
+ "evani-model",
  "evani-render",
  "flate2",
  "serde_json",
@@ -665,11 +683,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "evani-grass"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "evani-core",
+ "evani-render",
+ "naga",
+ "wasm-bindgen-futures",
+ "wgpu",
+]
+
+[[package]]
 name = "evani-guide"
 version = "0.1.0"
 dependencies = [
+ "evani-construct",
  "evani-gltf",
  "evani-lookguard",
+ "evani-material-recipes",
+ "evani-studio",
+ "evani-style-geo",
  "serde_json",
  "sha2",
  "toml",
@@ -686,6 +720,8 @@ dependencies = [
  "evani-kit-kart-racer",
  "evani-live",
  "evani-look-toon",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
@@ -760,6 +796,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "evani-kit-material-view"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-material-recipes",
+ "evani-render",
+ "evani-studio",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "evani-kit-model-view"
 version = "0.1.0"
 dependencies = [
@@ -769,6 +817,15 @@ dependencies = [
  "evani-look-toon",
  "evani-render",
  "serde_json",
+]
+
+[[package]]
+name = "evani-kit-scene-sunmoon-meadow"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-procedural-lib",
+ "evani-render",
 ]
 
 [[package]]
@@ -914,6 +971,8 @@ dependencies = [
  "evani-kit-match-3",
  "evani-live",
  "evani-look-cartoon2d",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-render",
  "evani-ui",
@@ -961,9 +1020,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "evani-material-recipes"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-gltf",
+ "evani-material-character",
+ "evani-material-layers",
+ "evani-material-nature",
+ "flate2",
+ "serde_json",
+]
+
+[[package]]
+name = "evani-material-view"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-fx",
+ "evani-gltf",
+ "evani-kit-material-view",
+ "evani-live",
+ "evani-look-photoreal",
+ "evani-look-stylizedpbr",
+ "evani-material-layers",
+ "evani-material-nature",
+ "evani-material-proc",
+ "evani-material-recipes",
+ "evani-procedural-lib",
+ "evani-render",
+ "evani-style-geo",
+ "js-sys",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "evani-model"
 version = "0.1.0"
 dependencies = [
+ "evani-construct",
  "serde",
  "serde_json",
 ]
@@ -995,6 +1093,8 @@ dependencies = [
  "evani-kit-model-view",
  "evani-live",
  "evani-look-toon",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-render",
  "evani-ui",
  "js-sys",
@@ -1009,6 +1109,7 @@ name = "evani-net"
 version = "0.1.0"
 dependencies = [
  "evani-core",
+ "evani-net",
  "js-sys",
  "wasm-bindgen",
 ]
@@ -1021,6 +1122,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "evani-procedural"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-render",
+]
+
+[[package]]
+name = "evani-procedural-lib"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-grass",
+ "evani-material-nature",
+ "evani-material-proc",
+ "evani-material-recipes",
+ "evani-procedural",
+ "evani-render",
+ "serde_json",
+]
+
+[[package]]
 name = "evani-render"
 version = "0.1.0"
 dependencies = [
@@ -1029,6 +1152,7 @@ dependencies = [
  "evani-gltf",
  "evani-material-character",
  "evani-material-layers",
+ "evani-material-recipes",
  "js-sys",
  "naga",
  "serde_json",
@@ -1037,6 +1161,10 @@ dependencies = [
  "web-sys",
  "wgpu",
 ]
+
+[[package]]
+name = "evani-reqcheck"
+version = "0.1.0"
 
 [[package]]
 name = "evani-sandbox"
@@ -1057,13 +1185,50 @@ dependencies = [
  "evani-material-layers",
  "evani-material-nature",
  "evani-material-proc",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
  "evani-ui",
  "evani-xr",
+ "serde_json",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "evani-scene-sunmoon-meadow"
+version = "0.1.0"
+dependencies = [
+ "evani-core",
+ "evani-gltf",
+ "evani-kit-scene-sunmoon-meadow",
+ "evani-live",
+ "evani-look-photoreal",
+ "evani-material-nature",
+ "evani-material-recipes",
+ "evani-procedural-lib",
+ "evani-render",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "evani-studio"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "evani-style-geo"
+version = "0.1.0"
+dependencies = [
+ "evani-gltf",
+ "evani-studio",
+ "flate2",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1078,6 +1243,8 @@ dependencies = [
  "evani-live",
  "evani-look-photoreal",
  "evani-look-toon",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
@@ -1098,6 +1265,8 @@ dependencies = [
  "evani-kit-top-down-action-adventure",
  "evani-live",
  "evani-look-pixelhd",
+ "evani-material-nature",
+ "evani-material-recipes",
  "evani-net",
  "evani-physics",
  "evani-render",
@@ -1128,7 +1297,12 @@ dependencies = [
  "evani-bench",
  "evani-core",
  "evani-guide",
+ "evani-reqcheck",
+ "evani-studio",
+ "evani-style-geo",
  "flate2",
+ "jpeg-decoder",
+ "jpeg-encoder",
  "png",
  "serde_json",
  "sha2",
@@ -1466,6 +1640,18 @@ name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
+
+[[package]]
+name = "jpeg-decoder"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00810f1d8b74be64b13dbf3db89ac67740615d6c891f0e7b6179326533011a07"
+
+[[package]]
+name = "jpeg-encoder"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0370574b86f7eca156b9f298392b5e69a23f8c86f3f865add60bbc2e79467a6"
 
 [[package]]
 name = "js-sys"

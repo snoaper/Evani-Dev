@@ -33,6 +33,12 @@
 //!    what players get.
 //!
 //! It never uploads: only the owner's click on Evani.App's publish card does.
+//!
+//! A game outside the engine folder (`--app-dir <game>/apps/<id>`, e.g. one
+//! made by `new-game --app-dir` from an installed engine pack) goes the same
+//! way; its package (`<game workspace>/publish/<id>/`), summaries and history
+//! (`<game workspace>/.evani/publish/<id>/`) and builds stay in its own
+//! workspace, never in the engine (docs/ENGINE_PACK.md 2).
 
 use std::collections::BTreeMap;
 use std::io::{Read as _, Write as _};
@@ -91,7 +97,7 @@ pub const DEFAULT_PORT: u16 = 8114;
 pub const SUMMARY_SCHEMA: &str = "evani.publish.summary/1";
 
 pub fn usage() -> String {
-    "  cargo xtask publish <id> [--dry-run] [--serve] [--port 8114] [--out <dir>] [--from <dir>] [--quick]\n  cargo xtask publish <id> --mark-published vN [--out <dir>]   record the package folder as the live version".to_string()
+    "  cargo xtask publish <id> [--dry-run] [--serve] [--port 8114] [--out <dir>] [--from <dir>] [--quick]\n  cargo xtask publish <id> --mark-published vN [--out <dir>]   record the package folder as the live version\n  cargo xtask publish --app-dir <game app folder> [same options]   a game outside the engine folder".to_string()
 }
 
 // ---- package manifest (path -> SHA-256 -> size) ------------------------------------
@@ -497,6 +503,9 @@ pub struct Expect {
     pub playground_problems: Vec<String>,
     /// Every `evani.*` marker name (to find the live module in the wasm).
     pub known_markers: Vec<String>,
+    /// The size cap: `Some(10 MB)` for a game or playground, `None` for the
+    /// library, a Scene, a viewer or a tool (`pg::size_cap`, `pg::CAP_RULE`).
+    pub cap: Option<u64>,
 }
 
 /// The `evani.json` a package gets when the previous one had none.
@@ -687,18 +696,21 @@ pub fn preflight(dir: &Path, e: &Expect) -> Vec<Check> {
     let read = |n: &str| std::fs::read(dir.join(n)).ok();
     let html = read("index.html").map(|b| String::from_utf8_lossy(&b).into_owned()).unwrap_or_default();
 
-    // 1. Size: the whole folder, uncompressed, under the cap.
+    // 1. Size: the whole folder, uncompressed, under the cap (games only: pg::CAP_RULE).
     let total = pg::dir_bytes(dir);
-    out.push(check(
-        "size",
-        (total > pg::PACKAGE_CAP_BYTES).then(|| {
-            (
-                format!("the package is {} (raw, whole folder), over the {} cap", pg::mb(total), pg::mb(pg::PACKAGE_CAP_BYTES)),
-                format!("Shrink {id}: smaller or fewer textures, sounds and models, or optional modules off in apps/{id}/evani.toml (the module table above shows each one's size)."),
-            )
-        }),
-        format!("{} of {} (raw, whole folder)", pg::mb(total), pg::mb(pg::PACKAGE_CAP_BYTES)),
-    ));
+    out.push(match e.cap {
+        Some(cap) => check(
+            "size",
+            (total > cap).then(|| {
+                (
+                    format!("the package is {} (raw, whole folder), over the {} cap", pg::mb(total), pg::mb(cap)),
+                    format!("Shrink {id}: smaller or fewer textures, sounds and models, or optional modules off in apps/{id}/evani.toml (the module table above shows each one's size)."),
+                )
+            }),
+            format!("{} of {} (raw, whole folder)", pg::mb(total), pg::mb(cap)),
+        ),
+        None => check("size", None, format!("{} (raw, whole folder); not a game: no size cap", pg::mb(total))),
+    });
 
     // 2. No dev-only code: no live module, no live code swapping, no root-absolute paths.
     let mut size = BuildSize::default();
@@ -907,22 +919,22 @@ fn build_totals(dist: &Path) -> (u64, u64, u64) {
         .fold((0, 0, 0), |(r, g, b), bytes| (r + bytes.len() as u64, g + gzip_len(&bytes), b + brotli_len(&bytes)))
 }
 
-fn variant_dist(app: &str, variant: &str) -> PathBuf {
-    workspace_root().join("target").join("evani-sizes").join(format!("{app}-{variant}"))
+fn variant_dist(app: &AppDir, variant: &str) -> PathBuf {
+    app.sizes_dir().join(format!("{}-{variant}", app.name))
 }
 
 /// One rebuild per listed module with it off, plus the base build.
 fn module_rows(app: &AppDir, m: &Manifest) -> Result<Vec<ModuleRow>, String> {
-    let (sr, sg, sb) = build_totals(&variant_dist(&app.name, "ship"));
+    let (sr, sg, sb) = build_totals(&variant_dist(app, "ship"));
     let mut rows = Vec::new();
     for (module, without) in m.without_each() {
         let variant = format!("ship-no-{}", module.replace([' ', '(', ')'], ""));
         trunk_build(app, &variant, &without)?;
-        let (r, g, b) = build_totals(&variant_dist(&app.name, &variant));
+        let (r, g, b) = build_totals(&variant_dist(app, &variant));
         rows.push(ModuleRow { module, raw: sr as i64 - r as i64, gzip: sg as i64 - g as i64, brotli: sb as i64 - b as i64 });
     }
     trunk_build(app, "ship-base", &m.base())?;
-    let (r, g, b) = build_totals(&variant_dist(&app.name, "ship-base"));
+    let (r, g, b) = build_totals(&variant_dist(app, "ship-base"));
     rows.push(ModuleRow { module: "base (core+render+kit+look)".to_string(), raw: r as i64, gzip: g as i64, brotli: b as i64 });
     Ok(rows)
 }
@@ -956,7 +968,7 @@ pub fn download_totals(m: &PackageManifest, page: &[String]) -> (u64, u64, u64) 
 
 /// The text of the size report, every figure labelled raw / gzip / brotli.
 /// `page` is what the browser fetches ([`page_files`]).
-pub fn size_report_lines(m: &PackageManifest, page: &[String], modules: Option<&[ModuleRow]>) -> Vec<String> {
+pub fn size_report_lines(m: &PackageManifest, page: &[String], modules: Option<&[ModuleRow]>, cap: Option<u64>) -> Vec<String> {
     let mut l = Vec::new();
     match modules {
         Some(rows) => {
@@ -978,12 +990,15 @@ pub fn size_report_lines(m: &PackageManifest, page: &[String], modules: Option<&
     }
     let (raw, gz, br) = m.totals();
     l.push(format!("    {:<44} {:>11} {:>11} {:>11}", "total", kb(raw), kb(gz), kb(br)));
-    l.push(format!(
-        "  10 MB cap (raw, whole folder, uncompressed; what Evani.App checks on upload): {} of {}, {}",
-        pg::mb(raw),
-        pg::mb(pg::PACKAGE_CAP_BYTES),
-        if raw > pg::PACKAGE_CAP_BYTES { "OVER" } else { "under" }
-    ));
+    l.push(match cap {
+        Some(cap) => format!(
+            "  10 MB cap (raw, whole folder, uncompressed; what Evani.App checks on upload): {} of {}, {}",
+            pg::mb(raw),
+            pg::mb(cap),
+            if raw > cap { "OVER" } else { "under" }
+        ),
+        None => format!("  size (raw, whole folder, uncompressed): {}; not a game, so no size cap ({})", pg::mb(raw), pg::CAP_RULE),
+    });
     let line = size_line_raw(m);
     l.push(format!(
         "  1.5 MB size line (raw wasm+js+html+css of the build, as `cargo xtask size-report`): {}, {}",
@@ -1092,6 +1107,8 @@ pub struct Summary<'a> {
     pub swapped: bool,
     /// Per-tier verdicts against catalog/tiers.json `download_targets` (S7-1).
     pub tiers: &'a crate::tier_report::TierReport,
+    /// The size cap (`Expect::cap`): `None` for anything that is not a game.
+    pub cap: Option<u64>,
 }
 
 impl Summary<'_> {
@@ -1139,8 +1156,8 @@ impl Summary<'_> {
             "sizes": {
                 "raw": raw, "gzip": gz, "brotli": br, "basis": "whole folder (what is uploaded)",
                 "download": {"raw": draw, "gzip": dgz, "brotli": dbr, "files": self.page, "basis": "index.html and the files it loads (what a player's browser fetches)"},
-                "cap_bytes": pg::PACKAGE_CAP_BYTES, "cap_basis": "raw, whole folder, uncompressed",
-                "under_cap": raw <= pg::PACKAGE_CAP_BYTES,
+                "cap_bytes": self.cap, "cap_basis": if self.cap.is_some() { "raw, whole folder, uncompressed" } else { "none: not a game (the 10 MB cap is for games only)" },
+                "under_cap": self.cap.is_none_or(|c| raw <= c),
                 "size_line_bytes": LIMIT_BYTES, "size_line_raw": size_line_raw(self.manifest),
                 "tier_targets": self.tiers.to_json(),
                 "modules": modules, "files": files,
@@ -1181,14 +1198,16 @@ impl Summary<'_> {
             s.push_str(&format!("- Preview: {u}\n"));
         }
         s.push_str(&format!(
-            "\n## Size\n\n- Download (index.html and the files it loads): {} gzip, {} brotli\n- On disk: {} raw of the {} cap (the cap is on the raw whole folder)\n",
+            "\n## Size\n\n- Download (index.html and the files it loads): {} gzip, {} brotli\n- On disk: {}\n",
             kb(gz),
             kb(br),
-            pg::mb(raw),
-            pg::mb(pg::PACKAGE_CAP_BYTES)
+            match self.cap {
+                Some(c) => format!("{} raw of the {} cap (the cap is on the raw whole folder)", pg::mb(raw), pg::mb(c)),
+                None => format!("{} raw; not a game, so no size cap", pg::mb(raw)),
+            }
         ));
         s.push_str("\n```text\n");
-        for l in size_report_lines(self.manifest, self.page, self.modules).into_iter().chain(self.tiers.lines()) {
+        for l in size_report_lines(self.manifest, self.page, self.modules, self.cap).into_iter().chain(self.tiers.lines()) {
             s.push_str(&l);
             s.push('\n');
         }
@@ -1315,7 +1334,8 @@ fn serve(listener: TcpListener, pkg: PathBuf, app: String) -> ! {
 // ---- the command -------------------------------------------------------------------
 
 struct Opts {
-    app: String,
+    /// The game id; `None` with `--app-dir` (the folder is the game).
+    app: Option<String>,
     dry_run: bool,
     serve: bool,
     quick: bool,
@@ -1345,7 +1365,7 @@ fn parse_opts(args: &[String]) -> Result<Opts, String> {
             positional.push(a.clone());
         }
     }
-    let app = positional.first().cloned().ok_or_else(usage)?;
+    let app = positional.first().cloned();
     let port = match value("--port") {
         Some(p) => p.parse().map_err(|_| format!("publish: --port {p} is not a port"))?,
         None => DEFAULT_PORT,
@@ -1377,8 +1397,15 @@ fn expect_for(root: &Path, app: &AppDir) -> Result<Expect, String> {
         look: app.manifest.look.clone(),
         title: page_title(&page).unwrap_or_else(|| app.manifest.name.clone()),
         free_roam,
-        playground_problems: pg::problems(root, &app.name, &app.manifest.kit, &toml).into_iter().map(|p| p.what).collect(),
+        playground_problems: match &app.external {
+            None => pg::problems(root, &app.name, &app.manifest.kit, &toml),
+            Some(x) => pg::problems_in(&x.kit_dir, &app.dir.join("src"), &app.dir.join("evani.toml").display().to_string(), &app.manifest.kit, &toml),
+        }
+        .into_iter()
+        .map(|p| p.what)
+        .collect(),
         known_markers: known_markers(root),
+        cap: pg::size_cap(&app.name, &toml),
     })
 }
 
@@ -1485,13 +1512,38 @@ pub fn dev_only_refusal(app: &str) -> Option<String> {
 
 pub fn cmd_publish(args: &[String]) -> Result<(), String> {
     let o = parse_opts(args)?;
-    if let Some(why) = dev_only_refusal(&o.app) {
+    let name = o.app.clone().ok_or_else(usage)?;
+    if let Some(why) = dev_only_refusal(&name) {
         return Err(format!("publish: {why}"));
     }
+    publish_app(&load_app(&name)?, &o)
+}
+
+/// `cargo xtask publish --app-dir <dir> ..`: a game outside the engine
+/// folder, packaged into its own workspace (never the engine's).
+pub fn cmd_publish_app(app: &AppDir, args: &[String]) -> Result<(), String> {
+    let o = parse_opts(args)?;
+    if let Some(id) = &o.app {
+        return Err(format!("publish --app-dir: `{id}`: with --app-dir the game is the folder; give no game id"));
+    }
+    if let Some(why) = dev_only_refusal(&app.name) {
+        return Err(format!("publish: {why}"));
+    }
+    publish_app(app, &o)
+}
+
+fn publish_app(app: &AppDir, o: &Opts) -> Result<(), String> {
+    // The engine (notice, looks, markers) and the game's own workspace
+    // (package, summaries, history): the same folder for a game under apps/.
     let root = workspace_root();
-    let app = load_app(&o.app)?;
-    let hist = history_dir(&root, &app.name);
-    let dest = o.out.as_deref().map_or_else(|| root.join("publish").join(&app.name), absolute);
+    let groot = app.external.as_ref().map_or_else(|| root.clone(), |x| x.root.clone());
+    // How to name this game on a command line.
+    let game_arg = match &app.external {
+        None => app.name.clone(),
+        Some(_) => format!("--app-dir {}", app.dir.display()),
+    };
+    let hist = history_dir(&groot, &app.name);
+    let dest = o.out.as_deref().map_or_else(|| groot.join("publish").join(&app.name), absolute);
     if dest.starts_with(&hist) || hist.starts_with(&dest) {
         return Err(format!("publish: --out {} overlaps the summary folder {}; pick another folder", dest.display(), hist.display()));
     }
@@ -1500,7 +1552,7 @@ pub fn cmd_publish(args: &[String]) -> Result<(), String> {
     if let Some(v) = &o.mark {
         let version = mark_published(&hist, &app.name, v, &dest, &now)?;
         println!("{}: recorded {} as live {version} ({})", app.name, dest.display(), hist.join("published").join(format!("{version}.json")).display());
-        println!("  the next `cargo xtask publish {}` diffs against {version}", app.name);
+        println!("  the next `cargo xtask publish {game_arg}` diffs against {version}");
         return Ok(());
     }
 
@@ -1512,35 +1564,35 @@ pub fn cmd_publish(args: &[String]) -> Result<(), String> {
     };
 
     // 1. The ship build (same guards as `cargo xtask build <id> --ship`).
-    playground_guard(&app)?;
+    playground_guard(app)?;
     let m = app.manifest.clone().ship();
-    let e = expect_for(&root, &app)?;
+    let e = expect_for(&root, app)?;
     println!(
-        "{} (\"{}\"): publish{} from apps/{}/evani.toml: kit {}, look {}, features [{}]",
+        "{} (\"{}\"): publish{} from {}: kit {}, look {}, features [{}]",
         app.name,
         e.title,
         if o.dry_run { " --dry-run" } else { "" },
-        app.name,
+        if app.external.is_some() { app.dir.join("evani.toml").display().to_string() } else { format!("apps/{}/evani.toml", app.name) },
         m.kit,
         m.look,
         m.features().join(", ")
     );
-    let ship = trunk_build(&app, "ship", &m)?;
+    let ship = trunk_build(app, "ship", &m)?;
     ship_guard(&app.name, &ship)?;
-    let dist = variant_dist(&app.name, "ship");
-    crate::build_facts::write(&app, &ship, &dist)?;
-    playground_size_guard(&app)?;
+    let dist = variant_dist(app, "ship");
+    crate::build_facts::write(app, &ship, &dist)?;
+    playground_size_guard(app)?;
     let modules = if o.quick {
         None
     } else {
         let extra = m.without_each().len() + 1;
         println!("size by module: {extra} more ship build(s), one per optional module off plus the base (--quick skips them)");
-        Some(module_rows(&app, &m)?)
+        Some(module_rows(app, &m)?)
     };
 
     // 2-3. Package, preflight, swap.
     let carry = o.from.as_deref().map(absolute).or_else(|| {
-        let own = root.join("publish").join(&app.name);
+        let own = groot.join("publish").join(&app.name);
         if dest.join("index.html").is_file() { Some(dest.clone()) } else { own.is_dir().then_some(own) }
     });
     let dry_dir = hist.join("dry-run");
@@ -1567,7 +1619,7 @@ pub fn cmd_publish(args: &[String]) -> Result<(), String> {
     print_checks(&p.checks);
     let page = page_files(&p.manifest, &std::fs::read_to_string(p.dir.join("index.html")).unwrap_or_default());
     println!("\nsize report:");
-    for l in size_report_lines(&p.manifest, &page, modules.as_deref()) {
+    for l in size_report_lines(&p.manifest, &page, modules.as_deref(), e.cap) {
         println!("{l}");
     }
     let tiers = crate::tier_report::report(
@@ -1605,6 +1657,7 @@ pub fn cmd_publish(args: &[String]) -> Result<(), String> {
         preview_url: preview_url.clone(),
         swapped: p.swapped,
         tiers: &tiers,
+        cap: e.cap,
     };
     let path = write_summary(&hist, &summary)?;
     println!("\nsummary: {} (and summary.md; outside the package, never uploaded)", path.display());
@@ -1619,9 +1672,8 @@ pub fn cmd_publish(args: &[String]) -> Result<(), String> {
         println!("verdict: nothing changed since the live version, skip: no publish needed");
     } else {
         println!(
-            "verdict: ready{}; only the owner's click on Evani.App's publish card uploads it, then record it with `cargo xtask publish {} --mark-published <version>`",
+            "verdict: ready{}; only the owner's click on Evani.App's publish card uploads it, then record it with `cargo xtask publish {game_arg} --mark-published <version>`",
             summary.suggested.as_ref().map_or_else(|| " (no version history yet: the next version is one above the live one)".to_string(), |v| format!(" as {v}")),
-            app.name
         );
     }
     if let (Some(listener), Some(url)) = (listener, preview_url) {

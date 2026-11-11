@@ -2,7 +2,7 @@
 //! (tests/model_bench/README.md, plan-m1.md task T2).
 //!
 //! For the 8 Sugarpeak karts it captures our own kart racer's kart at rest
-//! (`Kart::new` + `draw_kart`, 34 instances of the renderer's built-in
+//! (`Kart::new` + `draw_kart_classic`, the kart from before the candy designs, 34 instances of the renderer's built-in
 //! meshes), splits off the seated driver (instances 15 to 21), applies each
 //! rival's shape overrides from the manifest (decision D4, option B) and
 //! writes, per item: `mesh.glb` (the instances as drawn), front, side and top
@@ -16,7 +16,7 @@
 //!
 //! Usage: `model-bench-ref [--out tests/model_bench/ref]`
 
-use evani_kit_kart_racer::draw::{Mat, draw_kart};
+use evani_kit_kart_racer::draw::{Mat, draw_kart_classic};
 use evani_kit_kart_racer::kart::Kart;
 use evani_model::mesh::Mesh;
 use evani_model::png;
@@ -39,7 +39,7 @@ pub struct Inst {
     pub driver: bool,
 }
 
-/// The kart at rest, as `draw_kart` draws it: 34 instances.
+/// The kart at rest, as `draw_kart_classic` draws it: 34 instances.
 pub fn capture() -> Result<Vec<Inst>, String> {
     let kart = Kart::new(0, None, [0.0, 0.0, 0.0], 0.0);
     let at_rest = kart.speed == 0.0 && kart.steer_vis == 0.0 && kart.drift == 0.0 && kart.boost == 0.0 && kart.hop == 0.0 && kart.squash == 0.0 && kart.wheel_roll == 0.0 && kart.vy == 0.0;
@@ -48,7 +48,7 @@ pub fn capture() -> Result<Vec<Inst>, String> {
     }
     let mats = [Mat { index: 0, tint: [1.0; 3] }; 16];
     let mut rw = RenderWorld::default();
-    draw_kart(&kart, ([1.0, 1.0, 1.0], None), [0.0, 0.0, 0.0], 0.0, 1.0, &mats, &mut rw);
+    draw_kart_classic(&kart, ([1.0, 1.0, 1.0], None), [0.0, 0.0, 0.0], 0.0, 1.0, &mats, &mut rw);
     if rw.meshes.len() != 34 {
         return Err(format!("draw_kart drew {} instances, the manifest lists 34; update tests/model_bench/manifest.json", rw.meshes.len()));
     }

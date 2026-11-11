@@ -18,6 +18,9 @@
 //   --connect http://127.0.0.1:9222       drive a Chrome already running (the
 //                                         leased phone over adb) instead of
 //                                         starting one; only its own tabs close
+//   --raf-log 1                           time every animation-frame callback per bench
+//                                         phase (main-thread ms against the frame
+//                                         interval) into the job's `raf`
 // A job may carry `css` (a style sheet added to the page), `label` (file names; default its tier) and `storage`
 // ({ key: value } put in localStorage before the page's own scripts run,
 // e.g. the saved tier `evani:<game>:render.tier`, so there is no warm-up).
@@ -35,6 +38,7 @@ import { join } from 'node:path';
 
 // Chrome finder, CDP client and the pointer/keyboard stubs (shared with tools/convert-runner).
 import { Cdp, STUBS, findChrome as findChromeAt, sleep } from './chrome.mjs';
+import { waitDevToolsUrl } from '../live-check/devtools-port.mjs';
 
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
@@ -113,15 +117,7 @@ async function main() {
   let cdp = null;
   try {
     // Chrome writes the debugging port into the profile folder.
-    let wsUrl = null;
-    for (let i = 0; i < 200 && !wsUrl && !chromeExited; i++) {
-      const f = join(profile, 'DevToolsActivePort');
-      if (existsSync(f)) {
-        const [port, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-        if (port && path) wsUrl = `ws://127.0.0.1:${port}${path}`;
-      }
-      if (!wsUrl) await sleep(100);
-    }
+    let wsUrl = await waitDevToolsUrl(profile, { exited: () => chromeExited });
     if (!wsUrl) throw new Error('Chrome did not open its debugging port');
     cdp = await Cdp.connect(wsUrl);
     const ver = await cdp.send('Browser.getVersion');
@@ -217,6 +213,15 @@ async function runJob(cdp, baseUrl, job, timeoutMs, out) {
       const css = `(() => { const add = () => { const st = document.createElement('style'); st.textContent = ${JSON.stringify(job.css)}; document.head.appendChild(st); }; if (document.head) add(); else document.addEventListener('DOMContentLoaded', add); })();`;
       await s('Page.addScriptToEvaluateOnNewDocument', { source: css });
     }
+    if (args['raf-log']) {
+      // Diagnosis (`--raf-log 1`): time every animation-frame callback (the
+      // engine's whole main-thread frame) and tag it with the bench phase,
+      // so a CPU-bound phase can be told from one waiting on the browser's
+      // GPU process (callback short, frame interval long).
+      const hook = `(() => { const L = window.__rafLog = []; const raf = window.requestAnimationFrame.bind(window); let last = 0;
+        window.requestAnimationFrame = (cb) => raf((t) => { const s = performance.now(); try { cb(t); } finally { const e = performance.now(); const p = (window.__bench && window.__bench.progress) || ''; if (p.includes(' measuring ')) L.push([p.split(' ')[1], e - s, last ? s - last : 0]); last = s; } }); })();`;
+      await s('Page.addScriptToEvaluateOnNewDocument', { source: hook });
+    }
     if (result.requests || args['throttle-kbps']) await s('Network.enable');
     if (args['throttle-kbps']) {
       // A slow line, so a streamed file arrives after the first frames.
@@ -285,6 +290,15 @@ async function runJob(cdp, baseUrl, job, timeoutMs, out) {
     }
     const r = await s('Runtime.evaluate', { expression: 'JSON.stringify(window.__bench)', returnByValue: true });
     result.bench = JSON.parse(r.result.value);
+    if (args['raf-log']) {
+      // Per phase: the callback's mean and median ms and the mean frame interval.
+      const e = await s('Runtime.evaluate', {
+        expression: `JSON.stringify((() => { const by = {}; for (const [p, d, i] of window.__rafLog || []) (by[p] = by[p] || []).push([d, i]); const o = {}; for (const p in by) { const v = by[p]; const d = v.map((x) => x[0]).sort((a, b) => a - b); const i = v.map((x) => x[1]).filter((x) => x > 0); o[p] = { frames: v.length, callback_mean_ms: d.reduce((a, b) => a + b, 0) / d.length, callback_p50_ms: d[Math.floor(d.length / 2)], interval_mean_ms: i.reduce((a, b) => a + b, 0) / Math.max(1, i.length) }; } return o; })())`,
+        returnByValue: true,
+      });
+      result.raf = JSON.parse(e.result?.value ?? '{}');
+      log(`${label}: frame callbacks ${JSON.stringify(result.raf)}`);
+    }
   } catch (e) {
     result.error = String(e.message ?? e);
   } finally {

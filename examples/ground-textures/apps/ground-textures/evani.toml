@@ -1,0 +1,8 @@
+# Ground textures proof (TopGun W3). Dev only: not a game for the library.
+name = "ground-textures"
+kit = "ground-textures"   # crate kits/evani-kit-ground-textures
+look = "photoreal"
+effects = ["shadows"]
+
+[modules]
+physics = "none"

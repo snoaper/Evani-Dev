@@ -1,0 +1,16 @@
+[package]
+name = "evani-cargo-xtask"
+description = "cargo-xtask for an engine pack: `cargo xtask <cmd>` runs the prebuilt `evani` beside it, so nobody compiles the build tool"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# std only: it starts another program and passes its exit code back.
+[[bin]]
+name = "cargo-xtask"
+path = "src/main.rs"
+
+[lints]
+workspace = true

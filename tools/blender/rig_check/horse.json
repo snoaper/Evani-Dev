@@ -1,0 +1,18 @@
+{
+  "about": "Rig check for the Evani.Dev test horse v3 (tools/models/horse: canon-built anatomy; Rigify horse metarig as the deform skeleton plus 8 half-turn helper bones at the hips, shoulders, stifles and elbows, 56 joints; the breast bones follow their arm's swing by 60 percent). Model frame: glTF, ground at y=0, nose toward +z. Goal for every region: no edge past 1.6x or under 0.45x its rest length. The idle and the walk under the tail meet it (v3: 1.32x / 0.71x and 1.29x / 0.83x). The other walk regions do not yet; their limits are the v3 measures plus a small margin, every one tighter than v2's (v2 limits in brackets), a regression guard, never to be raised to pass. Measured on v3 (v2 in brackets): elbow and armpit 3.30x / 0.45x (4.34x / 0.32x): the inside of the arm against the chest floor between the forelegs; the arm and shoulder blade carry the elbow 15-20 cm forward of the chest at touch-down, and the skin from the midline to the arm (9-10 cm) cannot follow without a corrective shape or a sliding-skin bone; the engine has no shape keys yet. Flank and groin 3.00x / 0.18x (2.68x / 0.04x): the stifle fold where the kneecap (always the leg's) meets the flank blend, at the end of stance; v2's lower stretch figure hid its fault, a sheet of skin from the flank to the hock (the femur held 6-8 percent of the stifle; the abdomen 35, the gaskin 55), which v3 removes; the squeeze, the fold closing in front of the stifle as the thigh swings forward, is four times milder. Back of the thigh and stifle 1.80x / 0.35x (2.35x / 0.27x). Everything else 2.60x / 0.13x (2.45x / 0.13x): the girth behind the elbow as the arm reaches forward (the arm's share of the skin blends back to f 0.30). What changed from v2: the limbs' share of the skin is rebuilt from anatomy with an even (harmonic) blend between plain anchors (rig_horse.py limb_share), the stifle split by angle round the joint, the crease rounding cut from 18 to 6 cm so the flank fold and groin are no longer filled with skin, the belly tucked up behind the barrel so the stifle and gaskin hang free.",
+  "frame_step": 1,
+  "stretch": [
+    {"name": "idle, whole body", "clips": ["idle"], "max_ratio": 1.6, "min_ratio": 0.45, "min_change_mm": 2, "max_count": 0},
+    {"name": "walk: under the tail", "clips": ["walk"], "max_ratio": 1.6, "min_ratio": 0.45, "min_change_mm": 2, "max_count": 0,
+     "region": [{"center": [0, 1.20, -0.76], "size": [0.20, 0.40, 0.20]}]},
+    {"name": "walk: elbow and armpit", "clips": ["walk"], "max_ratio": 3.6, "min_ratio": 0.40, "min_change_mm": 2, "max_count": 0,
+     "region": [{"center": [0, 0.92, 0.56], "size": [0.50, 0.34, 0.34]}]},
+    {"name": "walk: flank and groin", "clips": ["walk"], "max_ratio": 3.05, "min_ratio": 0.16, "min_change_mm": 2, "max_count": 0,
+     "region": [{"center": [0, 1.02, -0.30], "size": [0.70, 0.36, 0.40]}]},
+    {"name": "walk: back of the thigh and stifle", "clips": ["walk"], "max_ratio": 2.0, "min_ratio": 0.31, "min_change_mm": 2, "max_count": 0,
+     "region": [{"center": [0, 0.95, -0.62], "size": [0.70, 0.40, 0.30]}]},
+    {"name": "walk: everything else", "clips": ["walk"], "max_ratio": 2.75, "min_ratio": 0.115, "min_change_mm": 2, "max_count": 0,
+     "exclude_region": [{"center": [0, 0.92, 0.56], "size": [0.50, 0.34, 0.34]}, {"center": [0, 1.02, -0.30], "size": [0.70, 0.36, 0.40]},
+                        {"center": [0, 1.20, -0.76], "size": [0.20, 0.40, 0.20]}, {"center": [0, 0.95, -0.62], "size": [0.70, 0.40, 0.30]}]}
+  ]
+}

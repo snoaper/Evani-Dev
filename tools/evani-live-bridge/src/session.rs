@@ -13,15 +13,32 @@ use serde_json::{Value, json};
 
 use crate::proto::PROTOCOL;
 
+/// Set by Evani.App when the engine is a read-only pack: the live session
+/// files go under `<EVANI_STATE_DIR>/live/` instead of `<root>/.evani/live/`
+/// (docs/ENGINE_PACK.md).
+pub const STATE_DIR_VAR: &str = "EVANI_STATE_DIR";
+
+/// `<root>/.evani/live`, or `<EVANI_STATE_DIR>/live`.
+pub fn live_dir(root: &Path) -> PathBuf {
+    live_dir_from(root, std::env::var_os(STATE_DIR_VAR).as_deref())
+}
+
+pub fn live_dir_from(root: &Path, state: Option<&std::ffi::OsStr>) -> PathBuf {
+    match state.filter(|v| !v.is_empty()) {
+        Some(s) => PathBuf::from(s).join("live"),
+        None => root.join(".evani").join("live"),
+    }
+}
+
 pub fn path(root: &Path) -> PathBuf {
-    root.join(".evani").join("live").join("session.json")
+    live_dir(root).join("session.json")
 }
 
 /// Several live sessions in one folder (LIVE_API.md 2.6): every bridge on
 /// the default session file also writes `.evani/live/sessions/<port>.json`;
 /// `session.json` is a copy of the most recently started one.
 pub fn sessions_dir(root: &Path) -> PathBuf {
-    root.join(".evani").join("live").join("sessions")
+    live_dir(root).join("sessions")
 }
 
 pub fn port_path(root: &Path, port: u16) -> PathBuf {
@@ -91,7 +108,7 @@ fn info_at(p: &Path, kind: &'static str) -> Option<Info> {
 /// tab's `model/session.json` and the review bridges' `review/*/session.json`,
 /// newest first.
 pub fn list(root: &Path) -> Vec<Info> {
-    let live = root.join(".evani").join("live");
+    let live = live_dir(root);
     let mut out = Vec::new();
     if let Ok(rd) = std::fs::read_dir(sessions_dir(root)) {
         for e in rd.flatten() {
@@ -260,6 +277,14 @@ pub fn iso_utc(t: SystemTime) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn state_dir_moves_live_files_out_of_the_engine() {
+        let root = Path::new("C:/pack/engine");
+        assert_eq!(live_dir_from(root, None), root.join(".evani").join("live"));
+        assert_eq!(live_dir_from(root, Some(std::ffi::OsStr::new(""))), root.join(".evani").join("live"));
+        assert_eq!(live_dir_from(root, Some(std::ffi::OsStr::new("D:/state"))), Path::new("D:/state").join("live"));
+    }
     use std::time::Duration;
 
     #[test]

@@ -13,6 +13,10 @@ publish.workspace = true
 # compiled, so its WGSL never reaches the download.
 default = []
 bloom = []
+# Bloom on emitters only (`fx.bloom.lit_floor`): the threshold never falls
+# under what the sun alone gives a white face, so lit surfaces don't glow.
+# Games without it are byte for byte what they were.
+bloom-emitters = ["bloom"]
 vignette = []
 # Reads the scene depth, which only the 3D path (`forward`) draws.
 outline = ["evani-render/forward"]
@@ -20,6 +24,9 @@ speedlines = []
 shake = []
 juice = []
 particles = ["evani-render/particles"]
+# Ribbons and trails (catalog `trails`): strips drawn from each emitter's last
+# 64 fixed-step points. Games without it download none of it.
+trails = ["evani-render/trails"]
 parallax = []
 shadows = ["evani-render/shadows"]
 # Fog is a body for the forward and model shaders' `fog` slot: it needs the 3D path.

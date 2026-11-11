@@ -226,6 +226,28 @@ fn list(s: &mut String, items: &[String], none: &str) {
     }
 }
 
+/// The packet's pictures are enough for a critic round: at least one, and a
+/// `shot-<moment>-<tier>.png` or `moment-<moment>.png` for every moment the
+/// target pack (or `[review] moments`) names. After the batch 3-5 join a
+/// stalled browser left material-view's round-2 packet with 0 pictures and
+/// `cargo xtask critic` still wrote it.
+pub fn picture_check(images: &[String], moments: &[String]) -> Result<(), String> {
+    if images.is_empty() {
+        return Err("ERROR critic: the packet would have no pictures (the review's captures failed or were never taken)".into());
+    }
+    let names: Vec<&str> = images.iter().filter_map(|i| Path::new(i).file_name().and_then(|n| n.to_str())).collect();
+    let missing: Vec<&str> = moments
+        .iter()
+        .map(String::as_str)
+        .filter(|m| !names.iter().any(|n| *n == format!("moment-{m}.png") || (n.starts_with(&format!("shot-{m}-")) && n.ends_with(".png"))))
+        .collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("ERROR critic: the packet has {} pictures but none for the moment(s) {} of {}", images.len(), missing.join(", "), moments.len()))
+    }
+}
+
 pub fn packet_md(p: &PacketInputs) -> String {
     let mut s = String::new();
     let _ = writeln!(s, "# Critic packet: {} (kit {}, look {}), round {} of {MAX_ROUNDS}", p.app, p.kit, p.look, p.round);
@@ -448,8 +470,16 @@ fn critic_for(root: &Path, app: &crate::AppDir, place: &crate::review::Place, ex
         previous,
         out_dir: rel(&root, &dir),
     };
-    let md = packet_md(&p);
     let out = dir.join("packet.md");
+    // The critic judges pictures: a packet without them (or without one per
+    // target moment) is refused, and a stale packet.md is not left behind.
+    let target_moments = std::fs::read_to_string(kit_dir.join("target").join("moments.md")).map(|t| crate::kitchecks::moment_ids(&t)).unwrap_or_default();
+    let want: Vec<String> = if target_moments.is_empty() { m.review_moments.iter().map(|x| x.name.clone()).collect() } else { target_moments };
+    if let Err(e) = picture_check(&p.images, &want) {
+        let _ = std::fs::remove_file(&out);
+        return Err(format!("{e}\n  fix: run `cargo xtask review {app_name}` until its card shows pictures for every moment, then `cargo xtask critic {app_name}` again."));
+    }
+    let md = packet_md(&p);
     std::fs::write(&out, md).map_err(|e| format!("{}: {e}", out.display()))?;
     println!("Critic packet for {app_name}, round {round} of {MAX_ROUNDS}: {}", out.display());
     println!(
@@ -479,6 +509,33 @@ mod tests {
 
     fn all(score: u64) -> Vec<(&'static str, u64)> {
         RUBRIC.iter().filter(|r| r.from_stage == 0).map(|r| (r.id, score)).collect()
+    }
+
+    #[test]
+    fn a_packet_needs_pictures_for_every_moment() {
+        let moments = vec!["ball".to_string(), "pool".to_string()];
+        let e = picture_check(&[], &moments).unwrap_err();
+        assert!(e.starts_with("ERROR critic: the packet would have no pictures"), "{e}");
+        assert!(picture_check(&[], &[]).is_err(), "no pictures is refused even without moments");
+        let some = vec![".vibedeck/review/material-view/shot-ball-low.png".to_string(), ".vibedeck/review/material-view/page-phone.png".to_string()];
+        let e = picture_check(&some, &moments).unwrap_err();
+        assert!(e.contains("none for the moment(s) pool of 2"), "{e}");
+        let all = [some.clone(), vec![".vibedeck/review/material-view/moment-pool.png".into()]].concat();
+        assert!(picture_check(&all, &moments).is_ok());
+        // `shot-ball-...` does not cover a moment named `bal`.
+        assert!(picture_check(&some, &["bal".into()]).is_err());
+        assert!(picture_check(&some, &[]).is_ok());
+    }
+
+    /// tools/live-check/stall-retry.mjs (a stalled capture step: one page
+    /// reload, then `ERROR capture: ...`) passes its own self-test.
+    #[test]
+    fn the_stall_retry_self_test_passes() {
+        let script = crate::workspace_root().join("tools").join("live-check").join("stall-retry.mjs");
+        match std::process::Command::new("node").arg(&script).arg("--self-test").output() {
+            Ok(o) => assert!(o.status.success() && String::from_utf8_lossy(&o.stdout).contains("stall-retry self-test: ok"), "{}\n{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr)),
+            Err(e) => eprintln!("node not found ({e}); the review tooling needs it, skipping the stall-retry self-test"),
+        }
     }
 
     #[test]

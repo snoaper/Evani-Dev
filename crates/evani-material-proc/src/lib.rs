@@ -19,7 +19,9 @@
 //! Feature `sky`: the [`sky`] dome, a Preetham daylight sky with drifting
 //! clouds (ported from three.js Sky.js, MIT), drawn as one unlit sphere
 //! round the camera when the look has a `sky` material, its sun following
-//! `render.light.direction` (`sky.*` params).
+//! `render.light.direction` (`sky.*` params). Feature `sky-horizon` adds
+//! live control of how the clouds meet the horizon (`sky.cloud_horizon_*`,
+//! [`sky::CloudHorizon`]) for cameras that see mostly the skyline.
 //!
 //! Turning the module on: list it as an optional dependency behind a game
 //! feature; it turns on evani-render's `forward` and `kit-material`. The
@@ -28,6 +30,8 @@
 //! evani-look-photoreal's `daylight` preset has all three.
 
 pub mod bake;
+#[cfg(feature = "sky-discs")]
+pub mod discs;
 pub mod draw;
 pub mod layout;
 pub mod params;
@@ -37,6 +41,8 @@ pub mod shader;
 pub mod sky;
 
 pub use bake::{Bake, FaceBake};
+#[cfg(feature = "sky-discs")]
+pub use discs::{DiscHandles, SkyDiscs};
 pub use draw::{DECAL_MATERIAL, ProcWorld, WORLD_MATERIAL, draw_world, install, system};
 pub use params::{MaterialParams, SurfaceTune, Tuning};
 pub use scene::{ProcBox, Region, Scene, V3, surface};
@@ -248,6 +254,272 @@ mod tests {
             shader::wgsl(3, 4, 5).contains("three.js"),
             cfg!(feature = "sky")
         );
+    }
+
+    /// The forward module with the engine's built-in slots spliced in.
+    #[cfg(feature = "sky")]
+    fn forward_module() -> String {
+        let mut slots = evani_core::slots::ShaderSlots::with_builtins();
+        slots.declare(evani_core::slots::SlotSignature {
+            name: "pcss_params",
+            params: &[("i", "u32")],
+            ret: "vec4<f32>",
+            description: "Soft shadows (test stand-in)",
+            default_body: "    return vec4<f32>(0.02, 6.0, 1.0, 12.0);",
+        });
+        let mut fwd = String::new();
+        for line in evani_render::shaders::FORWARD.source.lines() {
+            match line.trim().strip_prefix("//@slot ") {
+                Some(name) => {
+                    let id = slots.id(name.trim()).unwrap();
+                    fwd.push_str(&slots.wgsl_function(id).unwrap());
+                }
+                None => fwd.push_str(line),
+            }
+            fwd.push('\n');
+        }
+        fwd
+    }
+
+    /// A scene of no boxes ships only the sky part: it validates on its
+    /// own and spliced into the forward and shadow modules, carries none of
+    /// the surface painter, and is far smaller than the whole code.
+    #[cfg(feature = "sky")]
+    #[test]
+    fn sky_only_code_validates_and_carries_no_painter() {
+        let code = shader::sky_wgsl(4);
+        validate(&format!(
+            "{}{}",
+            evani_render::kit_material::BINDING_WGSL,
+            code
+        ));
+        assert!(code.contains("fn mp_sky_rgba(") && code.contains("const MP_SKY: u32 = 4u;"));
+        assert!(!code.contains("fn mp_world(") && !code.contains('$'));
+        assert!(
+            code.len() * 3 < shader::wgsl(0, 1, 4).len(),
+            "{} bytes of {}",
+            code.len(),
+            shader::wgsl(0, 1, 4).len()
+        );
+        let patched = evani_render::kit_material::patch_forward(&forward_module(), &code).unwrap();
+        validate(&patched);
+        validate(&evani_render::kit_material::shadows_source(&code));
+        let empty = Scene {
+            boxes: Vec::new(),
+            regions: Vec::new(),
+            default_region: None,
+        };
+        assert_eq!(draw::code_for(&empty, (0, 1, 4)), code);
+        assert_eq!(draw::code_for(&yard(), (0, 1, 4)), shader::wgsl(0, 1, 4));
+    }
+
+    /// A sky-only world draws just the dome round the eye (none while
+    /// `sky.visible` is off), installs the sky-only code, and sends the
+    /// open-below flag in record 6.
+    #[cfg(feature = "sky")]
+    #[test]
+    fn a_sky_only_world_draws_the_dome_and_follows_its_switches() {
+        use evani_core::ecs::World;
+        use evani_core::params::{ParamRegistry, ParamValue};
+        use evani_core::plugin::{LookData, MaterialDesc};
+        use evani_render::RenderWorld;
+        use evani_render::kit_material::KitMaterial;
+        let mut w = World::new();
+        let mut sky = MaterialDesc::new(SKY_MATERIAL, [1.0; 4]);
+        sky.unlit = true;
+        w.insert_resource(LookData {
+            materials: vec![MaterialDesc::new("stone", [0.6; 4]), sky],
+            ..Default::default()
+        });
+        let mut reg = ParamRegistry::new();
+        let mut pw = ProcWorld::sky_only().unwrap();
+        pw.register_params(&mut reg).unwrap();
+        w.insert_resource(reg);
+        w.insert_resource(pw);
+        w.insert_resource(KitMaterial::default());
+        w.insert_resource(RenderWorld::default());
+        draw_world(&mut w);
+        {
+            let rw = w.res::<RenderWorld>();
+            assert_eq!(rw.meshes.len(), 1, "only the dome");
+            assert_eq!(rw.meshes[0].material, 1);
+            let km = w.res::<KitMaterial>();
+            assert!(km.wgsl().contains("fn mp_sky_rgba(") && !km.wgsl().contains("fn mp_world("));
+            assert_eq!(km.data()[sky::RECORD + 3][3], 0.0);
+        }
+        {
+            let mut reg = w.res_mut::<ParamRegistry>();
+            let id = reg.id("sky.open_below").unwrap();
+            reg.set(id, ParamValue::Bool(true)).unwrap();
+            let id = reg.id("sky.visible").unwrap();
+            reg.set(id, ParamValue::Bool(false)).unwrap();
+        }
+        w.res_mut::<RenderWorld>().meshes.clear();
+        draw_world(&mut w);
+        assert!(w.res::<RenderWorld>().meshes.is_empty(), "hidden");
+        assert_eq!(
+            w.res::<KitMaterial>().data()[sky::RECORD + 3][3],
+            1.0,
+            "open below"
+        );
+    }
+
+    /// Without feature `sky-horizon` the sky part ships exactly as written
+    /// (other games' shaders are unchanged); with it, every edit matched
+    /// once, no fixed horizon number is left, and the code validates on its
+    /// own and spliced into the forward and shadow modules.
+    #[cfg(feature = "sky")]
+    #[test]
+    fn horizon_edits_apply_only_with_their_feature() {
+        #[cfg(not(feature = "sky-horizon"))]
+        {
+            assert!(shader::wgsl(0, 1, 2).contains(shader::SKY));
+            assert!(shader::sky_wgsl(2).starts_with(shader::SKY));
+            assert_eq!(layout::HEADER, 8);
+        }
+        #[cfg(feature = "sky-horizon")]
+        {
+            for (from, to) in shader::HORIZON_EDITS {
+                assert_eq!(shader::SKY.matches(from).count(), 1, "{from}");
+                assert!(shader::sky_source().contains(to), "{to}");
+            }
+            let src = shader::sky_source();
+            // The notes go, the three.js licence ships whole (MIT).
+            let licence_end = shader::SKY.find("DEALINGS IN THE SOFTWARE.").unwrap() + 25;
+            assert!(src.starts_with(&shader::SKY[..licence_end]));
+            assert!(!src.contains("// Records:") && !src.contains("// ---- sky cumulus"));
+            assert!(!src.contains("smoothstep(0.03, 0.27") && !src.contains("smoothstep(0.1, 0.4"));
+            assert!(src.contains("kit_data[8]") && layout::SKY_HORIZON == 8);
+            assert!(src.contains("kit_data[9]") && layout::SKY_CLOUD_LOOK == 9);
+            assert!(src.contains("kit_data[10]") && layout::SKY_TONE == 10);
+            assert!(!src.contains("thr + 0.16") && !src.contains("0.3 * main.z"));
+            assert!(src.contains("kit_data[11]") && layout::SKY_CLOUD_LIGHT == 11);
+            assert!(src.contains("kit_data[12]") && layout::SKY_CUMULUS == 12);
+            assert!(src.contains("kit_data[13]") && layout::SKY_CUMULUS_LOOK == 13);
+            #[cfg(not(feature = "sky-discs"))]
+            assert_eq!(layout::HEADER, 14);
+            // The disc part: its one edit made, its code spliced in and
+            // reading its three records (feature `sky-discs`).
+            #[cfg(feature = "sky-discs")]
+            {
+                for (from, to) in shader::DISC_EDITS {
+                    assert!(src.matches(to).count() == 1 && src.matches(from).count() == usize::from(to.contains(from)), "{to}");
+                }
+                assert!(src.contains("fn mp_discs(") && src.contains("fn mp_dk_warm(") && !src.contains("// ---- sky discs"));
+                assert!(src.contains("fn mp_dk_grain(") && src.contains("fn mp_dk_air(") && src.contains("fn mp_dk_un("));
+                assert!(src.contains("kit_data[24]") && src.contains("fn mp_dk_haze(") && layout::SKY_DISCS == 14);
+                assert_eq!(layout::HEADER, 25);
+                assert_eq!(layout::SKY_DISCS + crate::discs::RECORDS, layout::HEADER);
+            }
+            let code = shader::sky_wgsl(4);
+            validate(&format!(
+                "{}{}",
+                evani_render::kit_material::BINDING_WGSL,
+                code
+            ));
+            let fwd = forward_module();
+            validate(&evani_render::kit_material::patch_forward(&fwd, &code).unwrap());
+            validate(&evani_render::kit_material::shadows_source(&code));
+        }
+    }
+
+    /// Feature `sky-horizon`: the horizon record sits in the header, the
+    /// tune records move one on, the lookup still finds every face, and
+    /// the draw system sends the live horizon params into record 8.
+    #[cfg(feature = "sky-horizon")]
+    #[test]
+    fn horizon_record_is_in_the_header_and_follows_its_params() {
+        use evani_core::ecs::World;
+        use evani_core::params::{ParamRegistry, ParamValue};
+        use evani_core::plugin::{LookData, MaterialDesc};
+        use evani_render::RenderWorld;
+        use evani_render::kit_material::KitMaterial;
+        let yard_world = ProcWorld::new(yard()).unwrap();
+        assert_eq!(yard_world.data()[layout::TUNE_HEADER][0], layout::TUNE_BASE as f32);
+        assert_eq!(
+            layout::find(yard_world.data(), [2.0, 0.0, -3.0], [0.0, 1.0, 0.0], false),
+            Some((0, 3))
+        );
+        let mut w = World::new();
+        let mut sky = MaterialDesc::new(SKY_MATERIAL, [1.0; 4]);
+        sky.unlit = true;
+        w.insert_resource(LookData {
+            materials: vec![MaterialDesc::new("stone", [0.6; 4]), sky],
+            ..Default::default()
+        });
+        let mut reg = ParamRegistry::new();
+        let mut pw = ProcWorld::sky_only().unwrap();
+        pw.register_params(&mut reg).unwrap();
+        w.insert_resource(reg);
+        w.insert_resource(pw);
+        w.insert_resource(KitMaterial::default());
+        w.insert_resource(RenderWorld::default());
+        draw_world(&mut w);
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_HORIZON],
+            [0.03, 0.27, 1.0, 1.0]
+        );
+        // The cloud look and the tone start as the sky part draws without
+        // them.
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_CLOUD_LOOK],
+            [0.3, 0.16, 1.0, 1.0]
+        );
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_TONE],
+            [1.0, 1.0, 1.0, 0.0]
+        );
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_CLOUD_LIGHT],
+            [0.8, 0.4, 0.0, 0.0]
+        );
+        {
+            let mut reg = w.res_mut::<ParamRegistry>();
+            for (n, v) in [
+                ("sky.cloud_horizon_high", 0.1),
+                ("sky.cloud_horizon_haze", 0.5),
+            ] {
+                let id = reg.id(n).unwrap();
+                reg.set(id, ParamValue::F32(v)).unwrap();
+            }
+        }
+        draw_world(&mut w);
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_HORIZON],
+            [0.03, 0.1, 1.0, 0.5]
+        );
+        {
+            let mut reg = w.res_mut::<ParamRegistry>();
+            for (n, v) in [("sky.cloud_lobe_shade", 0.1), ("sky.zenith_deep", 0.4)] {
+                let id = reg.id(n).unwrap();
+                reg.set(id, ParamValue::F32(v)).unwrap();
+            }
+            let id = reg.id("sky.tint").unwrap();
+            reg.set(id, ParamValue::Color([1.0, 0.75, 1.0])).unwrap();
+        }
+        draw_world(&mut w);
+        assert_eq!(w.res::<KitMaterial>().data()[layout::SKY_CLOUD_LOOK][0], 0.1);
+        assert_eq!(
+            w.res::<KitMaterial>().data()[layout::SKY_TONE],
+            [1.0, 0.75, 1.0, 0.4]
+        );
+        // The cloud volume: off by default (its records at their defaults),
+        // then on with its own seed and layer.
+        let d = sky::CloudVolume::default();
+        assert_eq!(w.res::<KitMaterial>().data()[layout::SKY_CUMULUS], d.record());
+        assert_eq!(w.res::<KitMaterial>().data()[layout::SKY_CUMULUS_LOOK], d.look_record());
+        {
+            let mut reg = w.res_mut::<ParamRegistry>();
+            let id = reg.id("sky.cloud_volume").unwrap();
+            reg.set(id, ParamValue::Bool(true)).unwrap();
+            for (n, v) in [("sky.cloud_seed", 102.49), ("sky.cloud_base", 1.2), ("sky.cirrus", 0.2)] {
+                let id = reg.id(n).unwrap();
+                reg.set(id, ParamValue::F32(v)).unwrap();
+            }
+        }
+        draw_world(&mut w);
+        assert_eq!(w.res::<KitMaterial>().data()[layout::SKY_CLOUD_LIGHT], [0.8, 0.4, 1.0, 102.49]);
+        assert_eq!(w.res::<KitMaterial>().data()[layout::SKY_CUMULUS], [1.2, d.depth, d.size, 0.2]);
     }
 
     #[test]

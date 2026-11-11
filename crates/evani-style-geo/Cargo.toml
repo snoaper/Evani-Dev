@@ -1,0 +1,32 @@
+[package]
+name = "evani-style-geo"
+description = "Evani.Dev Asset & Style Studio geometry stage: an asset's one source model turned into each art style's shape (conservative voxels that keep thin parts, greedy meshing, low-poly, papercraft, clay lumps, yarn ridges), plus the source reader; shared by the material viewer and `cargo xtask style-bake` (dev tool, never in a game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Own code only (docs/studio/WORK_PACKAGES.md WP3): the research's papers and
+# articles are ideas, nothing is copied and no mesh library is added. No GPU
+# and no browser API, so the same code runs in the viewer's wasm and natively
+# in xtask. Only the material-view tool app reaches it.
+[features]
+default = []
+
+[dependencies]
+evani-studio.workspace = true
+# The source reader (WP2): the engine's own model reader.
+evani-gltf.workspace = true
+# The source reader's region rules (catalog/assets/source_rules.json);
+# both already come in through evani-studio, so nothing new downloads.
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# examples/studio_assets.rs packs its thumbnails (already a workspace
+# dependency of the tools; never reaches a game).
+flate2.workspace = true
+
+[lints]
+workspace = true

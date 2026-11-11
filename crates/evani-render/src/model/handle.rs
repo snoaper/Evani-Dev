@@ -162,6 +162,23 @@ impl Models { #[cfg(feature = "frustum-cull")] pub(crate) fn retain_draws(&mut s
         hd.current.filter(|&c| self.ready(c)).or(hd.shown.filter(|&c| self.ready(c)))
     }
 
+    /// Every handle drawn this frame draws its settled tier's own file, or
+    /// that file failed for good (tier-settle; a handle not drawn does not
+    /// count). Capture builds only.
+    #[cfg(feature = "capture")]
+    pub fn handles_settled(&self) -> bool {
+        let drawn = |id: Option<ModelId>| id.is_some_and(|m| self.draws.iter().any(|d| d.model == m));
+        self.stream.handles.iter().filter(|h| drawn(h.shown) || drawn(h.current)).all(|h| h.current.is_some_and(|c| !matches!(self.state(c), Some(ModelState::Loading))))
+    }
+
+    /// Model `id` is drawn only as a handle's last ready file while the
+    /// handle's own file for the tier still loads (a tier switch): it is
+    /// about to go, so no Lite or Low sun bake is spent on it.
+    pub fn standing_in(&self, id: ModelId) -> bool {
+        self.stream.handles.iter().any(|h| h.shown == Some(id) && h.current.is_some_and(|c| c != id && matches!(self.state(c), Some(ModelState::Loading))))
+            && !self.stream.handles.iter().any(|h| h.current == Some(id))
+    }
+
     /// The handle's model failed for good (no file, a bad file): the
     /// placeholder stays. The reason is in the error log.
     pub fn handle_failed(&self, h: ModelHandle) -> bool {

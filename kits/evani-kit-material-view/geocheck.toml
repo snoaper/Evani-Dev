@@ -1,0 +1,12 @@
+# Intentional cases for `cargo xtask geocheck material-view` (docs/GEOCHECK.md).
+# The garden bottle's cork rests in the bottle's neck, which is glass drawn by
+# the nature pass (no mesh the check can see). The head bust needs no tag: every
+# part of it (tools/blender/bust_build.py) is a closed, manifold surface, so a
+# mesh finding on it is a real defect to fix, not a feature.
+
+[[tag]]
+check = "floating"
+object = "*accent (cylinder)"
+at = [0.36, 1.2, 1.26]
+radius = 0.05
+reason = "the bottle's cork: it rests in the bottle's neck, which is glass drawn by the nature pass as an analytic surface (no mesh under it for the check's ray to hit)"

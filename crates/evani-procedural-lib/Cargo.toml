@@ -1,0 +1,544 @@
+[package]
+name = "evani-procedural-lib"
+description = "Evani.Dev procedural library: 24 categories and 357 assets (catalog/procedural/library.json), one Cargo feature per category and per asset so a game builds only what it lists; reference generators, the storm sea, ocean, water, glass, sky and grass wrapped as they are, and name-based placeholders for the rest"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# A game lists categories or assets in evani.toml:
+#   [modules] procedural = ["terrain", "geometry-cube-cuboid"]
+# which turns on the app features `procedural` (this crate, optional) and
+# `procedural-<part>` (each forwarding to this crate's feature `<part>`).
+# Nothing unlisted is compiled: every asset's code and registration sits
+# behind its own feature, and a game without `procedural` has no
+# dependency on this crate at all. docs/PROCEDURAL.md.
+#
+# Features: `<category>` turns on all its assets; `<category>-<asset>` one
+# asset; `cat-<category>` is internal (the category's entry, on with any of
+# its assets); `host-*` are internal (the wrapped engine modules, on only
+# with an asset that wraps them).
+[features]
+default = []
+# Dev builds with live capture: the wrapped modules follow a capture's
+# camera and jitter. Ship builds leave it off.
+capture = ["evani-grass?/capture", "evani-material-nature?/capture"]
+# The wrapped engine modules, as they are.
+host-nature = ["dep:evani-material-nature"]
+host-grass = ["dep:evani-grass"]
+host-sky = ["dep:evani-material-proc", "evani-material-proc/sky"]
+# Realism: the assets drawn in catalogue materials (evani-procedural's
+# surface feature, the textured-model path). On only with such an asset.
+realism = ["evani-procedural/surface"]
+# Behaviour fields: the wind gusts' wind and the water currents' flow, for
+# Evani.commons' test scenes (evani-procedural's `behaviour`). Only the
+# commons render app turns it on; no game lists it.
+behaviour = ["evani-procedural/behaviour"]
+# The realism preview forms (a finish on a door, a table, a fence...): the
+# Material library view only, so no game downloads them.
+preview = ["realism"]
+# The typed building-block graph as engine data (blocks_table, written by
+# tools/procedural/gen_blocks.mjs) and `composition()`: an asset assembled
+# from its layer, scatter and base links (docs/PROCEDURAL.md "Composition
+# from typed links"). Off unless a game asks for it.
+compose = []
+material-soil-dark-loam = [
+    "realism",
+]
+material-snow-fresh-powder = [
+    "realism",
+]
+
+# BEGIN generated features (tools/procedural/gen_library.py)
+# 1. Core geometry and primitives (15 assets)
+geometry = ["geometry-cube-cuboid", "geometry-bevelled-box", "geometry-uv-sphere", "geometry-icosphere", "geometry-cylinder", "geometry-cone", "geometry-capsule", "geometry-torus", "geometry-plane-grid", "geometry-disc-ring", "geometry-pyramid", "geometry-wedge-ramp", "geometry-lathed-rotational-mesh", "geometry-extruded-polygon", "geometry-swept-spline-tube"]
+cat-geometry = []
+geometry-cube-cuboid = ["cat-geometry", "realism"]
+geometry-bevelled-box = ["cat-geometry", "realism"]
+geometry-uv-sphere = ["cat-geometry", "realism"]
+geometry-icosphere = ["cat-geometry", "realism"]
+geometry-cylinder = ["cat-geometry", "realism"]
+geometry-cone = ["cat-geometry", "realism"]
+geometry-capsule = ["cat-geometry"]
+geometry-torus = ["cat-geometry"]
+geometry-plane-grid = ["cat-geometry"]
+geometry-disc-ring = ["cat-geometry"]
+geometry-pyramid = ["cat-geometry"]
+geometry-wedge-ramp = ["cat-geometry"]
+geometry-lathed-rotational-mesh = ["cat-geometry"]
+geometry-extruded-polygon = ["cat-geometry"]
+geometry-swept-spline-tube = ["cat-geometry"]
+
+# 2. Terrain and landforms (15 assets)
+terrain = ["terrain-flat-terrain", "terrain-rolling-hills", "terrain-mountains", "terrain-mountain-ranges", "terrain-valleys", "terrain-canyons", "terrain-cliffs", "terrain-plateaus", "terrain-craters", "terrain-sand-dunes", "terrain-beaches", "terrain-islands", "terrain-caves", "terrain-ravines", "terrain-terraced-landscapes"]
+cat-terrain = []
+terrain-flat-terrain = ["cat-terrain", "realism"]
+terrain-rolling-hills = ["cat-terrain", "realism"]
+# The rolling hills with real meadow grass round a player (evani-grass;
+# `terrain::hills_meadow_grass`, Asset Studio column 28): opt-in, so a game
+# without it downloads no grass.
+hills-grass = ["terrain-rolling-hills", "host-grass"]
+terrain-mountains = ["cat-terrain", "realism"]
+# The mountains with real grass on their meadows round a player (evani-grass;
+# `mountain::meadow_grass`): opt-in, so a game without it downloads no grass.
+mountain-grass = ["terrain-mountains", "host-grass"]
+terrain-mountain-ranges = ["cat-terrain", "realism"]
+terrain-valleys = ["cat-terrain", "realism"]
+# The canyons: their own module (src/canyon.rs), realism surfaces only.
+terrain-canyons = ["cat-terrain", "realism"]
+terrain-cliffs = ["cat-terrain", "realism"]
+terrain-plateaus = ["cat-terrain", "realism"]
+terrain-craters = ["cat-terrain", "realism"]
+terrain-sand-dunes = ["cat-terrain"]
+terrain-beaches = ["cat-terrain"]
+terrain-islands = ["cat-terrain"]
+terrain-caves = ["cat-terrain", "realism"]
+terrain-ravines = ["cat-terrain", "realism"]
+terrain-terraced-landscapes = ["cat-terrain"]
+
+# 3. Rocks, minerals and geology (15 assets)
+rocks = ["rocks-small-stones", "rocks-pebbles", "rocks-medium-rocks", "rocks-large-boulders", "rocks-jagged-rock-formations", "rocks-rounded-river-rocks", "rocks-rock-piles", "rocks-scree-slopes", "rocks-rock-walls", "rocks-stone-arches", "rocks-crystal-clusters", "rocks-mineral-deposits", "rocks-ore-veins", "rocks-stalagmites", "rocks-stalactites"]
+cat-rocks = []
+rocks-small-stones = ["cat-rocks"]
+rocks-pebbles = ["cat-rocks", "realism"]
+rocks-medium-rocks = ["cat-rocks", "realism"]
+rocks-large-boulders = ["cat-rocks"]
+rocks-jagged-rock-formations = ["cat-rocks", "realism"]
+rocks-rounded-river-rocks = ["cat-rocks", "realism"]
+rocks-rock-piles = ["cat-rocks", "realism"]
+rocks-scree-slopes = ["cat-rocks", "realism"]
+rocks-rock-walls = ["cat-rocks"]
+rocks-stone-arches = ["cat-rocks"]
+rocks-crystal-clusters = ["cat-rocks"]
+rocks-mineral-deposits = ["cat-rocks"]
+rocks-ore-veins = ["cat-rocks"]
+rocks-stalagmites = ["cat-rocks"]
+rocks-stalactites = ["cat-rocks"]
+
+# 4. Grass, plants and ground vegetation (12 assets)
+vegetation = ["vegetation-short-grass", "vegetation-long-grass", "vegetation-wildflowers", "vegetation-flower-beds", "vegetation-weeds", "vegetation-ferns", "vegetation-bushes", "vegetation-shrubs", "vegetation-reeds", "vegetation-moss-patches", "vegetation-vines", "vegetation-ground-cover-plants"]
+cat-vegetation = []
+vegetation-short-grass = ["cat-vegetation", "host-grass"]
+vegetation-long-grass = ["cat-vegetation", "host-grass"]
+vegetation-wildflowers = ["cat-vegetation"]
+vegetation-flower-beds = ["cat-vegetation"]
+vegetation-weeds = ["cat-vegetation"]
+vegetation-ferns = ["cat-vegetation"]
+vegetation-bushes = ["cat-vegetation"]
+vegetation-shrubs = ["cat-vegetation"]
+vegetation-reeds = ["cat-vegetation"]
+vegetation-moss-patches = ["cat-vegetation"]
+vegetation-vines = ["cat-vegetation"]
+vegetation-ground-cover-plants = ["cat-vegetation"]
+
+# 5. Trees and forests (15 assets)
+trees = ["trees-oak-trees", "trees-pine-trees", "trees-birch-trees", "trees-palm-trees", "trees-willow-trees", "trees-fruit-trees", "trees-saplings", "trees-dead-trees", "trees-tree-stumps", "trees-fallen-trees", "trees-exposed-root-systems", "trees-branch-structures", "trees-tree-canopies", "trees-hedgerows", "trees-dense-forest-clusters"]
+cat-trees = []
+trees-oak-trees = ["cat-trees", "realism"]
+trees-pine-trees = ["cat-trees"]
+trees-birch-trees = ["cat-trees"]
+trees-palm-trees = ["cat-trees"]
+trees-willow-trees = ["cat-trees"]
+trees-fruit-trees = ["cat-trees"]
+trees-saplings = ["cat-trees"]
+trees-dead-trees = ["cat-trees"]
+trees-tree-stumps = ["cat-trees"]
+trees-fallen-trees = ["cat-trees"]
+trees-exposed-root-systems = ["cat-trees"]
+trees-branch-structures = ["cat-trees"]
+trees-tree-canopies = ["cat-trees"]
+trees-hedgerows = ["cat-trees"]
+trees-dense-forest-clusters = ["cat-trees"]
+
+# 6. Water and coastal assets (15 assets)
+water = ["water-oceans", "water-lakes", "water-ponds", "water-rivers", "water-streams", "water-waterfalls", "water-rapids", "water-water-currents", "water-ocean-waves", "water-wave-foam", "water-shorelines", "water-tidal-pools", "water-puddles", "water-marshes", "water-floating-ice"]
+cat-water = []
+water-oceans = ["cat-water", "host-nature", "evani-material-nature/spectral-sea"]
+water-lakes = ["cat-water", "host-nature"]
+water-ponds = ["cat-water", "host-nature"]
+water-rivers = ["cat-water", "realism", "host-nature", "host-grass"]
+water-streams = ["cat-water"]
+water-waterfalls = ["cat-water"]
+water-rapids = ["cat-water"]
+water-water-currents = ["cat-water"]
+water-ocean-waves = ["cat-water", "host-nature", "evani-material-nature/spectral-sea"]
+water-wave-foam = ["cat-water"]
+# The shoreline: realism surfaces (sand, soil, granite) and the nature
+# pass for its water (src/shore.rs).
+water-shorelines = ["cat-water", "realism", "host-nature"]
+water-tidal-pools = ["cat-water"]
+water-puddles = ["cat-water"]
+water-marshes = ["cat-water"]
+water-floating-ice = ["cat-water"]
+
+# 7. Sky, weather and atmosphere (15 assets)
+sky = ["sky-dynamic-sky-dome", "sky-sun-and-moon-discs", "sky-cloud-layers", "sky-volumetric-looking-clouds", "sky-distance-fog", "sky-ground-mist", "sky-rain", "sky-snowfall", "sky-hail", "sky-wind-gust-effects", "sky-dust-storms", "sky-sandstorms", "sky-lightning", "sky-rainbows", "sky-aurora-effects"]
+cat-sky = []
+# The dome with its horizon part (clouds down to the skyline, for player
+# cameras) and its photoreal recipe (src/skydome.rs).
+sky-dynamic-sky-dome = ["cat-sky", "host-sky", "evani-material-proc/sky-horizon"]
+sky-sun-and-moon-discs = ["cat-sky", "host-sky", "evani-material-proc/sky-discs"]
+sky-cloud-layers = ["cat-sky"]
+# The clouds are a ray-marched volume (src/clouds.rs): four game passes.
+sky-volumetric-looking-clouds = ["cat-sky", "evani-render/game-passes"]
+# The distance fog is a depth-based height fog (src/fog.rs): one game pass.
+sky-distance-fog = ["cat-sky",
+    "evani-render/game-passes",
+]
+sky-ground-mist = ["cat-sky"]
+sky-rain = ["cat-sky"]
+sky-snowfall = ["cat-sky"]
+sky-hail = ["cat-sky"]
+sky-wind-gust-effects = ["cat-sky"]
+sky-dust-storms = ["cat-sky"]
+sky-sandstorms = ["cat-sky"]
+sky-lightning = ["cat-sky"]
+sky-rainbows = ["cat-sky"]
+sky-aurora-effects = ["cat-sky"]
+
+# 8. Roads, paths and transport infrastructure (15 assets)
+roads = ["roads-dirt-roads", "roads-gravel-roads", "roads-cobblestone-roads", "roads-brick-roads", "roads-asphalt-roads", "roads-concrete-roads", "roads-wooden-boardwalks", "roads-railway-tracks", "roads-tram-tracks", "roads-road-kerbs", "roads-pavements", "roads-road-intersections", "roads-roundabouts", "roads-bridges", "roads-tunnels"]
+cat-roads = []
+roads-dirt-roads = ["cat-roads"]
+roads-gravel-roads = ["cat-roads"]
+roads-cobblestone-roads = ["cat-roads"]
+roads-brick-roads = ["cat-roads"]
+roads-asphalt-roads = ["cat-roads"]
+roads-concrete-roads = ["cat-roads"]
+roads-wooden-boardwalks = ["cat-roads"]
+roads-railway-tracks = ["cat-roads"]
+roads-tram-tracks = ["cat-roads"]
+roads-road-kerbs = ["cat-roads"]
+roads-pavements = ["cat-roads"]
+roads-road-intersections = ["cat-roads"]
+roads-roundabouts = ["cat-roads"]
+roads-bridges = ["cat-roads"]
+roads-tunnels = ["cat-roads"]
+
+# 9. Buildings and structures (15 assets)
+buildings = ["buildings-log-cabins", "buildings-townhouses", "buildings-farmhouses", "buildings-barns", "buildings-warehouses", "buildings-workshops", "buildings-shops", "buildings-office-buildings", "buildings-apartment-buildings", "buildings-high-rise-towers", "buildings-aircraft-hangars", "buildings-factories", "buildings-churches", "buildings-schools", "buildings-castles"]
+cat-buildings = []
+buildings-log-cabins = ["cat-buildings"]
+# The terrace of townhouses: its own module (src/townhouse.rs), realism surfaces only.
+buildings-townhouses = ["cat-buildings", "realism"]
+buildings-farmhouses = ["cat-buildings"]
+buildings-barns = ["cat-buildings"]
+buildings-warehouses = ["cat-buildings"]
+buildings-workshops = ["cat-buildings"]
+buildings-shops = ["cat-buildings"]
+# The office building: its own module (src/office.rs), realism surfaces only.
+buildings-office-buildings = ["cat-buildings", "realism"]
+buildings-apartment-buildings = ["cat-buildings"]
+buildings-high-rise-towers = ["cat-buildings"]
+buildings-aircraft-hangars = ["cat-buildings"]
+buildings-factories = ["cat-buildings"]
+buildings-churches = ["cat-buildings"]
+buildings-schools = ["cat-buildings"]
+buildings-castles = ["cat-buildings"]
+
+# 10. Architectural components (15 assets)
+architecture = ["architecture-walls", "architecture-floors", "architecture-roofs", "architecture-foundations", "architecture-doors", "architecture-windows", "architecture-staircases", "architecture-balconies", "architecture-porches", "architecture-chimneys", "architecture-columns", "architecture-structural-beams", "architecture-gutters", "architecture-fences", "architecture-gates"]
+cat-architecture = []
+architecture-walls = ["cat-architecture"]
+architecture-floors = ["cat-architecture"]
+architecture-roofs = ["cat-architecture"]
+architecture-foundations = ["cat-architecture"]
+architecture-doors = ["cat-architecture"]
+architecture-windows = ["cat-architecture"]
+architecture-staircases = ["cat-architecture"]
+architecture-balconies = ["cat-architecture"]
+architecture-porches = ["cat-architecture"]
+architecture-chimneys = ["cat-architecture"]
+architecture-columns = ["cat-architecture"]
+architecture-structural-beams = ["cat-architecture"]
+architecture-gutters = ["cat-architecture"]
+architecture-fences = ["cat-architecture"]
+architecture-gates = ["cat-architecture"]
+
+# 11. Interior furniture (15 assets)
+furniture = ["furniture-tables", "furniture-chairs", "furniture-stools", "furniture-sofas", "furniture-benches", "furniture-beds", "furniture-cabinets", "furniture-shelving-units", "furniture-wardrobes", "furniture-dressers", "furniture-desks", "furniture-kitchen-counters", "furniture-dining-sets", "furniture-kitchen-islands", "furniture-bunk-beds"]
+cat-furniture = []
+furniture-tables = ["cat-furniture"]
+furniture-chairs = ["cat-furniture"]
+furniture-stools = ["cat-furniture"]
+furniture-sofas = ["cat-furniture"]
+furniture-benches = ["cat-furniture"]
+furniture-beds = ["cat-furniture"]
+furniture-cabinets = ["cat-furniture"]
+furniture-shelving-units = ["cat-furniture"]
+furniture-wardrobes = ["cat-furniture"]
+furniture-dressers = ["cat-furniture"]
+furniture-desks = ["cat-furniture"]
+furniture-kitchen-counters = ["cat-furniture"]
+furniture-dining-sets = ["cat-furniture"]
+furniture-kitchen-islands = ["cat-furniture"]
+furniture-bunk-beds = ["cat-furniture"]
+
+# 12. Environmental props and clutter (15 assets)
+props = ["props-wooden-crates", "props-barrels", "props-sacks", "props-baskets", "props-bottles", "props-metal-cans", "props-broken-glass", "props-scattered-papers", "props-books", "props-signs", "props-lanterns", "props-cooking-pots", "props-rubble-piles", "props-rubbish-bags", "props-wooden-pallets"]
+cat-props = []
+props-wooden-crates = ["cat-props"]
+props-barrels = ["cat-props"]
+props-sacks = ["cat-props"]
+props-baskets = ["cat-props"]
+props-bottles = ["cat-props"]
+props-metal-cans = ["cat-props"]
+props-broken-glass = ["cat-props"]
+props-scattered-papers = ["cat-props"]
+props-books = ["cat-props"]
+props-signs = ["cat-props"]
+props-lanterns = ["cat-props"]
+props-cooking-pots = ["cat-props"]
+props-rubble-piles = ["cat-props"]
+props-rubbish-bags = ["cat-props"]
+props-wooden-pallets = ["cat-props"]
+
+# 13. Industrial and factory assets (15 assets)
+industrial = ["industrial-conveyor-belts", "industrial-roller-conveyors", "industrial-overhead-cranes", "industrial-hoists", "industrial-gantry-cranes", "industrial-robotic-arms", "industrial-pumps", "industrial-electric-motors", "industrial-generators", "industrial-gearboxes", "industrial-pipe-networks", "industrial-valves", "industrial-storage-tanks", "industrial-silos", "industrial-scaffolding"]
+cat-industrial = []
+industrial-conveyor-belts = ["cat-industrial"]
+industrial-roller-conveyors = ["cat-industrial"]
+industrial-overhead-cranes = ["cat-industrial"]
+industrial-hoists = ["cat-industrial"]
+industrial-gantry-cranes = ["cat-industrial"]
+industrial-robotic-arms = ["cat-industrial"]
+industrial-pumps = ["cat-industrial"]
+industrial-electric-motors = ["cat-industrial"]
+industrial-generators = ["cat-industrial"]
+industrial-gearboxes = ["cat-industrial"]
+industrial-pipe-networks = ["cat-industrial"]
+industrial-valves = ["cat-industrial"]
+industrial-storage-tanks = ["cat-industrial"]
+industrial-silos = ["cat-industrial"]
+industrial-scaffolding = ["cat-industrial"]
+
+# 14. City and public infrastructure (15 assets)
+city = ["city-electricity-poles", "city-streetlights", "city-traffic-lights", "city-road-signs", "city-bus-shelters", "city-bollards", "city-fire-hydrants", "city-parking-meters", "city-telephone-booths", "city-drainage-grates", "city-manhole-covers", "city-power-transformers", "city-utility-cabinets", "city-billboards", "city-crash-barriers"]
+cat-city = []
+city-electricity-poles = ["cat-city"]
+city-streetlights = ["cat-city"]
+city-traffic-lights = ["cat-city"]
+city-road-signs = ["cat-city"]
+city-bus-shelters = ["cat-city"]
+city-bollards = ["cat-city"]
+city-fire-hydrants = ["cat-city"]
+city-parking-meters = ["cat-city"]
+city-telephone-booths = ["cat-city"]
+city-drainage-grates = ["cat-city"]
+city-manhole-covers = ["cat-city"]
+city-power-transformers = ["cat-city"]
+city-utility-cabinets = ["cat-city"]
+city-billboards = ["cat-city"]
+city-crash-barriers = ["cat-city"]
+
+# 15. Ground vehicles (15 assets)
+vehicles = ["vehicles-sedans", "vehicles-hatchbacks", "vehicles-pickup-trucks", "vehicles-heavy-trucks", "vehicles-delivery-vans", "vehicles-buses", "vehicles-motorcycles", "vehicles-bicycles", "vehicles-quad-bikes", "vehicles-tractors", "vehicles-trailers", "vehicles-train-carriages", "vehicles-tanks", "vehicles-off-road-buggies", "vehicles-emergency-vehicles"]
+cat-vehicles = []
+vehicles-sedans = ["cat-vehicles"]
+vehicles-hatchbacks = ["cat-vehicles"]
+vehicles-pickup-trucks = ["cat-vehicles"]
+vehicles-heavy-trucks = ["cat-vehicles"]
+vehicles-delivery-vans = ["cat-vehicles"]
+vehicles-buses = ["cat-vehicles"]
+vehicles-motorcycles = ["cat-vehicles"]
+vehicles-bicycles = ["cat-vehicles"]
+vehicles-quad-bikes = ["cat-vehicles"]
+vehicles-tractors = ["cat-vehicles"]
+vehicles-trailers = ["cat-vehicles"]
+vehicles-train-carriages = ["cat-vehicles"]
+vehicles-tanks = ["cat-vehicles"]
+vehicles-off-road-buggies = ["cat-vehicles"]
+vehicles-emergency-vehicles = ["cat-vehicles"]
+
+# 16. Aircraft and spacecraft (15 assets)
+aircraft = ["aircraft-biplanes", "aircraft-light-aircraft", "aircraft-propeller-passenger-aircraft", "aircraft-commercial-jetliners", "aircraft-cargo-aircraft", "aircraft-fighter-jets", "aircraft-ground-attack-aircraft", "aircraft-helicopters", "aircraft-quadcopter-drones", "aircraft-fixed-wing-drones", "aircraft-gliders", "aircraft-seaplanes", "aircraft-hot-air-balloons", "aircraft-rockets", "aircraft-space-shuttles"]
+cat-aircraft = []
+aircraft-biplanes = ["cat-aircraft"]
+aircraft-light-aircraft = ["cat-aircraft"]
+aircraft-propeller-passenger-aircraft = ["cat-aircraft"]
+aircraft-commercial-jetliners = ["cat-aircraft"]
+aircraft-cargo-aircraft = ["cat-aircraft"]
+aircraft-fighter-jets = ["cat-aircraft"]
+aircraft-ground-attack-aircraft = ["cat-aircraft"]
+aircraft-helicopters = ["cat-aircraft"]
+aircraft-quadcopter-drones = ["cat-aircraft"]
+aircraft-fixed-wing-drones = ["cat-aircraft"]
+aircraft-gliders = ["cat-aircraft"]
+aircraft-seaplanes = ["cat-aircraft"]
+aircraft-hot-air-balloons = ["cat-aircraft"]
+aircraft-rockets = ["cat-aircraft"]
+aircraft-space-shuttles = ["cat-aircraft"]
+
+# 17. Boats and marine vessels (15 assets)
+boats = ["boats-canoes", "boats-kayaks", "boats-rowboats", "boats-dinghies", "boats-fishing-boats", "boats-sailing-boats", "boats-speedboats", "boats-yachts", "boats-ferries", "boats-cargo-ships", "boats-tugboats", "boats-pirate-ships", "boats-submarines", "boats-rafts", "boats-landing-craft"]
+cat-boats = []
+boats-canoes = ["cat-boats"]
+boats-kayaks = ["cat-boats"]
+boats-rowboats = ["cat-boats"]
+boats-dinghies = ["cat-boats"]
+boats-fishing-boats = ["cat-boats"]
+boats-sailing-boats = ["cat-boats"]
+boats-speedboats = ["cat-boats"]
+boats-yachts = ["cat-boats"]
+boats-ferries = ["cat-boats"]
+boats-cargo-ships = ["cat-boats"]
+boats-tugboats = ["cat-boats"]
+boats-pirate-ships = ["cat-boats"]
+boats-submarines = ["cat-boats"]
+boats-rafts = ["cat-boats"]
+boats-landing-craft = ["cat-boats"]
+
+# 18. Humans and character anatomy (15 assets)
+humans = ["humans-base-human-bodies", "humans-procedural-heads", "humans-facial-structures", "humans-hairstyles", "humans-eyes", "humans-noses", "humans-ears", "humans-mouths-and-lips", "humans-hands", "humans-feet", "humans-fingers", "humans-skeletal-rigs", "humans-muscle-forms", "humans-facial-expression-morphs", "humans-full-npc-body-variations"]
+cat-humans = []
+humans-base-human-bodies = ["cat-humans"]
+humans-procedural-heads = ["cat-humans"]
+humans-facial-structures = ["cat-humans"]
+humans-hairstyles = ["cat-humans"]
+humans-eyes = ["cat-humans"]
+humans-noses = ["cat-humans"]
+humans-ears = ["cat-humans"]
+humans-mouths-and-lips = ["cat-humans"]
+humans-hands = ["cat-humans"]
+humans-feet = ["cat-humans"]
+humans-fingers = ["cat-humans"]
+humans-skeletal-rigs = ["cat-humans"]
+humans-muscle-forms = ["cat-humans"]
+humans-facial-expression-morphs = ["cat-humans"]
+# The NPC line-up: its own module (src/npc.rs); its cotton is the jersey
+# knit surface.
+humans-full-npc-body-variations = ["cat-humans", "realism"]
+
+# 19. Clothing and character equipment (15 assets)
+clothing = ["clothing-shirts", "clothing-jackets", "clothing-coats", "clothing-trousers", "clothing-shorts", "clothing-skirts", "clothing-dresses", "clothing-boots", "clothing-shoes", "clothing-hats", "clothing-gloves", "clothing-scarves", "clothing-belts", "clothing-backpacks", "clothing-armour-and-capes"]
+cat-clothing = []
+clothing-shirts = ["cat-clothing"]
+clothing-jackets = ["cat-clothing"]
+clothing-coats = ["cat-clothing"]
+clothing-trousers = ["cat-clothing"]
+clothing-shorts = ["cat-clothing"]
+clothing-skirts = ["cat-clothing"]
+clothing-dresses = ["cat-clothing"]
+clothing-boots = ["cat-clothing"]
+clothing-shoes = ["cat-clothing"]
+clothing-hats = ["cat-clothing"]
+clothing-gloves = ["cat-clothing"]
+clothing-scarves = ["cat-clothing"]
+clothing-belts = ["cat-clothing"]
+clothing-backpacks = ["cat-clothing"]
+clothing-armour-and-capes = ["cat-clothing"]
+
+# 20. Animals and creatures (15 assets)
+animals = ["animals-horses", "animals-dogs", "animals-cats", "animals-cattle", "animals-pigs", "animals-sheep", "animals-deer", "animals-wolves", "animals-bears", "animals-birds", "animals-fish", "animals-sharks", "animals-whales", "animals-insects", "animals-fantasy-creatures"]
+cat-animals = []
+animals-horses = ["cat-animals"]
+animals-dogs = ["cat-animals"]
+animals-cats = ["cat-animals"]
+animals-cattle = ["cat-animals"]
+animals-pigs = ["cat-animals"]
+animals-sheep = ["cat-animals"]
+animals-deer = ["cat-animals"]
+animals-wolves = ["cat-animals"]
+animals-bears = ["cat-animals"]
+animals-birds = ["cat-animals"]
+animals-fish = ["cat-animals"]
+animals-sharks = ["cat-animals"]
+animals-whales = ["cat-animals"]
+animals-insects = ["cat-animals"]
+animals-fantasy-creatures = ["cat-animals"]
+
+# 21. Weapons, tools and combat equipment (15 assets)
+weapons = ["weapons-swords", "weapons-knives", "weapons-axes", "weapons-spears", "weapons-bows", "weapons-arrows", "weapons-shields", "weapons-pistols", "weapons-rifles", "weapons-shotguns", "weapons-machine-guns", "weapons-cannons", "weapons-turrets", "weapons-pickaxes", "weapons-shovels"]
+cat-weapons = []
+weapons-swords = ["cat-weapons"]
+weapons-knives = ["cat-weapons"]
+weapons-axes = ["cat-weapons"]
+weapons-spears = ["cat-weapons"]
+weapons-bows = ["cat-weapons"]
+weapons-arrows = ["cat-weapons"]
+weapons-shields = ["cat-weapons"]
+weapons-pistols = ["cat-weapons"]
+weapons-rifles = ["cat-weapons"]
+weapons-shotguns = ["cat-weapons"]
+weapons-machine-guns = ["cat-weapons"]
+weapons-cannons = ["cat-weapons"]
+weapons-turrets = ["cat-weapons"]
+weapons-pickaxes = ["cat-weapons"]
+weapons-shovels = ["cat-weapons"]
+
+# 22. Agriculture, crops and food (15 assets)
+agriculture = ["agriculture-crop-rows", "agriculture-wheat-plants", "agriculture-corn-plants", "agriculture-potato-plants", "agriculture-pumpkin-plants", "agriculture-grape-vines", "agriculture-orchard-trees", "agriculture-irrigation-channels", "agriculture-greenhouses", "agriculture-hay-bales", "agriculture-haystacks", "agriculture-grain-piles", "agriculture-fruit", "agriculture-vegetables", "agriculture-bread-loaves"]
+cat-agriculture = []
+agriculture-crop-rows = ["cat-agriculture"]
+agriculture-wheat-plants = ["cat-agriculture", "host-grass"]
+agriculture-corn-plants = ["cat-agriculture"]
+agriculture-potato-plants = ["cat-agriculture"]
+agriculture-pumpkin-plants = ["cat-agriculture"]
+agriculture-grape-vines = ["cat-agriculture"]
+agriculture-orchard-trees = ["cat-agriculture"]
+agriculture-irrigation-channels = ["cat-agriculture"]
+agriculture-greenhouses = ["cat-agriculture"]
+agriculture-hay-bales = ["cat-agriculture"]
+agriculture-haystacks = ["cat-agriculture"]
+agriculture-grain-piles = ["cat-agriculture"]
+agriculture-fruit = ["cat-agriculture"]
+agriculture-vegetables = ["cat-agriculture"]
+agriculture-bread-loaves = ["cat-agriculture"]
+
+# 23. Procedural textures and materials (15 assets)
+textures = ["textures-wood", "textures-metal", "textures-stone", "textures-brick", "textures-concrete", "textures-dirt", "textures-sand", "textures-grass", "textures-fabric", "textures-leather", "textures-plastic", "textures-glass", "textures-ice", "textures-snow", "textures-surface-damage-wear-and-noise"]
+cat-textures = []
+textures-wood = ["cat-textures"]
+textures-metal = ["cat-textures"]
+textures-stone = ["cat-textures"]
+textures-brick = ["cat-textures"]
+textures-concrete = ["cat-textures"]
+textures-dirt = ["cat-textures"]
+textures-sand = ["cat-textures"]
+textures-grass = ["cat-textures"]
+textures-fabric = ["cat-textures"]
+textures-leather = ["cat-textures"]
+textures-plastic = ["cat-textures"]
+textures-glass = ["cat-textures", "host-nature"]
+textures-ice = ["cat-textures"]
+textures-snow = ["cat-textures"]
+textures-surface-damage-wear-and-noise = ["cat-textures"]
+
+# 24. Particles, effects and destruction (15 assets)
+effects = ["effects-smoke", "effects-fire", "effects-sparks", "effects-embers", "effects-explosions", "effects-dust-clouds", "effects-destructible-fragments", "effects-projectile-trails", "effects-bullet-impacts", "effects-water-splashes", "effects-bubbles", "effects-water-droplets", "effects-steam", "effects-magical-particles", "effects-footprints-and-ground-decals"]
+cat-effects = []
+effects-smoke = ["cat-effects"]
+effects-fire = ["cat-effects"]
+effects-sparks = ["cat-effects"]
+effects-embers = ["cat-effects"]
+effects-explosions = ["cat-effects"]
+effects-dust-clouds = ["cat-effects"]
+effects-destructible-fragments = ["cat-effects"]
+effects-projectile-trails = ["cat-effects"]
+effects-bullet-impacts = ["cat-effects"]
+effects-water-splashes = ["cat-effects"]
+effects-bubbles = ["cat-effects"]
+effects-water-droplets = ["cat-effects"]
+effects-steam = ["cat-effects"]
+effects-magical-particles = ["cat-effects"]
+effects-footprints-and-ground-decals = ["cat-effects"]
+# END generated features
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-procedural.workspace = true
+evani-material-nature = { workspace = true, optional = true }
+evani-grass = { workspace = true, optional = true }
+evani-material-proc = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+# The clouds' test compiles their passes' WGSL (game_pass::check).
+evani-render = { workspace = true, features = ["game-passes-check"] }
+# The surface presets' test reads the material catalogue (dev only).
+evani-material-recipes = { workspace = true, features = ["gltf", "data"] }
+
+[lints]
+workspace = true

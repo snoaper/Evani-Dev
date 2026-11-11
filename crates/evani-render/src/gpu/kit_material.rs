@@ -2,7 +2,8 @@
 //! the WGSL contract are in [`crate::kit_material`]).
 //!
 //! * The kit data is one read-only storage buffer (at least 16 `vec4`s,
-//!   grown to the next power of two), bound at group 1 of the forward mesh
+//!   grown to the next power of two up to 4 MB and in 1 MiB steps above, to
+//!   at most `MAX_DATA` = 32 MiB or what the device can bind), bound at group 1 of the forward mesh
 //!   pass: its pipeline layout is `[frame, kit]`, or `[frame, kit, empty,
 //!   lights]` with point lights. Model draws rebind group 1 for their
 //!   materials afterwards, as before.
@@ -11,7 +12,10 @@
 //!   here; a change of code relaunches the forward pipelines.
 //! * Shadows: while the kit has code of its own, the mesh shadow draws use
 //!   `shaders/kit_shadows.wgsl` (with a fragment stage that discards the
-//!   cut-outs), layout `[shadow uniform, kit]`. Models keep their own.
+//!   cut-outs), layout `[shadow uniform, kit]`. Models keep their own. On the
+//!   web it compiles off the main thread (the build queue's warm-up), so no
+//!   frame waits for it (61.5 KB in the material viewer: a 1.4-2.2 s frozen
+//!   frame when it was built with the blocking call).
 
 use std::cell::RefCell;
 
@@ -44,7 +48,7 @@ pub fn sync_wgsl(world: &World) {
 /// other shader).
 pub fn patch(mut sp: Spliced) -> Spliced {
     if let Some(s) = WGSL.with_borrow(|w| km::patch_forward(&sp.source, w)) {
-        sp.source = s; #[cfg(feature = "kit-surface")] WGSL.with_borrow(|w| crate::kit_surface::patch(&mut sp.source, w));
+        sp.source = s; #[cfg(feature = "kit-surface")] WGSL.with_borrow(|w| crate::kit_surface::patch(&mut sp.source, w)); #[cfg(feature = "kit-textures")] super::kit_textures::note_source(sp.source.len());
     }
     sp
 }
@@ -61,7 +65,7 @@ impl KitLayouts {
     /// `frame`: the forward frame layout; `b`: the shadow uniform layout;
     /// `rest`: the forward groups after the kit's (point lights).
     pub fn new(device: &wgpu::Device, frame: &wgpu::BindGroupLayout, b: &wgpu::BindGroupLayout, rest: &[Option<&wgpu::BindGroupLayout>]) -> Self {
-        let kit = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        #[cfg(not(feature = "kit-textures"))] let kit = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("evani.layout.kit"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 15,
@@ -73,7 +77,7 @@ impl KitLayouts {
                 },
                 count: None,
             }],
-        });
+        }); #[cfg(feature = "kit-textures")] let kit = super::kit_textures::layout(device);
         let mut groups = vec![Some(frame), Some(&kit)];
         groups.extend_from_slice(rest);
         let pl_forward = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -102,6 +106,8 @@ impl KitLayouts {
 pub struct KitGpu {
     buf: wgpu::Buffer,
     records: usize,
+    /// Most records this device can bind ([`km::device_max_records`]).
+    cap: usize,
     bg: wgpu::BindGroup,
     wgsl_gen: u64,
     data_gen: u64,
@@ -113,16 +119,49 @@ pub struct KitGpu {
     /// Set if that build failed validation.
     #[cfg(feature = "shadows")]
     shadow_failed: std::rc::Rc<std::cell::Cell<bool>>,
+    /// A build compiling off the main thread (web): its module and, once the
+    /// browser is done, whether it compiled (and its pipeline, kept alive
+    /// until the build reuses it).
+    #[cfg(feature = "shadows")]
+    shadow_warm: Option<ShadowWarm>,
+}
+
+/// What the off-thread compile reports: compiled, and the browser's pipeline.
+#[cfg(feature = "shadows")]
+type WarmDone = std::rc::Rc<std::cell::RefCell<Option<(bool, Option<wasm_bindgen::JsValue>)>>>;
+
+/// The kit shadow pipeline's off-thread compile (`createRenderPipelineAsync`
+/// through the build queue's swap, as the other pipelines): until it is in,
+/// the shadow pass draws the meshes with the plain shadow pipeline (the
+/// previous kit one, after a code change), so no frame waits for it.
+#[cfg(feature = "shadows")]
+struct ShadowWarm {
+    module: wgpu::ShaderModule,
+    done: WarmDone,
+}
+
+#[cfg(feature = "shadows")]
+thread_local! {
+    /// Kit shadow builds compiling now (the page's "preparing" count).
+    static WARMING: core::cell::Cell<u32> = const { core::cell::Cell::new(0) };
+}
+
+/// Kit shadow builds compiling now.
+#[cfg(feature = "shadows")] #[allow(dead_code)] // its one call (pipeline_queue.rs `waiting`) sits after a `//` on that line: DECISIONS "Join (mergeall)"
+pub(super) fn warming() -> u32 {
+    WARMING.with(core::cell::Cell::get)
 }
 
 impl KitGpu {
     /// Call after [`sync_wgsl`] (the pipelines are launched with that code).
     pub fn new(device: &wgpu::Device, layouts: &Layouts, world: &World) -> Self {
         let wgsl_gen = world.try_res::<KitMaterial>().map_or(0, |k| k.generations().0);
-        let (buf, bg) = buffer(device, layouts, MIN_RECORDS);
+        #[cfg(feature = "kit-textures")] super::kit_textures::init(device); let (buf, bg) = buffer(device, layouts, MIN_RECORDS);
+        let limits = device.limits();
         Self {
             buf,
             records: MIN_RECORDS,
+            cap: km::device_max_records(limits.max_storage_buffer_binding_size, limits.max_buffer_size),
             bg,
             wgsl_gen,
             data_gen: 0,
@@ -132,6 +171,8 @@ impl KitGpu {
             shadow_tried: None,
             #[cfg(feature = "shadows")]
             shadow_failed: Default::default(),
+            #[cfg(feature = "shadows")]
+            shadow_warm: None,
         }
     }
 
@@ -145,19 +186,20 @@ impl KitGpu {
         if data_gen != self.data_gen {
             self.data_gen = data_gen;
             let data = k.data();
-            if data.len() > km::MAX_DATA {
-                world.res_mut::<ErrorLog>().note(format!("kit material: {} data records, only the first {} are used", data.len(), km::MAX_DATA));
+            let plan = km::plan_upload(data.len(), self.records, self.cap);
+            if let Some(over) = plan.over {
+                world.res_mut::<ErrorLog>().error(format!("kit material: {over}; only the first {} are used", plan.used));
             }
-            let data = &data[..data.len().min(km::MAX_DATA)];
-            if data.len() > self.records {
-                self.records = data.len().next_power_of_two();
+            let data = &data[..plan.used];
+            if plan.alloc != self.records {
+                self.records = plan.alloc;
                 (self.buf, self.bg) = buffer(device, layouts, self.records);
             }
             if !data.is_empty() {
                 queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(data));
             }
         }
-        let changed = wgsl_gen != self.wgsl_gen;
+        let changed = wgsl_gen != self.wgsl_gen; #[cfg(feature = "kit-textures")] if super::kit_textures::prepare(device, queue, world) { self.bg = super::kit_textures::bind_group(device, &layouts.kit.kit, &self.buf); }
         if changed {
             self.wgsl_gen = wgsl_gen;
             WGSL.with_borrow_mut(|w| k.wgsl().clone_into(w));
@@ -177,13 +219,53 @@ impl KitGpu {
             self.shadow = None;
             return;
         }
+        if let Some(w) = &self.shadow_warm {
+            let Some((ok, keep)) = w.done.borrow_mut().take() else {
+                return;
+            };
+            WARMING.with(|c| c.set(c.get().saturating_sub(1)));
+            let module = self.shadow_warm.take().map(|w| w.module);
+            if let (true, Some(module)) = (ok, module) {
+                // The browser answers this call from the compile it just did.
+                let (pipe, failed) = shadow_build(device, layouts, &module);
+                self.shadow = Some(pipe);
+                self.shadow_failed = failed;
+            } else {
+                self.shadow = None;
+                world.res_mut::<ErrorLog>().error("kit material: the shadow cut-out shader failed to build; shadows ignore the cut-outs");
+            }
+            drop(keep);
+        }
         if self.shadow_tried == Some(self.wgsl_gen) {
             return;
         }
         self.shadow_tried = Some(self.wgsl_gen);
-        let (pipe, failed) = shadow_pipeline(device, layouts, k.wgsl());
-        self.shadow = Some(pipe);
-        self.shadow_failed = failed;
+        let scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
+        let source = km::shadows_source(k.wgsl()); #[cfg(feature = "material-split")] let source = evani_material_recipes::split::shake(&source, &["vs_main", "fs_main"]);
+        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("evani.kit_shadows"),
+            source: wgpu::ShaderSource::Wgsl(source.as_str().into()),
+        });
+        let caught = super::queue::warm_call(device, || shadow_descriptor_build(device, layouts, &module));
+        let err = scope.pop();
+        match caught {
+            super::queue::Caught::Built(pipe) => {
+                self.shadow = Some(pipe);
+                self.shadow_failed = flag_on_error(err);
+            }
+            super::queue::Caught::Warming(promise) => {
+                let done: WarmDone = Default::default();
+                let slot = done.clone();
+                WARMING.with(|c| c.set(c.get() + 1));
+                wasm_bindgen_futures::spawn_local(async move {
+                    let bad = err.await.is_some();
+                    let r = wasm_bindgen_futures::JsFuture::from(promise).await;
+                    let ok = !bad && r.is_ok();
+                    *slot.borrow_mut() = Some((ok, r.ok()));
+                });
+                self.shadow_warm = Some(ShadowWarm { module, done });
+            }
+        }
     }
 
     /// Bind the kit data (group 1) for the forward mesh draws. Call after
@@ -210,24 +292,40 @@ fn buffer(device: &wgpu::Device, layouts: &Layouts, records: usize) -> (wgpu::Bu
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    #[cfg(not(feature = "kit-textures"))] let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("evani.kit_data"),
         layout: &layouts.kit.kit,
         entries: &[wgpu::BindGroupEntry { binding: 15, resource: buf.as_entire_binding() }],
-    });
+    }); #[cfg(feature = "kit-textures")] let bg = super::kit_textures::bind_group(device, &layouts.kit.kit, &buf);
     (buf, bg)
+}
+
+/// The cut-out shadow pipeline from `module` (the build after the warm-up),
+/// with a flag set if it fails validation.
+#[cfg(feature = "shadows")]
+fn shadow_build(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule) -> (wgpu::RenderPipeline, std::rc::Rc<std::cell::Cell<bool>>) {
+    let scope = dev.push_error_scope(wgpu::ErrorFilter::Validation);
+    let pipe = shadow_descriptor_build(dev, layouts, module);
+    (pipe, flag_on_error(scope.pop()))
+}
+
+/// A flag set once `err` turns out to be an error.
+#[cfg(feature = "shadows")]
+fn flag_on_error(err: impl core::future::Future<Output = Option<wgpu::Error>> + 'static) -> std::rc::Rc<std::cell::Cell<bool>> {
+    let failed = std::rc::Rc::new(std::cell::Cell::new(false));
+    let flag = failed.clone();
+    wasm_bindgen_futures::spawn_local(async move {
+        if err.await.is_some() {
+            flag.set(true);
+        }
+    });
+    failed
 }
 
 /// The cut-out shadow pipeline: the mesh shadow pipeline's streams, depth
 /// format and bias, plus the kit's fragment discard.
 #[cfg(feature = "shadows")]
-fn shadow_pipeline(dev: &wgpu::Device, layouts: &Layouts, wgsl: &str) -> (wgpu::RenderPipeline, std::rc::Rc<std::cell::Cell<bool>>) {
-    let scope = dev.push_error_scope(wgpu::ErrorFilter::Validation);
-    let source = km::shadows_source(wgsl);
-    let module = dev.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("evani.kit_shadows"),
-        source: wgpu::ShaderSource::Wgsl(source.as_str().into()),
-    });
+fn shadow_descriptor_build(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule) -> wgpu::RenderPipeline {
     let buffers = [
         Some(wgpu::VertexBufferLayout {
             array_stride: 24,
@@ -240,11 +338,11 @@ fn shadow_pipeline(dev: &wgpu::Device, layouts: &Layouts, wgsl: &str) -> (wgpu::
             attributes: &super::INSTANCE_ATTRS,
         }),
     ];
-    let pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("evani.kit_shadows"),
         layout: Some(&layouts.kit.pl_shadow),
         vertex: wgpu::VertexState {
-            module: &module,
+            module,
             entry_point: Some("vs_main"),
             compilation_options: Default::default(),
             buffers: &buffers,
@@ -263,23 +361,14 @@ fn shadow_pipeline(dev: &wgpu::Device, layouts: &Layouts, wgsl: &str) -> (wgpu::
         }),
         multisample: wgpu::MultisampleState::default(),
         fragment: Some(wgpu::FragmentState {
-            module: &module,
+            module,
             entry_point: Some("fs_main"),
             compilation_options: Default::default(),
             targets: &[],
         }),
         multiview_mask: None,
         cache: None,
-    });
-    let err = scope.pop();
-    let failed = std::rc::Rc::new(std::cell::Cell::new(false));
-    let flag = failed.clone();
-    wasm_bindgen_futures::spawn_local(async move {
-        if err.await.is_some() {
-            flag.set(true);
-        }
-    });
-    (pipe, failed)
+    })
 }
 
 impl Pipelines {

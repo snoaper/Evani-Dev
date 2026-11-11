@@ -24,6 +24,14 @@
 // with shifted tangents (Kajiya and Kay 1989; Scheuermann 2004). Ideas
 // only; the code is our own.
 
+// The live constants as data (evani-render char_live.rs writes them when a
+// param or the tier changes): the slot's body reads them, so neither ever
+// recompiles this module. Binding 14 of the model material group.
+struct CharLive {
+    e: array<vec4<f32>, 30>,
+};
+@group(1) @binding(14) var<uniform> char_live: CharLive;
+
 //@slot char_params
 
 struct CharFrame {
@@ -54,6 +62,11 @@ struct CharShade {
     catch_l: f32,
     // Coverage (hair edges).
     alpha: f32,
+    // Scale of the light a grazing edge catches from the sky: the reflected
+    // sky and the look's sky-tinted rim (material-view critic round 6: on
+    // skin they drew a cool grey band down the jaw that read as a crease;
+    // skin's edge is mostly its own scattered light).
+    env_k: f32,
 };
 
 struct CharOut {
@@ -174,6 +187,7 @@ fn char_none(base: vec3<f32>, n: vec3<f32>) -> CharShade {
     s.extra = vec3<f32>(0.0);
     s.catch_l = 0.0;
     s.alpha = 1.0;
+    s.env_k = 1.0;
     return s;
 }
 
@@ -246,7 +260,7 @@ fn char_eye(base: vec3<f32>, n: vec3<f32>, v: vec3<f32>, l: vec3<f32>, uv: vec2<
     let fw = length(cf.uvw) * 6.2831853 / ri;
     let wphi = fw / max(rho, 0.05);
     let fib = p5.w;
-    let inner = p2.rgb;
+    let inner = select(vec3<f32>(surface.kind.x, surface.kind.y, surface.kind.w), p2.rgb, surface.kind.x + surface.kind.y + surface.kind.w <= 0.0);
     var col = mix(inner, outer, smoothstep(pupil, min(pupil + 0.45, 1.0), rho));
     let f1 = char_fcos(phi * 46.0 + 2.5 * sin(rho * 9.0 + phi * 3.0), 46.0 * wphi);
     let f2 = char_fcos(phi * 113.0 + 4.0 * rho, 113.0 * wphi);
@@ -319,26 +333,52 @@ fn char_skin(base: vec3<f32>, n: vec3<f32>, g: vec3<f32>, l: vec3<f32>, uv: vec2
         let amp = smoothstep(0.35, 0.9, char_vnoise(uv * ws * 0.12 + vec2<f32>(7.0)));
         nn = normalize(nn - tv * (cos(ph) * amp * wrinkle_k * fade * 0.2));
     }
+    // Spots (freckles, age spots): dark warm dots at a share of the cell
+    // points, `spots` of them (a material's own value or none), faded as
+    // they near the pixel.
+    let spots = char_pick(surface.spare1.z, 0.0);
+    if (q >= 0.5 && spots > 0.0) {
+        let sc = max(pore_scale * 0.12, 4.0);
+        let w = char_worley(uv * sc);
+        let cell = floor(uv * sc - w.yz);
+        let rad = mix(0.1, 0.24, char_hash(cell + vec2<f32>(5.0, 3.0)));
+        let on = step(char_hash(cell + vec2<f32>(91.0, 17.0)), spots);
+        let dot_k = on * (1.0 - smoothstep(rad * 0.55, rad, w.x)) * smoothstep(1.0, 3.0, 1.0 / (sc * uvpx));
+        alb = mix(alb, alb * vec3<f32>(0.62, 0.42, 0.3), dot_k * 0.85);
+    }
     s.n_spec = nn;
+    s.lit3 = char_skin_light(nn, g, l, cf, q, scatter);
+    s.own_lit = 1.0;
+    s.albedo = alb;
+    s.env_k = 0.4;
+    return s;
+}
+
+// Skin's own light for normal `nn` (the hair's ends fade into it on tiers
+// without MSAA, char_hair).
+fn char_skin_light(nn: vec3<f32>, g: vec3<f32>, l: vec3<f32>, cf: CharFrame, q: f32, scatter: vec3<f32>) -> vec3<f32> {
+    let p6 = char_p(6u);
+    let p7 = char_p(7u);
+    let p8 = char_p(8u);
     let ndl = dot(nn, l);
     // Red light scatters under small bumps: it sees a smoother normal.
     let ndl_r = dot(normalize(mix(nn, g, clamp(p8.z, 0.0, 1.0))), l);
     let nl = vec3<f32>(ndl_r, ndl, ndl);
     let plain = vec3<f32>(max(ndl, 0.0));
-    if (q >= 1.5) {
+    // Low reads the same lookup as Ultra (a few ALU ops; the curvature is
+    // taken on every tier): its own wrap lifted the red half-shade about 8
+    // levels warmer than Ultra's skin (material-view round 5). Low loses only
+    // the pores and wrinkles; Lite keeps the cheaper wrap below.
+    if (q >= 0.5) {
         let c = cf.curv * 0.001 * p7.y;
         let t = sqrt(clamp(c, 0.0, 1.0)) * 7.0;
-        s.lit3 = max(plain + (char_lut(nl, t) - plain) * p7.x, vec3<f32>(0.0));
-    } else {
-        let w = p6.w * scatter / max(max(scatter.r, max(scatter.g, scatter.b)), 1e-3);
-        let x = clamp((nl + w) / (vec3<f32>(1.0) + w), vec3<f32>(0.0), vec3<f32>(1.0));
-        let ramp = 0.65 * x + 0.35 * x * x * (vec3<f32>(3.0) - 2.0 * x);
-        let band = 4.0 * x.r * (1.0 - x.r) * 0.12 * p7.x;
-        s.lit3 = ramp + scatter * band;
+        return max(plain + (char_lut(nl, t) - plain) * p7.x, vec3<f32>(0.0));
     }
-    s.own_lit = 1.0;
-    s.albedo = alb;
-    return s;
+    let w = p6.w * scatter / max(max(scatter.r, max(scatter.g, scatter.b)), 1e-3);
+    let x = clamp((nl + w) / (vec3<f32>(1.0) + w), vec3<f32>(0.0), vec3<f32>(1.0));
+    let ramp = 0.65 * x + 0.35 * x * x * (vec3<f32>(3.0) - 2.0 * x);
+    let band = 4.0 * x.r * (1.0 - x.r) * 0.12 * p7.x;
+    return ramp + scatter * band;
 }
 
 // Kajiya-Kay strand lobe for tangent `t`.
@@ -368,17 +408,60 @@ fn char_hair(base: vec3<f32>, n: vec3<f32>, v: vec3<f32>, l: vec3<f32>, uv: vec2
     let vv = clamp(uv.y, 0.0, 1.0);
 
     // Coverage: each lock tapers to its tip with a soft edge across it,
-    // averaged once a lock is narrower than the pixel.
+    // averaged once a lock is narrower than the pixel. Where a lock is as wide
+    // as its step (a root, or a material whose tips stay full width) it meets
+    // its neighbour, so there is no edge to soften: with one, every seam
+    // faded to clear and narrow locks (the bust's 1.6 mm brow hairs) read as
+    // comb teeth (material-view critic round 7).
     let x = abs(fract(uv.x) - 0.5);
     let hw = 0.5 * mix(1.0, tipw, vv);
     let aa = cf.uvw.x;
     var cov = clamp((hw - x) / max(soft * hw + aa, 1e-4), 0.0, 1.0);
     cov = mix(cov, 2.0 * hw, smoothstep(0.3, 1.0, aa));
-    s.alpha = cov * (1.0 - smoothstep(0.94, 1.0, vv));
+    cov = max(cov, smoothstep(0.47, 0.5, hw));
+    // A soft hairline: on long strands (|dP/dv| over about 3 cm; brows and
+    // lashes are short and keep whole hairs) each fine strand starts at its
+    // own height over the first 6 % from the root, so the skin shows between
+    // the first hairs; once a strand is under the pixel the fade is their
+    // average. It needs v to start at the hairline itself: round 6 put it on
+    // a model whose front held v near 0 over a wide band, and the fade showed
+    // skin through as a pale band (critic round 7); the bust now starts v at
+    // its hairline (tools/blender/bust_build.py).
+    let sx = (uv.x + 0.37 * lock) * 28.0;
+    let long = smoothstep(0.03, 0.06, length(cf.dpdv));
+    let root = 0.004 + 0.06 * char_hash(vec2<f32>(floor(sx * 4.0), 41.0));
+    let fringe = mix(smoothstep(root - 0.004, root + 0.004, vv), smoothstep(0.0, 0.064, vv), smoothstep(0.004, 0.012, aa));
+    s.alpha = cov * mix(1.0, fringe, long) * (1.0 - smoothstep(0.94, 1.0, vv));
+    // One sample a pixel (Lite, Low) cuts this at 40 %, and on a coarse level
+    // v runs over big triangles, so the cut through the tip fade wandered into
+    // a torn edge that bared the skin (material-view critic rounds 10 and 11),
+    // with no fade the tips' own line was hard (round 12), and a stipple of
+    // the fade read as a halftone dot band (round 13). There, long strands
+    // fade their colour and light into the scalp's
+    // (`material.hair.scalp_color`, a material's evani_hair.scalp_color wins)
+    // over the fringe's last band, 86 % to 96.5 % of their length (and over
+    // their first 8 %), then stop with a clean cut where the tips dive under
+    // the skin (the last 2 to 3 %, on the bust's Low level a sawtooth of lock
+    // ends), whose lip showed as a ridge of lit and dark facets: the cut runs
+    // through skin-coloured hair over skin, so it doesn't show however it
+    // wanders. (A fade from 78 % bared the forehead to a receding hairline,
+    // and a cut at 87 % to 95 % showed the dark scalp cap at the temples.)
+    // A soft, continuous hairline with no dots. Lock edges and short strands
+    // keep the clean cut.
+    let p29 = char_p(29u);
+    let fade_k = clamp(p29.w, 0.0, 1.0) * long * select(0.0, 1.0, CHAR_MSAA == 1u);
+    let ends = smoothstep(0.0, 0.08, vv) * (1.0 - smoothstep(0.86, 0.965, vv));
+    let hair_k = mix(1.0, ends, fade_k);
+    if (fade_k > 0.0) {
+        s.alpha = cov * (1.0 - fade_k * smoothstep(0.95, 0.97, vv));
+    }
 
-    // Strands within the lock and darker roots.
-    let strands = char_fcos((uv.x + 0.37 * lock) * 6.2831853 * 7.0, 6.2831853 * 7.0 * aa);
-    s.albedo = base * (0.88 + 0.12 * strands) * mix(1.0 - p12.w, 1.0, smoothstep(0.0, 0.6, vv));
+    // Strands within the lock (two sizes, round 6: at 0.12 they were lost
+    // and the locks read as one smooth shell), each lock its own tone, and
+    // darker roots.
+    let strands = 0.6 * char_fcos(sx * 0.25 * 6.2831853, 6.2831853 * 7.0 * aa) + 0.4 * char_fcos(sx * 0.61 * 6.2831853, 6.2831853 * 17.0 * aa);
+    let tone = 0.9 + 0.2 * char_hash(vec2<f32>(lock, 3.0));
+    s.albedo = base * tone * (0.8 + 0.2 * strands) * mix(1.0 - p12.w, 1.0, smoothstep(0.0, 0.6, vv));
 
     let h = normalize(l + v);
     let t1 = normalize(tt + n * (pshift + jit));
@@ -387,6 +470,24 @@ fn char_hair(base: vec3<f32>, n: vec3<f32>, v: vec3<f32>, l: vec3<f32>, uv: vec2
     let wl = 0.25 + 0.75 * clamp(dot(n, l) * 0.5 + 0.5, 0.0, 1.0);
     s.extra = (tint * (p9.w * char_kk(t1, h, p11.w)) + p10.rgb * base * (p10.w * char_kk(t2, h, p12.z) * spark)) * wl;
     s.spec_k = 0.0;
+    // The fade into the scalp (tiers without MSAA, above): the skin's colour
+    // and its own light take over from the strands' as hair_k falls. Where
+    // the tips start to dive, their faces turn from the light and the view
+    // and drew a dashed dark line by the cut: there the light is taken with
+    // the normal turned back towards the viewer, as the skin under them
+    // faces.
+    if (fade_k > 0.0) {
+        let scalp = char_pick3(vec3<f32>(surface.kind.x, surface.kind.y, surface.kind.w), p29.rgb);
+        let dive = smoothstep(0.9, 0.96, vv) * fade_k;
+        let nd = normalize(n + v * (3.0 * dive * clamp(0.7 - dot(n, v), 0.0, 1.0)));
+        let lit = char_skin_light(nd, nd, l, cf, char_p(0u).y, char_p(6u).rgb);
+        s.albedo = mix(scalp, s.albedo, hair_k);
+        s.lit3 = lit;
+        s.own_lit = 1.0 - hair_k;
+        s.extra *= hair_k;
+        s.env_k = mix(0.4, s.env_k, hair_k);
+        s.spec_k = 1.0 - hair_k;
+    }
     return s;
 }
 
@@ -408,12 +509,22 @@ fn char_shade(kind: f32, base: vec3<f32>, n: vec3<f32>, g: vec3<f32>, v: vec3<f3
 }
 
 // Interleaved gradient noise (Jimenez 2014) at a pixel.
+// The sun's visibility for a character material. Skin, eyes and hair
+// scatter light, and on tiers without a shadow map the baked open-sky cone
+// (a coarse per-vertex estimate) left dark blotches in every crease of a
+// face: the nostrils, the mouth line, beside the nose (critic round 2). A
+// character keeps a fifth of that cone; the face's own side still shades
+// it (self_shadow), and with a shadow map nothing changes.
+fn char_sun_vis(kind: f32, cast_vis: f32, has_map: bool) -> f32 {
+    return select(cast_vis, mix(cast_vis, 1.0, 0.8), kind > 0.5 && !has_map);
+}
+
 fn char_ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 // The colour with a coverage mask: with 4x MSAA, round(alpha x 4) samples
-// (dithered, turned per pixel); without, all or none against the noise.
+// (dithered, turned per pixel); without, all or none at 40 % coverage.
 // Alpha-to-coverage would need alpha < 1 in the colour, which the tonemap
 // reads as its screen-door mark.
 fn char_out(c: vec4<f32>, a: f32, frag: vec2<f32>) -> CharOut {
@@ -430,7 +541,11 @@ fn char_out(c: vec4<f32>, a: f32, frag: vec2<f32>) -> CharOut {
         let rot = u32(char_ign(frag + vec2<f32>(5.3, 9.1)) * 4.0) & 3u;
         o.mask = ((bits << rot) | (bits >> ((4u - rot) & 3u))) & 15u;
     } else {
-        o.mask = select(0u, 0xffffffffu, a > z);
+        // One sample a pixel (Lite, Low): a clean cut at 40 % coverage. A
+        // test against the per-pixel noise sprayed loose dots round every
+        // hair edge and drew the fur collar as streaks (critic round 2 of
+        // material-view); the cut keeps the same locks and tapered tips.
+        o.mask = select(0u, 0xffffffffu, a > 0.4);
     }
     return o;
 }

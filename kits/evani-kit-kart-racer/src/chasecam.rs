@@ -121,6 +121,64 @@ pub fn ease_lift(lift: f32, target: f32, dt: f32, snap: bool) -> f32 {
     lift + (target - lift) * (1.0 - (-rate * dt).exp())
 }
 
+/// A pose step bigger than this (metres, past the kart's own motion) is a
+/// respawn or a teleport: the camera cuts to it instead of gliding.
+pub const GLIDE_CUT_M: f32 = 6.0;
+/// The most the camera's anchor may trail the kart (metres).
+pub const GLIDE_MAX_M: f32 = 2.5;
+/// How fast the anchor settles back onto the kart (rad/s, critically
+/// damped: about 0.3 s to settle).
+pub const GLIDE_RATE: f32 = 14.0;
+
+/// The chase camera's anchor, kept continuous when the kart's drawn pose
+/// steps by more than its own motion: online, a correction from the
+/// referee, a catch-up tick or a held tick moves the predicted kart in one
+/// frame, and a camera fixed to it jumps with it (most visibly in corners,
+/// where a mispredicted steer moves the kart sideways). The step is taken
+/// into an offset that springs back to zero, so the view glides instead.
+/// Offline the kart only ever moves by its own motion, and the offset stays
+/// at a few millimetres.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Glide {
+    last: Option<[f32; 3]>,
+    off: [f32; 3],
+    vel: [f32; 3],
+}
+
+impl Glide {
+    /// The anchor for a kart drawn at `pos` this frame, moving at `vel`
+    /// (m/s, its last step) over `dt` seconds. `snap` (a new race, a staged
+    /// moment) puts it straight on the kart.
+    pub fn follow(&mut self, pos: [f32; 3], vel: [f32; 3], dt: f32, snap: bool) -> [f32; 3] {
+        let Some(last) = self.last.filter(|_| !snap && dt > 0.0) else {
+            *self = Self { last: Some(pos), ..Self::default() };
+            return pos;
+        };
+        let err: [f32; 3] = core::array::from_fn(|i| pos[i] - last[i] - vel[i] * dt);
+        if err.iter().map(|e| e * e).sum::<f32>().sqrt() > GLIDE_CUT_M {
+            *self = Self { last: Some(pos), ..Self::default() };
+            return pos;
+        }
+        // Keep the anchor where the kart's own motion takes it, then let the
+        // offset settle (the exact critically damped step: stable at any dt).
+        let (w, e) = (GLIDE_RATE, (-GLIDE_RATE * dt).exp());
+        for ((o, vel), er) in self.off.iter_mut().zip(self.vel.iter_mut()).zip(err) {
+            let x = *o - er;
+            let v = *vel;
+            let c = v + w * x;
+            *o = (x + c * dt) * e;
+            *vel = (v - w * c * dt) * e;
+        }
+        let len = self.off.iter().map(|o| o * o).sum::<f32>().sqrt();
+        if len > GLIDE_MAX_M {
+            let s = GLIDE_MAX_M / len;
+            self.off = self.off.map(|o| o * s);
+        }
+        self.last = Some(pos);
+        core::array::from_fn(|i| pos[i] + self.off[i])
+    }
+}
+
 /// The eye moved up out of any block it sits in or beside (never sideways,
 /// so it never swings across the road): the backstop for when the smoothing
 /// lags behind a rival that appears under the camera.
@@ -500,5 +558,46 @@ mod tests {
         assert_eq!(screen_rect(&vp, &kart_at(0.0, -7.0)), Some([-1.0, -1.0, 1.0, 1.0]));
         assert_eq!(screen_rect(&vp, &kart_at(0.0, -20.0)), None);
         assert_eq!(cover_share([0.0, 0.0, 1.0, 1.0], [0.5, -1.0, 2.0, 2.0]), 0.5);
+    }
+
+    /// Steady motion: the anchor is the kart. A 1 m sideways correction:
+    /// no frame moves the anchor more than a fraction of it off its path, and it is
+    /// back on the kart within half a second, at 30, 60 and 144 fps. A
+    /// respawn-sized step cuts.
+    #[test]
+    fn glide_absorbs_pose_steps() {
+        for fps in [30.0f32, 60.0, 144.0] {
+            let dt = 1.0 / fps;
+            let vel = [0.0, 0.0, 25.0];
+            let mut g = Glide::default();
+            let mut pos = [0.0f32; 3];
+            let mut prev = g.follow(pos, vel, dt, true);
+            for _ in 0..30 {
+                pos[2] += vel[2] * dt;
+                let a = g.follow(pos, vel, dt, false);
+                assert!((a[0] - pos[0]).abs() < 1e-4 && (a[2] - pos[2]).abs() < 1e-3, "steady {fps}: {a:?} vs {pos:?}");
+                prev = a;
+            }
+            let mut step_prev = vel.map(|v| v * dt);
+            pos[0] += 1.0;
+            let mut worst = 0.0f32;
+            for i in 0..(fps as usize) {
+                pos[2] += vel[2] * dt;
+                let a = g.follow(pos, vel, dt, false);
+                let step: [f32; 3] = core::array::from_fn(|k| a[k] - prev[k]);
+                let jerk = (0..3).map(|k| (step[k] - step_prev[k]).powi(2)).sum::<f32>().sqrt();
+                worst = worst.max(jerk);
+                if i as f32 * dt >= 0.5 {
+                    assert!((a[0] - pos[0]).abs() < 0.02, "settled {fps}: {:.3} off", a[0] - pos[0]);
+                }
+                (prev, step_prev) = (a, step);
+            }
+            // Unglided the frame would jump the whole 1 m.
+            let limit = if fps < 50.0 { 0.25 } else { 0.07 };
+            assert!(worst < limit, "{fps} fps: a frame jumped {worst:.3} m");
+        }
+        let mut g = Glide::default();
+        g.follow([0.0; 3], [0.0; 3], 0.016, true);
+        assert_eq!(g.follow([20.0, 0.0, 0.0], [0.0; 3], 0.016, false), [20.0, 0.0, 0.0]);
     }
 }

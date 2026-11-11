@@ -24,8 +24,9 @@
 //! |-------|-----------------|------------------|-----------------|
 //! | 4-6   | iris colour     | scatter colour   | highlight tint  |
 //! | 7     | iris size       | pore strength    | highlight shift |
-//! | 8-10  | sclera colour   | wrinkle strength, pore scale, - | edge softness, tip width, - |
+//! | 8-10  | sclera colour   | wrinkle strength, pore scale, spots | edge softness, tip width, - |
 //! | 11    | pupil size      | -                | -               |
+//! | 12, 13, 15 | inner iris colour (the ring round the pupil) | - | scalp colour (Low's hairline fades into it) |
 //! | 14    | kind code 2     | kind code 1      | kind code 3     |
 
 use serde_json::Value;
@@ -93,26 +94,31 @@ pub fn kind(extras: &Value) -> Kind {
 /// One value written by [`apply`]: a colour (3 words) or a number (1 word).
 enum Field {
     Color(&'static str, usize),
+    /// A colour whose three words are not side by side.
+    Split(&'static str, [usize; 3]),
     Num(&'static str, usize, f32, f32),
 }
 
-const EYE: [Field; 4] = [
+const EYE: [Field; 5] = [
     Field::Color("iris_color", 4),
+    Field::Split("inner_color", [12, 13, 15]),
     Field::Num("iris_size", 7, 0.1, 0.9),
     Field::Color("sclera_color", 8),
     Field::Num("pupil_size", 11, 0.05, 0.9),
 ];
-const SKIN: [Field; 4] = [
+const SKIN: [Field; 5] = [
     Field::Color("scatter_color", 4),
     Field::Num("pore_strength", 7, 0.0, 2.0),
     Field::Num("wrinkle_strength", 8, 0.0, 2.0),
     Field::Num("pore_scale", 9, 1.0, 4000.0),
+    Field::Num("spots", 10, 0.0, 1.0),
 ];
-const HAIR: [Field; 4] = [
+const HAIR: [Field; 5] = [
     Field::Color("highlight_color", 4),
     Field::Num("shift", 7, -1.0, 1.0),
     Field::Num("edge_softness", 8, 0.0, 1.0),
     Field::Num("tip_width", 9, 0.0, 1.0),
+    Field::Split("scalp_color", [12, 13, 15]),
 ];
 
 fn fields(k: Kind) -> &'static [Field] {
@@ -155,6 +161,12 @@ pub fn apply(extras: &Value, words: &mut [f32; WORDS]) -> Kind {
             Field::Color(name, at) => {
                 let c = block.and_then(|b| b.get(name)).and_then(color).unwrap_or([UNSET; 3]);
                 words[at..at + 3].copy_from_slice(&c);
+            }
+            Field::Split(name, at) => {
+                let c = block.and_then(|b| b.get(name)).and_then(color).unwrap_or([UNSET; 3]);
+                for (w, v) in at.iter().zip(c) {
+                    words[*w] = v;
+                }
             }
             Field::Num(name, at, lo, hi) => {
                 let x = block.and_then(|b| b.get(name)).and_then(Value::as_f64).map(|x| x as f32).filter(|x| x.is_finite());
@@ -210,7 +222,25 @@ mod tests {
         assert_eq!(w[7], UNSET, "iris size not given: the live param");
         assert_eq!(&w[8..11], &[UNSET; 3]);
         assert_eq!(w[11], 0.4);
+        assert_eq!((w[12], w[13], w[15]), (UNSET, UNSET, UNSET), "no inner colour given: the live param");
         assert_eq!((w[0], w[1], w[2]), (0.0, 0.5, 0.0), "the PBR words stay");
+        let mut w = words();
+        let e = json!({"evani_kind": "eye", "evani_eye": {"inner_color": [0.14, 0.05, 0.03]}});
+        apply(&e, &mut w);
+        assert_eq!((w[12], w[13], w[KIND_WORD], w[15]), (0.14, 0.05, 2.0, 0.03), "the inner ring rides in the kind vector, round the kind code");
+    }
+
+    #[test]
+    fn skin_spots_land_in_word_ten() {
+        let mut w = words();
+        apply(&json!({"evani_kind": "skin", "evani_skin": {"spots": 0.6, "pore_scale": 300.0}}), &mut w);
+        assert_eq!((w[9], w[10]), (300.0, 0.6));
+        let mut w = words();
+        apply(&json!({"evani_kind": "skin", "evani_skin": {"spots": 4.0}}), &mut w);
+        assert_eq!(w[10], 1.0, "clamped");
+        let mut w = words();
+        apply(&json!({"evani_kind": "skin"}), &mut w);
+        assert_eq!(w[10], UNSET, "no spots given: none");
     }
 
     #[test]

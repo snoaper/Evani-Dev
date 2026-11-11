@@ -1,0 +1,167 @@
+[package]
+name = "evani-kit-proc-field"
+description = "Evani.Dev procedural library proof kit: places every compiled-in procedural CPU asset in a row on a floor, under a fixed camera"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Places the assets (the app's `procedural` feature).
+procedural = ["dep:evani-procedural"]
+# The render service's views of the plain field (src/commons.rs): only the app
+# apps/commons-render turns it on; never the proof game or a scene.
+# Its test scenes (src/scenes.rs) read the assets' behaviour fields.
+commons = ["procedural", "evani-procedural/surface", "evani-procedural/behaviour"]
+# The realism parity scene (src/wall.rs; the app's `wall` feature): the
+# library's concrete in the engine's realism studio. The gating proof never
+# turns it on.
+wall = ["procedural", "evani-procedural/surface"]
+# The faceted ball's live scene (src/facet.rs; the app's `facet` feature):
+# the library's faceted concrete ball under its reference's camera and light,
+# its floor's grain and contact drawn by one game pass (round 11). Dev only;
+# the gating proof never turns it on.
+facet = ["procedural", "evani-procedural/surface", "evani-render/game-passes"]
+# The granite ball scene (src/granite.rs; the app's `granite` feature): the
+# library's granite ball tuned live beside its reference. Dev only.
+granite = ["procedural", "evani-procedural/surface"]
+# The concrete cone scene (src/cone.rs; the app's `cone` feature): the
+# library's cone tuned live beside its reference. Dev only.
+cone = ["procedural", "evani-procedural/surface"]
+# The live oak block (src/oak.rs; the app's `oak` feature): the library's
+# solid-oak bevelled box lit and framed as its reference. Dev only.
+oak = ["procedural", "evani-procedural/surface"]
+# The concrete cube scene (src/cube.rs; the app's `cube` feature): the
+# library's cube lit and framed as its reference, the faceted ball scene's
+# floor pass under it. Dev only.
+cube = ["facet"]
+# The oak trees scene (src/oaktree.rs; the app's `oaktree` feature): the
+# library's photoreal oaks lit and framed as their reference. Dev only.
+oaktree = ["procedural", "evani-procedural/surface"]
+# The distance fog's neutral staging (src/fogstage.rs; the app's `fogstage`
+# feature, Asset Studio column 74): plain grey blocks on flat grey ground at
+# near, middle and far distance from eye height, the library's distance fog
+# over the look's haze, as its staged reference. In the oak trees scene's
+# slot. Dev only.
+fogstage = ["oaktree"]
+# The pebbles' scene (src/pebbles.rs; the app's `pebbles` feature): the
+# library's pebbles lit and framed as their reference, the faceted ball
+# scene's floor pass under them. Dev only.
+pebbles = ["facet"]
+# The medium rocks' scene (src/mrocks.rs; the app's `mrocks` feature): the
+# library's medium rocks lit and framed as their reference, in the pebbles'
+# place (it turns `pebbles` on for its floor pass and scene slot). Dev only.
+mrocks = ["pebbles"]
+# The jagged rock formation's scene (src/jrocks.rs; the app's `jrocks`
+# feature): the library's jagged rock formation lit and framed as its
+# reference, in the pebbles' place (it turns `pebbles` on for its floor
+# pass and scene slot). Dev only.
+jrocks = ["pebbles"]
+# The rounded river rocks' scene (src/rrocks.rs; the app's `rrocks`
+# feature): the library's rounded river rocks lit and framed as their
+# reference, in the pebbles' place (it turns `pebbles` on for its floor
+# pass and scene slot). Dev only.
+rrocks = ["pebbles", "dep:evani-procedural-lib", "evani-procedural-lib/rocks-rounded-river-rocks"]
+# The rock pile's scene (src/rpiles.rs; the app's `rpiles` feature): the
+# library's rock pile lit and framed as its reference, in the pebbles'
+# place (it turns `pebbles` on for its floor pass and scene slot). Dev only.
+rpiles = ["pebbles"]
+loam = [
+    "pebbles",
+    "dep:evani-procedural-lib",
+    "evani-procedural-lib/material-soil-dark-loam",
+]
+snowpowder = [
+    "pebbles",
+    "dep:evani-procedural-lib",
+    "evani-procedural-lib/material-snow-fresh-powder",
+]
+# The volumetric clouds' scene (src/clouds.rs; the app's `clouds` feature):
+# the library's cumulus, drawn by its own ray-marched volume, lit and framed
+# as its reference. Dev only.
+clouds = ["procedural", "evani-render/game-passes"]
+# The shoreline's scene (src/shore.rs; the app's `shore` feature): the
+# library's shoreline lit and framed as its reference, its water handed to
+# the nature pass as a game does, the faceted ball scene's floor pass under
+# it. Dev only.
+shore = ["facet", "dep:evani-procedural-lib", "evani-procedural-lib/water-shorelines"]
+# The canyons' scene (src/canyon.rs; the app's `canyon` feature): the
+# library's canyons lit and framed as their reference, the faceted ball
+# scene's floor pass under them. Dev only.
+canyon = ["facet"]
+# The office building's scene (src/office.rs; the app's `office` feature):
+# the library's office building lit and framed as its reference, the
+# faceted ball scene's floor pass under it. Dev only.
+office = ["facet"]
+# The townhouses' scene (src/townhouse.rs; the app's `townhouse` feature):
+# in the office building's slot, its own camera, light and placement. Dev
+# only.
+townhouse = ["office"]
+# The NPC body variations' scene (src/npc.rs; the app's `npc` feature): the
+# library's line-up of people lit and framed as its reference, the faceted
+# ball scene's floor pass under it. Dev only.
+npc = ["facet"]
+# The rivers' scene (src/river.rs; the app's `river` feature): the library's
+# river valley outdoors under the sky dome, seen from its reference's two
+# cameras (the aerial overview and the player's eye), its water handed to
+# the nature pass and its bank grass to evani-grass as a game does; the sky
+# dome started with its own photoreal recipe (sky-dynamic-sky-dome). Dev only.
+river = ["procedural", "evani-procedural/surface", "dep:evani-procedural-lib", "evani-procedural-lib/water-rivers", "evani-procedural-lib/host-sky", "evani-procedural-lib/sky-dynamic-sky-dome"]
+# The mountains' scene (src/mountain.rs; the app's `mountain` feature): the
+# library's mountain massif seen from the air and from a player standing at
+# its foot, under a hazy mid-morning sky; it reads the library's ground to
+# stand the player on it. Dev only.
+mountain = ["procedural", "evani-procedural/surface", "dep:evani-procedural-lib", "evani-procedural-lib/terrain-mountains", "evani-procedural-lib/mountain-grass", "evani-render/game-passes"]
+# The scree slopes' scene (src/scree.rs; the app's `scree` feature): the
+# library's scree slope from a player standing on it, the library's massif
+# across the valley, in the mountains scene's slot. Dev only.
+scree = ["mountain", "evani-procedural-lib/rocks-scree-slopes"]
+# The rolling hills' scene (src/hills.rs; the app's `hills` feature, the
+# Asset Studio rolling hills session, column 28): the library's rolling
+# hills at a walker's scale, running on to the horizon, from a player
+# standing in them, with the hills' own meadow grass round the player, in
+# the mountains scene's slot. Dev only.
+hills = ["mountain", "evani-procedural-lib/hills-grass"]
+# The short grass's scene (src/shortgrass.rs; the app's `sgrass` feature, the
+# Asset Studio short grass session, column 68): the library's short grass as
+# a grazed pasture from a player standing in the field, its own patch and
+# pasture recipe, in the rolling hills scene's slot (its sky pass). Dev only.
+sgrass = [
+    "hills",
+    "evani-procedural-lib/vegetation-short-grass",
+]
+# The caves' scene (src/cave.rs; the app's `cave` feature, the Asset Studio
+# caves session, column 29): the library's limestone cave passage from a
+# player standing just inside its mouth, lit only by the daylight at the
+# mouth (the library's entrance lights, drawn as point lights), in the
+# mountains scene's slot. Dev only.
+cave = ["mountain", "evani-procedural-lib/terrain-caves", "evani-render/point-lights"]
+# The dynamic sky dome's scene (src/skydome.rs; the app's `skydome` feature):
+# the library's sky dome with its photoreal recipe, from a player's eye over
+# a meadow and far hills, as its reference. Dev only.
+skydome = ["dep:evani-procedural-lib", "evani-procedural-lib/sky-dynamic-sky-dome"]
+# The sun and moon discs' scene (src/sunmoon.rs; the app's `sunmoon`
+# feature): the library's sun and moon discs with their photoreal recipe, a
+# golden hour from a player's eye over dark fields, as its reference. In the
+# sky dome scene's slot. Dev only.
+sunmoon = ["skydome", "evani-procedural-lib/sky-sun-and-moon-discs", "evani-procedural-lib/vegetation-long-grass"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward"] }
+evani-procedural = { workspace = true, optional = true }
+# The shoreline scene (its water helper and look), the sky dome scene
+# (the dome and its photoreal recipe) and the rivers' scene only.
+evani-procedural-lib = { workspace = true, optional = true }
+
+[dev-dependencies]
+# The faceted ball scene's test compiles its floor pass's WGSL (game_pass::check).
+evani-render = { workspace = true, features = ["forward", "game-passes-check"] }
+# The render app's test-scene tests measure the library's own wind gusts and
+# water currents (src/scenes_tests.rs).
+evani-procedural-lib = { workspace = true, features = ["sky-wind-gust-effects", "water-water-currents", "behaviour"] }
+
+[lints]
+workspace = true

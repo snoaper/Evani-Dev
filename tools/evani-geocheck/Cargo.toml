@@ -20,6 +20,8 @@ cli = [
     "dep:evani-look-toon",
     "dep:evani-kit-example",
     "dep:evani-look-basic",
+    "dep:evani-gltf",
+    "dep:evani-model",
 ]
 
 [dependencies]
@@ -36,6 +38,11 @@ evani-look-toon = { workspace = true, optional = true }
 # The sandbox adapter: the example kit draws the sandbox scene, with the basic look.
 evani-kit-example = { workspace = true, optional = true }
 evani-look-basic = { workspace = true, optional = true }
+# `--model`: one model's tier files read through the engine's own reader, and
+# their review pictures drawn with Evani.Model's rasteriser (both dev only,
+# already in the workspace).
+evani-gltf = { workspace = true, optional = true }
+evani-model = { workspace = true, optional = true }
 
 [[bin]]
 name = "evani-geocheck"

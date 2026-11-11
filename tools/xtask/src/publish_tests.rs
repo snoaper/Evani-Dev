@@ -23,6 +23,7 @@ fn expect() -> Expect {
         free_roam: Some(true),
         playground_problems: Vec::new(),
         known_markers: vec!["evani.module.fx".into(), "evani.module.live".into()],
+        cap: Some(pg::PACKAGE_CAP_BYTES),
     }
 }
 
@@ -118,6 +119,7 @@ fn identical_package_says_skip() {
         preview_url: None,
         swapped: false,
         tiers: &crate::tier_report::TierReport::default(),
+        cap: Some(pg::PACKAGE_CAP_BYTES),
     };
     let j = s.to_json();
     assert_eq!(j["skip"], true);
@@ -156,6 +158,7 @@ fn only_files_the_page_loads_count_as_fetched_again() {
         preview_url: None,
         swapped: false,
         tiers: &crate::tier_report::TierReport::default(),
+        cap: Some(pg::PACKAGE_CAP_BYTES),
     };
     assert_eq!(s.to_json()["diff"]["redownload_gzip"], 0);
     // A first publish: everything is NEW, but only the page's files are fetched.
@@ -310,6 +313,17 @@ fn failed_preflight_leaves_the_old_package_untouched() {
     assert_eq!(p.dir, failed);
     assert_eq!(PackageManifest::scan(&failed).unwrap(), p.manifest);
 
+    // Chris 2026-11-11, "the 10mb is only for Games that is it": the same
+    // 10 MB+ folder as the library or a Scene (no cap) passes the size check
+    // and says why, while the game above was refused.
+    let lib_dest = t.join("publish").join("lib");
+    let lib = package_into(&root, &big, Some(&carry), &lib_dest, None, &t.join("hist").join("failed-lib"), &Expect { cap: None, ..expect() }).unwrap();
+    let size = lib.checks.iter().find(|c| c.id == "size").unwrap();
+    assert!(size.ok && size.detail.contains("no size cap"), "{size:?}");
+    let lines = size_report_lines(&lib.manifest, &[], None, None).join("
+");
+    assert!(lines.contains("no size cap") && !lines.contains("OVER"), "{lines}");
+
     // Dev-only code: refused the same way (the earlier rejected package is replaced).
     let dev = t.join("dist-dev");
     fake_dist(&dev, b"evani.module.live hotpatch");
@@ -376,7 +390,7 @@ fn size_report_labels_every_figure() {
     let rows = [ModuleRow { module: "fx.bloom".into(), raw: 9000, gzip: 3000, brotli: 2500 }];
     let page = page_files(&m, "<script src=\"evani-loader.js\"></script><script>const wasmUrl = './g_bg.wasm';</script><img src=\"gone.png\">");
     assert_eq!(page, ["evani-loader.js", "g_bg.wasm", "index.html"], "only files in the package");
-    let text = size_report_lines(&m, &page, Some(&rows)).join("\n");
+    let text = size_report_lines(&m, &page, Some(&rows), Some(pg::PACKAGE_CAP_BYTES)).join("\n");
     assert!(text.contains("whole folder (what is uploaded"));
     assert!(text.contains("download (what a player's browser fetches: index.html and the 2 file(s) it loads)"));
     // README, licences and the preview are uploaded but never fetched by the page.
@@ -391,7 +405,7 @@ fn size_report_labels_every_figure() {
     assert!(text.contains("+8.8 KB"));
     // The 1.5 MB line counts the build's files, not the loader.
     assert_eq!(size_line_raw(&m), 807_000);
-    assert!(size_report_lines(&m, &page, None).join("\n").contains("skipped (--quick)"));
+    assert!(size_report_lines(&m, &page, None, Some(pg::PACKAGE_CAP_BYTES)).join("\n").contains("skipped (--quick)"));
 }
 
 #[test]
@@ -444,6 +458,7 @@ fn summary_lands_outside_the_package() {
         preview_url: Some("http://localhost:8114/t/".into()),
         swapped: true,
         tiers: &crate::tier_report::TierReport::default(),
+        cap: Some(pg::PACKAGE_CAP_BYTES),
     };
     let path = write_summary(&hist, &s).unwrap();
     assert!(!path.starts_with(&pkg) && path.is_file());
@@ -505,13 +520,15 @@ fn an_interrupted_swap_puts_the_old_package_back() {
 fn options_parse() {
     let a = |s: &str| s.split(' ').map(str::to_string).collect::<Vec<_>>();
     let o = parse_opts(&a("kart-racer --dry-run --out C:/x --port 8200 --quick")).unwrap();
-    assert_eq!((o.app.as_str(), o.dry_run, o.quick, o.port, o.serve), ("kart-racer", true, true, 8200, false));
+    assert_eq!((o.app.as_deref(), o.dry_run, o.quick, o.port, o.serve), (Some("kart-racer"), true, true, 8200, false));
     assert_eq!(o.out, Some(PathBuf::from("C:/x")));
     let o = parse_opts(&a("match-3 --mark-published v5")).unwrap();
     assert_eq!(o.mark.as_deref(), Some("v5"));
     assert_eq!(o.port, DEFAULT_PORT);
     assert!(parse_opts(&a("x --bogus")).is_err());
-    assert!(parse_opts(&a("--dry-run")).is_err());
+    // No id: the --app-dir form (the folder is the game); a plain publish needs one.
+    assert_eq!(parse_opts(&a("--dry-run")).unwrap().app, None);
+    assert!(cmd_publish(&a("--dry-run")).is_err());
 }
 
 #[test]

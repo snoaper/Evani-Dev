@@ -20,23 +20,42 @@ pub struct Modules {
     pub models: bool,
     pub anim: bool,
     pub ui: bool,
+    /// `grass = true`: evani-grass, the procedural grass and crops (the
+    /// app's `grass` feature).
+    pub grass: bool,
     /// `nature = ["ocean", ..]`: evani-material-nature with these of its
     /// parts (`None`: not listed, so not built). See [`MATERIAL_MODULES`].
     pub nature: Option<Vec<String>>,
     /// `proc = ["sky", ..]`: evani-material-proc with these of its parts.
     pub proc: Option<Vec<String>>,
+    /// `procedural = ["terrain", "geometry-cube-cuboid", ..]`: the procedural
+    /// library (evani-procedural-lib) with these categories and assets
+    /// (docs/PROCEDURAL.md).
+    pub procedural: Option<Vec<String>>,
+    /// `[materials]` (recipes and condition layers); a non-empty list implies
+    /// `models`, like `anim` does.
+    pub materials: crate::materials::Listed,
+    /// `[modules] materials = ["layers", ..]`: material families, each the
+    /// app feature `material-<family>`. Unknown names are xtask's error.
+    pub material_families: Vec<String>,
 }
 
 /// The material modules of `[modules]`: key, engine crate. `key = [parts]`
 /// turns on the app features `<key>` (the crate) and `<key>-<part>` for each
 /// part (one of the crate's Cargo features); `key = []` is the crate alone.
-pub const MATERIAL_MODULES: &[(&str, &str)] = &[("nature", "evani-material-nature"), ("proc", "evani-material-proc")];
+/// The procedural library rides the same rule: each part is one of
+/// evani-procedural-lib's features (a category or an asset).
+pub const MATERIAL_MODULES: &[(&str, &str)] = &[("nature", "evani-material-nature"), ("proc", "evani-material-proc"), ("procedural", "evani-procedural-lib")];
 
 /// A material module's parts: `None` when the key is absent, else a list of
 /// distinct part names (lowercase letters, digits and `-`).
 pub fn parts(m: Option<&toml::Table>, key: &str) -> Result<Option<Vec<String>>, String> {
     let Some(v) = m.and_then(|m| m.get(key)) else { return Ok(None) };
-    let bad = || format!("evani.toml: `modules.{key}` must be a list of part names, e.g. `{key} = [\"{}\"]` (or `[]` for the crate alone)", if key == "nature" { "ocean" } else { "sky" });
+    let bad = || format!("evani.toml: `modules.{key}` must be a list of part names, e.g. `{key} = [\"{}\"]` (or `[]` for the crate alone)", match key {
+        "nature" => "ocean",
+        "procedural" => "terrain-rolling-hills",
+        _ => "sky",
+    });
     let list = v.as_array().ok_or_else(bad)?;
     let mut out: Vec<String> = Vec::new();
     for p in list {
@@ -61,9 +80,16 @@ pub fn material_features(nature: Option<&[String]>, proc: Option<&[String]>) -> 
     f
 }
 
+/// The app features of `procedural = [..]`: `procedural` and
+/// `procedural-<part>` (each forwarding to evani-procedural-lib's `<part>`).
+pub fn procedural_features(procedural: Option<&[String]>) -> Vec<String> {
+    let Some(parts) = procedural else { return Vec::new() };
+    std::iter::once("procedural".to_string()).chain(parts.iter().map(|p| format!("procedural-{p}"))).collect()
+}
+
 /// The optional engine crates; a game may only carry them as optional
 /// dependencies behind features.
-pub const OPTIONAL_CRATES: &[&str] = &["evani-fx", "evani-physics", "evani-net", "evani-xr", "evani-live", "evani-gltf", "evani-anim", "evani-ui", "evani-material-proc", "evani-material-layers", "evani-material-nature"];
+pub const OPTIONAL_CRATES: &[&str] = &["evani-fx", "evani-physics", "evani-net", "evani-xr", "evani-live", "evani-gltf", "evani-anim", "evani-ui", "evani-material-proc", "evani-material-layers", "evani-material-nature", "evani-material-recipes", "evani-studio", "evani-style-geo", "evani-grass", "evani-procedural", "evani-procedural-lib"];
 
 impl Modules {
     pub fn parse(text: &str) -> Result<Self, String> {
@@ -86,8 +112,16 @@ impl Modules {
         };
         let b = |k: &str| m.and_then(|m| m.get(k)).and_then(toml::Value::as_bool).unwrap_or(false);
         let anim = b("anim");
-        let (nature, proc) = (parts(m, "nature")?, parts(m, "proc")?);
-        Ok(Self { name: s("name")?, kit: s("kit")?, look: s("look")?, effects, physics, net: b("net"), xr: b("xr"), live: b("live"), models: b("models") || anim, anim, ui: b("ui"), nature, proc })
+        let (nature, proc, procedural) = (parts(m, "nature")?, parts(m, "proc")?, parts(m, "procedural")?);
+        let materials = crate::materials::Listed::parse(&t)?;
+        let mut material_families: Vec<String> = Vec::new();
+        for e in m.and_then(|m| m.get("materials")).and_then(toml::Value::as_array).into_iter().flatten() {
+            let name = e.as_str().ok_or("evani.toml: every `modules.materials` entry must be a string")?;
+            if !material_families.iter().any(|x| x == name) {
+                material_families.push(name.to_string());
+            }
+        }
+        Ok(Self { name: s("name")?, kit: s("kit")?, look: s("look")?, effects, physics, net: b("net"), xr: b("xr"), live: b("live"), models: b("models") || anim || materials.is_active(), anim, ui: b("ui"), grass: b("grass"), nature, proc, procedural, materials, material_families })
     }
 
     /// The game crate features this list turns on (the build always passes
@@ -101,12 +135,15 @@ impl Modules {
         if let Some(p) = &self.physics {
             f.push(format!("physics-{p}"));
         }
-        for (on, name) in [(self.net, "net"), (self.xr, "xr"), (self.live, "live"), (self.models, "models"), (self.anim, "anim"), (self.ui, "ui")] {
+        for (on, name) in [(self.net, "net"), (self.xr, "xr"), (self.live, "live"), (self.models, "models"), (self.anim, "anim"), (self.ui, "ui"), (self.grass, "grass")] {
             if on {
                 f.push(name.to_string());
             }
         }
         f.extend(material_features(self.nature.as_deref(), self.proc.as_deref()));
+        f.extend(procedural_features(self.procedural.as_deref()));
+        f.extend(self.materials.features());
+        f.extend(self.material_families.iter().map(|m| format!("material-{m}")));
         f
     }
 
@@ -114,7 +151,7 @@ impl Modules {
     pub fn materials(&self) -> Vec<(&'static str, &'static str, &[String])> {
         MATERIAL_MODULES
             .iter()
-            .zip([&self.nature, &self.proc])
+            .zip([&self.nature, &self.proc, &self.procedural])
             .filter_map(|(&(key, krate), parts)| parts.as_deref().map(|p| (key, krate, p)))
             .collect()
     }
@@ -124,6 +161,10 @@ impl Modules {
 /// list asks for that the crate lacks, the kit or look crate not a
 /// dependency.
 pub fn crate_problems(features: &[String], kit: &str, look: &str, cargo_toml: &str) -> Vec<String> {
+    // The `[materials]` features have their own check with the exact lines
+    // to add (`materials::cargo_problems`).
+    let features: Vec<String> = features.iter().filter(|f| !crate::materials::is_material_feature(f)).cloned().collect();
+    let features = &features[..];
     let t: toml::Table = match cargo_toml.parse() {
         Ok(t) => t,
         Err(e) => return vec![format!("Cargo.toml: {e}")],
@@ -194,6 +235,9 @@ mod tests {
         let m = Modules::parse("name = \"d\"\nkit = \"demo\"\nlook = \"basic\"\neffects = [\"bloom\"]\n[modules]\nphysics = \"none\"\nlive = true\n").unwrap();
         assert_eq!(m.features(), ["fx", "bloom", "live"]);
         assert!(Modules::parse("name = \"d\"\nkit = \"demo\"\nlook = \"basic\"\n[modules]\nphysics = \"soft\"\n").is_err());
+        let mat = Modules::parse("name = \"d\"\nkit = \"demo\"\nlook = \"basic\"\n[modules]\nmaterials = [\"layers\", \"playground\"]\n").unwrap();
+        assert_eq!(mat.features(), ["material-layers", "material-playground"]);
+        assert!(m.material_families.is_empty(), "a game that lists none ships none");
     }
 
     #[test]

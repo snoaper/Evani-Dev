@@ -1,0 +1,67 @@
+{
+  "library": "evani-kit-material-view/planned",
+  "version": 1,
+  "note": "Why a catalogue row is still planned, as the library panel shows it (greyed, with this reason). Reasons come from the batch-1 packages' own notes (DECISIONS P4-P10a and BATCH1_BUILD_PLAN P15). A row not listed here gets its batch's line, or its recipe backend's line, or the default.",
+  "default": "Its numbers aren't set yet.",
+  "batch": "Planned for batch {batch}: not built yet.",
+  "backend": {
+    "nature": "The nature family draws it in its own scene; its numbers come in a later step.",
+    "character": "The character family draws it; its numbers aren't set yet."
+  },
+  "groups": [
+    {
+      "reason": "Needs a body-region mask (belly, face, legs, bands) that no recipe has yet.",
+      "ids": ["deer.coat.brown"]
+    },
+    {
+      "reason": "Painted stripes and lining need a region mask or a decal.",
+      "ids": ["car.paint.racing_stripe", "car.paint.carriage", "car.paint.train"]
+    },
+    {
+      "reason": "Seams and mixed plates need regions: two materials on one surface.",
+      "ids": ["sf.hull.panel", "sf.rust_bucket"]
+    },
+    {
+      "reason": "Flesh fused with metal is two materials, not one.",
+      "ids": ["sf.biomech"]
+    },
+    {
+      "reason": "Copper traces need a trace pattern no recipe has.",
+      "ids": ["sf.circuit"]
+    },
+    {
+      "reason": "A flash where it is hit needs an impact input.",
+      "ids": ["magic.forcefield"]
+    },
+    {
+      "reason": "Flashing colour patches need a hue pattern the gem recipe lacks.",
+      "ids": ["gem.opal"]
+    },
+    {
+      "reason": "The pulse needs a time term the gem recipe lacks.",
+      "ids": ["gem.magic_crystal"]
+    }
+  ],
+  "rows": {
+    "skin.trait.freckled": "The skin family has no freckle field yet.",
+    "skin.trait.elder": "The skin family has no age spots yet.",
+    "eye.brown_dark": "The iris's centre ring can't be set per material yet, so a brown eye reads hazel.",
+    "cloth.denim.indigo": "The cloth family has no twill weave yet.",
+    "cloth.wool.blanket": "Blanket stripes need a stripe pattern the cloth family lacks.",
+    "tool.rope.hemp": "A rope's twist is geometry, not a weave.",
+    "glass.crystal.cut": "Cut facets and a rainbow sparkle need a faceted pattern the glass recipe lacks; it draws as plain clear glass.",
+    "jewel.paste": "Cut facets need a faceted pattern the glass recipe lacks; it draws as plain clear glass.",
+    "water.ocean.open": "Rolling waves and whitecaps need open-sea foam the water recipe lacks; it draws as flat blue.",
+    "dragonfly.wing": "A dragonfly wing needs veins running along it, a dense net of small cells and see-through; the wing pattern fans out like a shell.",
+    "cloth.chiffon": "Chiffon's sheerness needs see-through (the blend pass); drawn opaque it reads as pink silk.",
+    "food.meat.bacon":"Bacon's fat streaks need a stripe pattern the flesh recipe lacks; its marbling makes blobs, so it reads as raw meat.",
+    "paper.map": "Coastlines and lettering need a printed picture (a decal); the paper's motifs read as wallpaper.",
+    "paper.playing_card": "Printed pips and a card face need a printed picture (a decal); the paper's motifs read as wallpaper, not a playing card.",
+    "paper.paper_lantern": "A paper lantern needs a glow that works outside the nature scene; on the viewer ball it is plain red paper. Filed for batch 10.",
+    "ground.ice.sheet_road": "Black ice needs a near-black, glossy, slightly see-through road sheet; the ice recipe draws it as pale blue-grey slate (it lightens a dark tint) and the ground recipe is not see-through. Filed for batch 10.",
+    "food.beer": "Beer needs a foam top on the liquid preview; drawn as plain see-through gold glass it reads as honey. Filed for batch 10.",
+    "food.cake": "Cake is white icing over soft sponge: it needs a cut-slice preview that shows both; on the ball the icing alone reads as a plain white ball. Filed for batch 10.",
+    "food.milk": "Milk is an opaque white liquid: it needs a liquid preview (a glass or a pour); on the ball it reads as a plain white ball. Filed for batch 10.",
+    "food.stew": "Stew needs chunks (meat, carrot, potato) sitting in a glossy liquid; the water liquid draws a plain brown ball, and the organic recipe's round spots in one colour read as a spotted sweet. Filed for batch 10."
+  }
+}

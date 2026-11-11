@@ -80,7 +80,7 @@ pub trait PostRecorder {
     /// One full-screen draw of `shaders()[shader]` sampling `src` (None for
     /// shaders without an input) into `dst`, with the shader's blend mode.
     /// `uniforms` fills the shader's uniform struct.
-    fn draw(&mut self, shader: usize, src: Option<&str>, dst: &str, uniforms: &[f32]);
+    fn draw(&mut self, shader: usize, src: Option<&str>, dst: &str, uniforms: &[f32]); #[cfg(feature = "effect-mesh")] #[allow(clippy::too_many_arguments)] #[doc = "One draw of `vertices` vertices of a mesh shader into `dst` with its own depth `zbuf` (feature `effect-mesh`; see [`MeshShader`]). A recorder without it draws nothing."] fn draw_mesh(&mut self, shader: usize, src: &str, field: &str, dst: &str, zbuf: &str, clear_depth: bool, vertices: u32, uniforms: &[f32]) { let _ = (shader, src, field, dst, zbuf, clear_depth, vertices, uniforms); }
 }
 
 /// A post effect as the renderer sees it. evani-fx's `Effect` extends it.
@@ -100,7 +100,7 @@ pub trait PostEffect: 'static {
         out: &mut [f32],
     ) -> usize;
     /// Record the draws of graph pass `pass`. No allocation.
-    fn record(&self, pass: &str, reg: &ParamRegistry, rec: &mut dyn PostRecorder);
+    fn record(&self, pass: &str, reg: &ParamRegistry, rec: &mut dyn PostRecorder); #[cfg(feature = "effect-mesh")] #[doc = "Whether `shaders()[shader]` is a mesh shader (feature `effect-mesh`)."] fn mesh_shader(&self, shader: usize) -> Option<MeshShader> { let _ = shader; None }
 }
 
 /// Helper for [`PostEffect::record`]: build the [`UniformFrame`] from the
@@ -215,4 +215,41 @@ mod tests {
         assert_eq!(fx.for_pass("t").map(|(i, _)| i), Some(0));
         assert!(fx.for_pass("x").is_none());
     }
+}
+
+/// A post-effect shader that draws a mesh (feature `effect-mesh`): its
+/// pipeline has a depth target (reversed depth) and a fifth binding, the
+/// `field` target sampled in both stages.
+#[cfg(feature = "effect-mesh")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MeshShader {
+    /// The extra colour target it samples (binding 4).
+    pub field: &'static str,
+    /// Whether it writes the depth target (else only tests against it).
+    pub depth_write: bool,
+}
+
+/// [`draw_effect`] for a mesh shader (feature `effect-mesh`): the uniforms
+/// as for a full-screen draw into `dst`, then `vertices` vertices.
+#[cfg(feature = "effect-mesh")]
+#[allow(clippy::too_many_arguments)]
+pub fn draw_effect_mesh<E: PostEffect + ?Sized>(
+    effect: &E,
+    rec: &mut dyn PostRecorder,
+    reg: &ParamRegistry,
+    shader: usize,
+    src: &str,
+    field: &str,
+    dst: &str,
+    zbuf: &str,
+    clear_depth: bool,
+    vertices: u32,
+) {
+    let Some(sh) = effect.shaders().get(shader) else {
+        return;
+    };
+    let frame = UniformFrame { source_size: rec.target_size(src), target_size: rec.target_size(dst), mip: 0 };
+    let mut buf = [0.0f32; MAX_UNIFORM_WORDS];
+    let n = effect.write_uniforms(sh.name, reg, &frame, &mut buf);
+    rec.draw_mesh(shader, src, field, dst, zbuf, clear_depth, vertices, &buf[..n]);
 }

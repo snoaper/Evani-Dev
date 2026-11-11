@@ -247,7 +247,7 @@ pub fn jobs_for(tiers: &Tiers, wanted: &[String], query: &str) -> Result<Vec<Val
 }
 
 fn root() -> PathBuf {
-    let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let here = PathBuf::from(env!("EVANI_COMPILED_DIR"));
     here.ancestors().nth(2).map_or(here.clone(), Path::to_path_buf)
 }
 
@@ -261,10 +261,12 @@ fn trunk_build(dist: &Path) -> Result<(), String> {
     if std::env::var_os("CARGO_BUILD_JOBS").is_none() {
         cmd.env("CARGO_BUILD_JOBS", "4");
     }
-    let out = cmd
-        .output()
+    let out = evani_guide::watch::run_watched_stderr(&mut cmd, "trunk build bench")
         .map_err(|e| format!("cannot run trunk ({e}); install it with `cargo install trunk --locked`"))?;
-    if !out.status.success() {
+    if let Some(s) = &out.stalled {
+        return Err(format!("trunk build: {}\n  fix: {}", evani_guide::watch::stall_what(s), evani_guide::watch::stall_fix(&evani_guide::watch::command_line(&cmd), s)));
+    }
+    if !out.success() {
         let log = String::from_utf8_lossy(&out.stderr);
         let tail: Vec<&str> = log.lines().rev().take(25).collect::<Vec<_>>().into_iter().rev().collect();
         return Err(format!("trunk build failed:\n{}", tail.join("\n")));

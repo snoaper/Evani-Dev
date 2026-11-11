@@ -298,6 +298,33 @@ impl Formulas {
     }
 }
 
+/// The trails effect's life curves: a fixed, valid curve over `u` in 0..1,
+/// without what `register` needs for arbitrary names and expressions, so a game
+/// with the effect does not download that for two curves. They bake and edit
+/// live like any formula.
+#[cfg(feature = "trails")]
+impl Formulas {
+    pub fn add_life_curve(&mut self, name: &str, description: &str, curve: Curve) {
+        if self.by_name.contains_key(name) {
+            return;
+        }
+        let id = FormulaId(self.defs.len() as u32);
+        self.defs.push(FormulaDef {
+            name: name.to_string(),
+            description: description.to_string(),
+            vars: vec!["u".to_string()],
+            owner: "fx".to_string(),
+            x_range: Some([0.0, 1.0]),
+            y_range: Some([0.0, 4.0]),
+        });
+        let body = FormulaBody::Curve(curve);
+        self.defaults.push(body.clone());
+        self.bodies.push(body);
+        self.changed_at.push(self.revision);
+        self.by_name.insert(name.to_string(), id);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

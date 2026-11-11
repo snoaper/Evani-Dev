@@ -1,0 +1,444 @@
+{
+  "converter": "evani-convert 0.1.0",
+  "evani_model_input": false,
+  "format": 1,
+  "gate": null,
+  "id": "horse",
+  "inputs": [
+    {
+      "bytes": 1919976,
+      "file": "<project>/.evani/tmp/horse5/final/horse.glb",
+      "role": "input",
+      "sha256": "87410f2c1ffd9a5fb35b160cae477513c29bf6f5347093991b3d23374bd9eaa3"
+    }
+  ],
+  "look": null,
+  "look_match": null,
+  "manifest": "horse.manifest.json",
+  "master": {
+    "bytes": 1919976,
+    "file": "horse.master.glb",
+    "levels": [
+      {
+        "draw_calls": 3,
+        "node": "(whole file)",
+        "triangles": 44966
+      }
+    ]
+  },
+  "meshcheck": [
+    {
+      "file": "horse.master.glb",
+      "meshcheck": {
+        "components": 1,
+        "issues": {
+          "degenerate": 1,
+          "self_intersection": 1
+        },
+        "self_intersections_checked": true,
+        "triangles": 44966,
+        "vertices": 22485
+      },
+      "what": "master"
+    },
+    {
+      "file": "horse.low.glb",
+      "meshcheck": {
+        "components": 3,
+        "issues": {
+          "non_manifold_vertex": 23,
+          "self_intersection": 23
+        },
+        "self_intersections_checked": true,
+        "triangles": 11239,
+        "vertices": 5669
+      },
+      "what": "low level 0"
+    },
+    {
+      "file": "horse.high.glb",
+      "meshcheck": {
+        "components": 2,
+        "issues": {
+          "non_manifold_vertex": 17,
+          "self_intersection": 18
+        },
+        "self_intersections_checked": true,
+        "triangles": 33722,
+        "vertices": 16910
+      },
+      "what": "high level 0"
+    },
+    {
+      "file": "horse.ultra.glb",
+      "meshcheck": {
+        "components": 1,
+        "issues": {
+          "self_intersection": 4
+        },
+        "self_intersections_checked": true,
+        "triangles": 44966,
+        "vertices": 22485
+      },
+      "what": "ultra level 0"
+    }
+  ],
+  "min_distance_m": null,
+  "notes": [
+    "layers: 1 material(s) carry sheen, clear coat, anisotropy or iridescence as extras.evani_layers (drawn with the engine's `material-layers` render feature)",
+    "regions: mesh 0 (`layout.003`): charted from 56 bones (vertices: ear 765, head 9560, leg 6167, neck 1303, spine 4010, tail 279)",
+    "regions: mesh 0 (`layout.003`): charted from 56 bones (vertices: leg 1408)",
+    "regions: mesh 0 (`layout.003`): charted from 56 bones (vertices: head 510)",
+    "occlusion: the baked _EVANI_AO kept on 3 primitive(s), 24002 vertices (mean 0.92, 608 under 0.5); drawn by games that turn on `[materials] baked_ao`",
+    "one level of detail per tier: the model is animated (skins, animations, cameras and extension data such as lights point at indices across the file, which the merge does not remap, and baked clips name each tier file's nodes once; LOD chains for skinned and animated models are not built yet)",
+    "regions / occlusion: levels simplified without gltfpack's attribute optimisation (-sv), which would zero the chart and the occlusion"
+  ],
+  "package": {
+    "brotli": 777383,
+    "cap": 10485760,
+    "files": 4,
+    "gzip": 823041,
+    "over_cap": false,
+    "raw": 994530
+  },
+  "read_back": {
+    "problems": [],
+    "reader": "evani-gltf"
+  },
+  "tiers": [
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 150,
+        "max_triangles": 100000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 112821,
+        "gzip": 121264,
+        "raw": 154712
+      },
+      "clips": {
+        "block_bytes": 28634,
+        "bound_m": 0.0004,
+        "clips": [
+          {
+            "bytes": 17185,
+            "constant": 2,
+            "frames": 151,
+            "keys": 2405,
+            "name": "idle",
+            "rest": 122,
+            "rot_bits": 48,
+            "tracks": 46,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.00037449182485669577
+          },
+          {
+            "bytes": 11430,
+            "constant": 0,
+            "frames": 41,
+            "keys": 1588,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "jaw.001",
+            "worst_shell_error_m": 0.0003278704250573015
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 154712,
+        "bc7_device": 154712
+      },
+      "draw_calls": 3,
+      "file": "horse.low.glb",
+      "files": [
+        {
+          "brotli": 112821,
+          "file": "horse.low.glb",
+          "gzip": 121264,
+          "raw": 154712
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.02,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 0.25,
+          "triangles": 11239
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 1.25,
+        "height": 1080.0,
+        "height_from": "bench reference 1080",
+        "pixels": 1012.5,
+        "render_scale": 0.75
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 100663296,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 1024,
+        "floor": 64,
+        "fraction": 1.0,
+        "screen_px": 1012.5,
+        "size": 1024
+      },
+      "tier": "low",
+      "triangles": 11239
+    },
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 800,
+        "max_triangles": 2000000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 295698,
+        "gzip": 311525,
+        "raw": 374180
+      },
+      "clips": {
+        "block_bytes": 28634,
+        "bound_m": 0.0004,
+        "clips": [
+          {
+            "bytes": 17185,
+            "constant": 2,
+            "frames": 151,
+            "keys": 2405,
+            "name": "idle",
+            "rest": 122,
+            "rot_bits": 48,
+            "tracks": 46,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.00037449182485669577
+          },
+          {
+            "bytes": 11430,
+            "constant": 0,
+            "frames": 41,
+            "keys": 1588,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "jaw.001",
+            "worst_shell_error_m": 0.0003278704250573015
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 374180,
+        "bc7_device": 374180
+      },
+      "draw_calls": 3,
+      "file": "horse.high.glb",
+      "files": [
+        {
+          "brotli": 295698,
+          "file": "horse.high.glb",
+          "gzip": 311525,
+          "raw": 374180
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.005,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 0.75,
+          "triangles": 33722
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 2.0,
+        "height": 1080.0,
+        "height_from": "bench reference 1080",
+        "pixels": 2160.0,
+        "render_scale": 1.0
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 536870912,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 4096,
+        "floor": 256,
+        "fraction": 1.0,
+        "screen_px": 2160.0,
+        "size": 4096
+      },
+      "tier": "high",
+      "triangles": 33722
+    },
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 2500,
+        "max_triangles": 6000000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 368655,
+        "gzip": 390013,
+        "raw": 464968
+      },
+      "clips": {
+        "block_bytes": 28634,
+        "bound_m": 0.0004,
+        "clips": [
+          {
+            "bytes": 17185,
+            "constant": 2,
+            "frames": 151,
+            "keys": 2405,
+            "name": "idle",
+            "rest": 122,
+            "rot_bits": 48,
+            "tracks": 46,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.00037449182485669577
+          },
+          {
+            "bytes": 11430,
+            "constant": 0,
+            "frames": 41,
+            "keys": 1588,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "jaw.001",
+            "worst_shell_error_m": 0.0003278704250573015
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 464968,
+        "bc7_device": 464968
+      },
+      "draw_calls": 3,
+      "file": "horse.ultra.glb",
+      "files": [
+        {
+          "brotli": 368655,
+          "file": "horse.ultra.glb",
+          "gzip": 390013,
+          "raw": 464968
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.0,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 1.0,
+          "triangles": 44966
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 1.0,
+        "height": 1440.0,
+        "height_from": "target_resolution",
+        "pixels": 1440.0,
+        "render_scale": 1.0
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 1610612736,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 2048,
+        "floor": 128,
+        "fraction": 1.0,
+        "screen_px": 1440.0,
+        "size": 2048
+      },
+      "tier": "ultra",
+      "triangles": 44966
+    }
+  ],
+  "tools": [
+    {
+      "name": "gltfpack",
+      "version": "1.3"
+    },
+    {
+      "name": "ktx",
+      "version": "4.4.2"
+    },
+    {
+      "name": "gltf-transform",
+      "version": "4.5.1"
+    }
+  ],
+  "validator": [
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "horse.low.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    },
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "horse.high.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    },
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "horse.ultra.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    }
+  ]
+}

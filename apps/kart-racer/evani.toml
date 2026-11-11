@@ -4,7 +4,7 @@
 name = "kart-racer"
 kit = "kart-racer"   # crate kits/evani-kit-kart-racer
 look = "toon"        # crate looks/evani-look-toon
-effects = ["outline", "speedlines", "shake", "bloom", "shadows"]   # each is an evani-fx feature
+effects = ["speedlines", "shake", "bloom", "shadows"]   # each is an evani-fx feature; no ink outlines (the owner prefers the clean candy look, 2026-10-29)
 
 [modules]
 physics = "simple"   # the catalog's physics for kart racers; the kit's arcade karts read physics.gravity

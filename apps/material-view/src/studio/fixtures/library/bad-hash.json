@@ -1,0 +1,48 @@
+{
+  "format": "evani-library/1",
+  "stage": "live",
+  "rev": 9,
+  "published_at": "2026-11-10T11:00:00Z",
+  "min_app": "0.5.3",
+  "assets": [
+    {
+      "id": "rocks-pebbles@photoreal", "asset": "rocks-pebbles", "style": "photoreal", "name": "Pebbles",
+      "category": "rocks", "area": "official",
+      "version": "3f9a0c1e2b4d", "content_hash": "sha256:9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9", "server_score": 4.0,
+      "score_categories": null,
+      "author": "@pebblemaker", "approved_at": "2026-11-09T08:12:00Z", "approved_by": "@snoaper",
+      "state": "in-library", "reference": null
+    },
+    {
+      "id": "vegetation-short-grass@photoreal", "asset": "vegetation-short-grass", "style": "photoreal", "name": "Short grass",
+      "category": "vegetation", "area": "official",
+      "version": "a79f60e3b1c2", "content_hash": "sha256:not-a-hash", "server_score": 3.0,
+      "score_categories": null,
+      "author": "@grassgrower", "approved_at": "2026-11-10T07:30:00Z", "approved_by": "@snoaper",
+      "state": "in-library", "reference": null
+    },
+    {
+      "id": "terrain-rolling-hills@photoreal", "asset": "terrain-rolling-hills", "style": "photoreal", "name": "Rolling hills",
+      "category": "terrain", "area": "official",
+      "version": null, "content_hash": null, "server_score": null, "score_categories": null,
+      "author": null, "approved_at": null, "approved_by": null,
+      "state": "base", "reference": { "sha256": "abc123", "type": "image/jpeg" }
+    },
+    {
+      "id": "rocks-medium-rocks@photoreal", "asset": "rocks-medium-rocks", "style": "photoreal", "name": "Medium rocks",
+      "category": "rocks", "area": "official",
+      "version": "3F9A0C1E2B4D", "content_hash": "sha256:aa00bb11cc22dd33ee44ff5566778899aa00bb11cc22dd33ee44ff5566778899", "server_score": 3.5,
+      "score_categories": null,
+      "author": "@stonemason", "approved_at": "2026-11-08T16:00:00Z", "approved_by": "@snoaper",
+      "state": "in-library", "reference": null
+    },
+    {
+      "id": "rocks-pebbles@photoreal", "asset": "rocks-pebbles", "style": "photoreal", "name": "Pebbles",
+      "category": "rocks", "area": "official",
+      "version": "3f9a0c1e2b4d", "content_hash": "sha256:9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9", "server_score": 4.0,
+      "score_categories": null,
+      "author": "@pebblemaker", "approved_at": "2026-11-09T08:12:00Z", "approved_by": "@snoaper",
+      "state": "in-library", "reference": null
+    }
+  ]
+}

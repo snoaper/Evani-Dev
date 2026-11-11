@@ -1,0 +1,204 @@
+{
+ "about": "Rig check for the Evani.Dev dog (tools/models/quadruped, species/dog.json: the Rigify horse metarig fitted to the species' joints plus the half-turn helper bones), written by tools/models/quadruped/rigcheck_regions.py from the built rig. Model frame: glTF, ground at y=0, nose toward +z. The test horse's regions (horse.json) placed by this species' joints, with the horse's limits: the idle and the skin under the tail to the goal (1.6x / 0.45x); in the walk the elbow and armpit, the flank and groin, the back of the thigh and stifle and everything else to the horse's own limits (linear skinning without corrective shapes cannot meet the goal there; the engine has no shape keys yet). Never raise a limit past the horse's to pass. Regions where this species misses the horse's limit are held at their own measure plus 5 percent (over_horse: the horse's limit and the measure); they are open work, not the goal.",
+ "frame_step": 1,
+ "stretch": [
+  {
+   "name": "idle, whole body",
+   "clips": [
+    "idle"
+   ],
+   "max_ratio": 1.6,
+   "min_ratio": 0.45,
+   "min_change_mm": 2,
+   "max_count": 0
+  },
+  {
+   "name": "walk: under the tail",
+   "clips": [
+    "walk"
+   ],
+   "max_ratio": 1.6,
+   "min_ratio": 0.45,
+   "min_change_mm": 2,
+   "max_count": 0,
+   "region": [
+    {
+     "center": [
+      0,
+      0.388,
+      -0.332
+     ],
+     "size": [
+      0.091,
+      0.183,
+      0.091
+     ]
+    }
+   ]
+  },
+  {
+   "name": "walk: elbow and armpit",
+   "clips": [
+    "walk"
+   ],
+   "max_ratio": 6.32,
+   "min_ratio": 0.199,
+   "min_change_mm": 2,
+   "max_count": 0,
+   "region": [
+    {
+     "center": [
+      0,
+      0.341,
+      0.183
+     ],
+     "size": [
+      0.232,
+      0.131,
+      0.131
+     ]
+    }
+   ]
+  },
+  {
+   "name": "walk: flank and groin",
+   "clips": [
+    "walk"
+   ],
+   "max_ratio": 3.05,
+   "min_ratio": 0.16,
+   "min_change_mm": 2,
+   "max_count": 0,
+   "region": [
+    {
+     "center": [
+      0,
+      0.33,
+      -0.167
+     ],
+     "size": [
+      0.263,
+      0.164,
+      0.183
+     ]
+    }
+   ]
+  },
+  {
+   "name": "walk: back of the thigh and stifle",
+   "clips": [
+    "walk"
+   ],
+   "max_ratio": 2.15,
+   "min_ratio": 0.31,
+   "min_change_mm": 2,
+   "max_count": 0,
+   "region": [
+    {
+     "center": [
+      0,
+      0.298,
+      -0.313
+     ],
+     "size": [
+      0.263,
+      0.183,
+      0.136
+     ]
+    }
+   ]
+  },
+  {
+   "name": "walk: everything else",
+   "clips": [
+    "walk"
+   ],
+   "max_ratio": 3.15,
+   "min_ratio": 0.115,
+   "min_change_mm": 2,
+   "max_count": 0,
+   "exclude_region": [
+    {
+     "center": [
+      0,
+      0.341,
+      0.183
+     ],
+     "size": [
+      0.232,
+      0.131,
+      0.131
+     ]
+    },
+    {
+     "center": [
+      0,
+      0.33,
+      -0.167
+     ],
+     "size": [
+      0.263,
+      0.164,
+      0.183
+     ]
+    },
+    {
+     "center": [
+      0,
+      0.388,
+      -0.332
+     ],
+     "size": [
+      0.091,
+      0.183,
+      0.091
+     ]
+    },
+    {
+     "center": [
+      0,
+      0.298,
+      -0.313
+     ],
+     "size": [
+      0.263,
+      0.183,
+      0.136
+     ]
+    }
+   ]
+  }
+ ],
+ "over_horse": {
+  "walk: elbow and armpit": {
+   "horse": [
+    3.6,
+    0.4
+   ],
+   "measured": [
+    6.01,
+    0.21
+   ]
+  },
+  "walk: back of the thigh and stifle": {
+   "horse": [
+    2.0,
+    0.31
+   ],
+   "measured": [
+    2.04,
+    0.565
+   ]
+  },
+  "walk: everything else": {
+   "horse": [
+    2.75,
+    0.115
+   ],
+   "measured": [
+    2.99,
+    0.237
+   ]
+  }
+ }
+}

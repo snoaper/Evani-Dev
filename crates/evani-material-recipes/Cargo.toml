@@ -1,0 +1,151 @@
+[package]
+name = "evani-material-recipes"
+description = "Evani.Dev material catalogue recipes: the 32-byte material block every catalogue row encodes to (recipe, variant, extras, condition mask, three colours, ten numbers, a seed and eight default condition amounts), plus the dev-only catalogue reader"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Opt-in on purpose: no game lists this crate yet. The block format needs no
+# dependency at all. `catalog` reads catalog/materials/*.json and `data`
+# (dev only, never in a ship build) embeds them.
+[features]
+default = []
+catalog = ["dep:serde_json"]
+data = ["catalog"]
+# Row to glTF (P10a, dev and tools only): the glTF material a catalogue row
+# becomes (PBR factors, `evani_material`, `evani_recipe`, and the family
+# fields), `apply_catalog` for models that name rows, and the .glb helpers.
+# Never in a game: games get the written models, not this code.
+gltf = ["catalog"]
+# The live switches (`params`: material.recipe.enabled, material.quality.*,
+# the compiled extras' allow switches) and the per-frame uniform words.
+# evani-render's `material-recipes` turns it on.
+engine = ["dep:evani-core"]
+# The style detail step (`style.rs`, `shaders/style.wgsl`; dev viewers only,
+# no game lists it): a recipe's pattern kept, simplified, inside a
+# non-realistic art style's flat colours, driven by the per-frame uniform's
+# reserved word. evani-render's `material-recipe-style` turns it on.
+style = []
+# Per-material shader composition (shader trial; dev viewers only, no game
+# lists it): `split.rs`, one recipe and one character kind per pipeline and
+# the reachable-code shake. evani-render's `material-split` turns it on.
+split = []
+# The eight condition layers (batch 1 build plan 2.4, P3), one feature each
+# (`evani.toml [materials] conditions`): each adds its `shaders/cond_<layer>.wgsl`
+# (stripped at compile time) and, with `engine`, its `material.cond.<layer>.*`
+# switches. A game that lists none downloads none of them.
+cond-wet = ["conditions"]
+cond-mud = ["conditions"]
+cond-dust = ["conditions"]
+cond-snow = ["conditions"]
+cond-wear = ["conditions"]
+cond-oxide = ["conditions"]
+cond-growth = ["conditions"]
+cond-blood = ["conditions"]
+# On with any cond-<layer> (never listed on its own): the CPU side of the
+# layers (the material.cond.* switches, their frame words and the per-material
+# mask rewrite). Without it that code is unreachable, so a game with no layer
+# downloads none of it.
+conditions = []
+# The recipes the recipe stage draws (batch 1 build plan section 3), one
+# feature each (`evani.toml [materials] recipes`): each adds its
+# `shaders/rc_<name>.wgsl` (stripped at compile time) to the stage, its case
+# to the dispatch and, with `engine`, its `material.recipe.<name>.<extra>`
+# switches. A game that lists none downloads none of them. How to add one:
+# src/recipes/mod.rs.
+recipe-metal = ["layout"]
+recipe-wood = ["layout"]
+# Wood's batch 3 layouts (clapboard, board and batten, logs, shingle, parquet,
+# panels, bamboo, cork: `shaders/rc_wood_layouts.wgsl`, about 520 B gzip), its
+# own part so a game whose wood is only grain and planks never downloads them
+# (`evani.toml [materials] recipes = ["wood-layouts"]`, which implies `wood`).
+# Without it `shaders/rc_wood_planks.wgsl` stands in: those rows draw as planks.
+recipe-wood-layouts = ["recipe-wood"]
+recipe-bark = []
+recipe-stone = ["layout"]
+recipe-masonry = ["layout"]
+recipe-plaster = []
+recipe-ground = []
+recipe-cloth = ["layout"]
+recipe-leather = []
+recipe-fur = []
+recipe-hide = []
+recipe-keratin = []
+recipe-thin = ["layout"]
+recipe-feather = []
+recipe-scales = []
+recipe-ceramic = ["layout"]
+recipe-gem = []
+# Batch 3 (B3-P3 with the glass rows): window, bottle, crystal, stained,
+# leaded, wired and block glass in the recipe stage (the nature family stays
+# its `also`). Leaded and block panes come from the shared layouts.
+recipe-glass = ["layout"]
+recipe-ice = []
+recipe-paint = ["layout"]
+recipe-plastic = []
+recipe-organic = []
+# Organic's food detail (material-view critic round 6): flesh fibres and
+# flakes, corn's kernels and the pastry lattice (`shaders/rc_organic_food.wgsl`,
+# about 380 B gzip added), its own part so a game whose organic rows are
+# fruit, bread, slime or mushrooms never downloads it (`evani.toml [materials]
+# recipes = ["organic-food"]`, which implies `organic`). Without it
+# `shaders/rc_organic_plain.wgsl` stands in: flesh draws without its grain,
+# kernels and pastry plain.
+recipe-organic-food = ["recipe-organic"]
+recipe-fire = []
+recipe-glow = []
+# The pattern layouts recipes share (batch 3 build plan 3.1, B3-P1):
+# `shaders/rc_layout.wgsl`, appended once to the stage. Never listed on its
+# own: the recipes that draw a layout (masonry's bonds, herringbone and basket;
+# wood's nail heads; stone's tiles; metal's and paint's rivets; ceramic's
+# motifs) turn it on, so a game with none of them downloads none of it.
+layout = []
+# Batch 2 (B2-P1): leaves, needles, grass, straw, turf, moss and litter in
+# the recipe stage, so they take the condition layers; no nature module.
+recipe-foliage = []
+# Cut-out holes (batch 3 build plan 3.5, B3-P2): grates, chain-link, wire mesh
+# and lattice. Adds `shaders/cut.wgsl` and `shaders/cut_stage.wgsl` to the
+# stage, two line edits to the patch (the holes after the recipe, the edge
+# mark on the return) and, with `engine`, `material.recipe.cut.enabled` and
+# `material.recipe.cut.min_px`. evani-render's `material-recipes-cut` turns it
+# on and adds the hole-aware shadow and depth pipeline; a game turns that on by
+# listing `"cutout"` in `[materials] recipes`. Off, none of it is compiled.
+cutout = []
+# The see-through pass (batch 3 build plan 3.5, B3-P3; batch 1 P15's verdict):
+# glass, smoke and steam drawn premultiplied over what is behind, fire and
+# holograms added to it. Adds `shaders/blend.wgsl` and the refraction stub to
+# the stage, one line edit and the wrapped return to the patch, and with
+# `engine` `material.recipe.blend.enabled` and `material.recipe.blend.sort`.
+# evani-render's `material-recipes-blend` turns it on and adds the sorted
+# blend pipelines; a game turns that on by listing `"blend"` in `[materials] recipes`. Off,
+# none of it is compiled.
+blend = []
+# Screen-space refraction for frosted, wavy and block glass (B3-P3, on top of
+# `blend`): `shaders/refract.wgsl` in the glass pipeline's own module and
+# `material.recipe.blend.refraction`. evani-render's
+# `material-recipes-refract` turns it on with the copy of the opaque colour.
+refract = ["blend"]
+
+[dependencies]
+serde_json = { workspace = true, optional = true }
+evani-core = { workspace = true, optional = true }
+
+[dev-dependencies]
+# The shader tests that need the engine's model stages live in evani-render
+# (tests/recipe_wgsl.rs, P2b). The row-to-glTF tests (tests/gltf.rs, P10a)
+# run each family's own parser on the written JSON and read a real .glb back
+# with the engine's model reader, so the three families and evani-gltf are
+# dev-dependencies here (tests only; evani-material-nature reaches
+# evani-render with `forward` only, so no feature cycle is compiled).
+evani-gltf = { workspace = true }
+evani-material-layers = { workspace = true }
+evani-material-character = { workspace = true }
+evani-material-nature = { workspace = true }
+# gzip -9 of the shipped recipe text, for the byte-budget guard
+# (tests/recipes.rs, P7-2 and P8-4); the workspace's own pin, tests only.
+flate2 = { workspace = true }
+
+[lints]
+workspace = true

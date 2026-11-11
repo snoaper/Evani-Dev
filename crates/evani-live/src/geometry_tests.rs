@@ -352,3 +352,71 @@ fn coplanar_faces_fight_by_the_depth_maths_from_the_live_camera() {
     assert!(s.starts_with(&format!("{} issue(s)", r["total"])), "{s}");
     assert!(s.contains("zfight, coplanar faces"), "{s}");
 }
+
+/// The scene of [`draw`] plus the look's sky dome (material 1, `sky`): a
+/// big sphere round the camera, drawn every frame as the material viewer's
+/// procedural sky is.
+fn draw_with_sky(world: &mut World) {
+    draw(world);
+    let mut rw = world.res_mut::<RenderWorld>();
+    let mut dome = MeshInstance::new(MeshId::SPHERE, [0.0, 2.0, 6.0]);
+    dome.scale = [400.0; 3];
+    dome.material = 1;
+    dome.color = WHITE;
+    rw.draw_mesh(dome);
+}
+
+/// Guard (critic round 6 of material-view: the debug views painted the
+/// yard and pool props red while the geocheck report counted no overlap):
+/// the live view judges exactly what the report judges. On one draw list
+/// with a sky dome round the camera and a tagged floater, its untagged
+/// issues are the report pipeline's (sky material left out, the same
+/// labels, checks, thresholds and tags), and the dome is never painted.
+#[test]
+fn the_debug_view_agrees_with_the_report_on_the_same_draw_list() {
+    use evani_core::plugin::{LookData, MaterialDesc};
+    use evani_geocheck::checks;
+    use evani_geocheck::scene::{self, Config, Scene};
+    use evani_geocheck::shape::Shapes;
+    use evani_geocheck::tags;
+    let mut g = G::with(true, draw_with_sky);
+    let names = ["world", "sky"];
+    g.a.world.insert_resource(LookData { materials: names.iter().map(|n| MaterialDesc::new(n, [1.0; 4])).collect(), ..LookData::default() });
+    let tag_json = json!([{ "check": "floating", "object": "*", "reason": "a balloon" }]);
+    let r = g.ok(json!({ "on": true, "sky": true, "tags": tag_json, "checks": ["overlap", "floating"] }));
+    // The report's pipeline (evani-geocheck main.rs run_material_view) on
+    // the same frame's instances.
+    let mut w = World::new();
+    w.insert_resource(RenderWorld::default());
+    draw_with_sky(&mut w);
+    let meshes = w.res::<RenderWorld>().meshes.clone();
+    let materials: Vec<String> = names.iter().map(|n| n.to_string()).collect();
+    let list: Vec<(usize, MeshInstance)> = meshes.iter().copied().enumerate().filter(|(_, m)| m.material != 1).collect();
+    let mut shapes = Shapes::new();
+    let s = Scene::build_with(&list, &mut shapes, &|m| scene::default_label(m, &materials), Config::default(), &|_| false);
+    let mut want = checks::overlaps(&s);
+    want.extend(checks::floating(&s));
+    tags::apply(&mut want, &tags::parse(&tag_json).unwrap());
+    let key = |check: &str, items: &mut Vec<u64>| {
+        items.sort_unstable();
+        format!("{check} {items:?}")
+    };
+    let mut report: Vec<String> = want.iter().filter(|i| i.tagged.is_none()).map(|i| key(i.check.name(), &mut i.items.iter().map(|&k| k as u64).collect())).collect();
+    let mut view: Vec<String> = r["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|i| i["tagged"].is_null())
+        .map(|i| key(i["check"].as_str().unwrap(), &mut i["items"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap()).collect()))
+        .collect();
+    report.sort();
+    view.sort();
+    assert_eq!(view, report, "the debug view and the report disagree on one draw list");
+    assert_eq!(view, vec!["overlap [1, 3]".to_string()], "boxes A and B only; the dome overlaps nothing");
+    assert_eq!(r["counts"]["tagged"], 1, "{r}");
+    g.a.run_headless(1, DT);
+    let c = g.colors();
+    assert_eq!((c[1], c[3]), (RED, RED));
+    assert_eq!(c[2], GREY, "the tagged floater is not painted");
+    assert_eq!(c[4], GREY, "the sky dome is not painted");
+}

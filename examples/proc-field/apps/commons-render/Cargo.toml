@@ -1,0 +1,46 @@
+[package]
+name = "evani-commons-render"
+description = "Evani.commons render app (dev only, never a game): the plain proof field with one procedural library asset under the engine's realism studio, with camera, sun, mask and stats params for Evani.App's server check (docs/EVANI_COMMONS.md)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Build it with the asset's library feature (commons.json `asset.feature`):
+#   trunk build --release --no-default-features --features evani-procedural-lib/<asset key> --public-url ./ --dist <dist>
+# Shoot it with tools/studio/asset-shoot.mjs and the kit.proc_field.cam_*,
+# sun_*, subject_off, stats, view_preset, test_scene, time_s, pose and measure
+# params (--stats <file> for the mesh stats, --measure <file> for a test
+# scene's measures; docs/EVANI_COMMONS.md).
+[features]
+default = []
+live = ["dep:evani-live", "evani-render/capture", "evani-procedural-lib/capture"]
+
+[dependencies]
+evani-core.workspace = true
+# The realism studio the Asset Studio scenes use (soft shadows, AO, image
+# lighting, the studio sky), the dev hooks (window.__engine.paramSet) and
+# every recipe a library asset paints with.
+evani-render = { workspace = true, features = [
+    "models", "look-surface", "material-recipes", "material-recipes-cut", "ibl", "gtao",
+    "pcss-stable", "shadow-cascades", "studio-sky", "contact-shadows", "hooks",
+] }
+evani-kit-proc-field = { workspace = true, features = ["commons"] }
+# `behaviour`: the wind gusts' wind and the water currents' flow for the
+# kit's test scenes (dev only: no game lists it).
+evani-procedural-lib = { workspace = true, features = ["behaviour"] }
+evani-look-stylizedpbr = { workspace = true, features = ["film", "pcss", "gtao"] }
+evani-fx = { workspace = true, features = ["shadows"] }
+evani-material-recipes = { workspace = true, features = [
+    "recipe-plaster", "recipe-stone", "recipe-wood", "recipe-bark", "recipe-foliage", "recipe-ground",
+    "cutout", "cond-dust", "cond-mud",
+] }
+evani-live = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = ["Window", "Location", "Document"] }
+
+[lints]
+workspace = true

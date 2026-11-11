@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { waitDevToolsUrl } from './devtools-port.mjs';
 const args = {};
 for (let i = 2; i < process.argv.length; i++) { const a = process.argv[i]; if (a.startsWith('--')) args[a.slice(2)] = process.argv[++i]; }
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
@@ -120,12 +121,7 @@ async function main() {
   const chrome = spawn(chromePath, flags, { stdio: 'ignore', windowsHide: true });
   const summary = {};
   try {
-    let wsUrl = null;
-    for (let i = 0; i < 200 && !wsUrl; i++) {
-      const f = join(profile, 'DevToolsActivePort');
-      if (existsSync(f)) { const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/); if (p && path) wsUrl = `ws://127.0.0.1:${p}${path}`; }
-      if (!wsUrl) await sleep(100);
-    }
+    let wsUrl = await waitDevToolsUrl(profile);
     const cdp = await Cdp.connect(wsUrl);
     const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });

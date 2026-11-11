@@ -34,7 +34,7 @@ The checks are repeatable with `tools/live-check/accept.mjs` (modes `ai`, `safet
 
 ## Sandbox review follow-up (2026-10-14, code at `7971507`)
 
-Chris's review of the sandbox, re-checked headlessly in a separate worktree (`C:VibeAreaEvani.Dev-review`,
+Chris's review of the sandbox, re-checked headlessly in a separate worktree (`..\evani-dev-review`,
 bridge on port 8092) with `accept.mjs quality` and `accept.mjs session`. Evidence in
 `.vibedeck/screenshots/sandbox-review/` (local, not committed): `quality.json`, `live-session.json`,
 `live-session.md`, PNGs named below.

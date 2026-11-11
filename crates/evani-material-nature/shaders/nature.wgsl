@@ -2,7 +2,7 @@
 // Nature materials without a screen copy (every tier but High and Ultra):
 // the same shader draws `nature_flat` and `nature_flat_add` (Lite/Low: calm
 // water and glass, a tint multiplied into hdr, then the sky and the water's
-// body colour added), `nature_mul` (what is behind each surface,
+// body colour added; leaves, grass and thin surfaces as below), `nature_mul` (what is behind each surface,
 // multiplied: depth fade, glass tint, foam cover, leaf colour variation)
 // and `nature_add` (light added: Fresnel sky, sun glint, foam, the
 // back-lit glow of leaves, grass, ears and lampshades). The shared body

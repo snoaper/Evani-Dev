@@ -51,6 +51,8 @@ pub mod trackgeo;
 
 // Drawing, sound, HUD and the plugin's frame systems (`render`, on by default).
 #[cfg(feature = "render")]
+pub mod candy;
+#[cfg(feature = "render")]
 pub mod chasecam;
 #[cfg(feature = "render")]
 pub mod draw;
@@ -65,7 +67,11 @@ pub mod hud_layout;
 #[cfg(feature = "render")]
 pub mod itembox;
 #[cfg(feature = "render")]
+pub mod kartmesh;
+#[cfg(feature = "render")]
 pub mod moments;
+#[cfg(feature = "render")]
+pub mod music;
 #[cfg(feature = "render")]
 pub mod propmesh;
 #[cfg(feature = "render")]
@@ -307,7 +313,8 @@ pub struct KartKit {
     /// karts, items or effects drawn, the race held).
     pub static_world: BoolParam,
     /// `kit.kart_racer.rival_parts`: draw rival karts from their recipes'
-    /// model parts (the models module; off draws the primitive kart).
+    /// model parts (the models module; off, the default, draws every kart
+    /// as its candy design).
     #[cfg(feature = "models")]
     pub rival_parts: BoolParam,
 }
@@ -475,8 +482,8 @@ impl KitPlugin for KartRacerPlugin {
         )?;
         #[cfg(feature = "models")]
         let rival_parts = kit.param_bool(
-            ParamDef::bool("kit.kart_racer.rival_parts", true).describe(
-                "Draw rival karts from their recipes' model parts (data/rivals.json); off draws every rival as the primitive kart. Draw only.",
+            ParamDef::bool("kit.kart_racer.rival_parts", false).describe(
+                "Draw rival karts from their recipes' model parts (data/rivals.json); off (the default) draws every kart as its candy design (src/candy.rs). Draw only.",
             ),
         )?;
         let steer_by_speed = kit.formula(

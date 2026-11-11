@@ -48,7 +48,7 @@ fn skin_buffer() -> wgpu::VertexBufferLayout<'static> {
 /// The skinned model pipeline (`model_skin_vs` / `model_fs` of the forward
 /// module), 1x or 4x: the model pipeline with the joints group and the skin
 /// vertex buffer.
-pub(in crate::gpu) fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule, ms: bool) -> wgpu::RenderPipeline {
+pub(in crate::gpu) fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule, ms: bool, lite: bool) -> wgpu::RenderPipeline {
     #[cfg(all(feature = "shadows", not(feature = "ambient")))]
     let frame = &layouts.fwd; #[cfg(feature = "ambient")] let frame = &layouts.fwd_amb;
     #[cfg(not(feature = "shadows"))]
@@ -80,11 +80,11 @@ pub(in crate::gpu) fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &w
         fragment: Some(wgpu::FragmentState {
             module,
             #[cfg(not(any(feature = "relief", feature = "look-surface")))]
-            entry_point: Some("model_fs"),
+            entry_point: Some(if lite { super::LITE_FS } else { "model_fs" }),
             // Surface relief (S3-10) shades skinned parts too: the same
             // fragment stage as the static model pipeline, same `ModelOut`.
             #[cfg(feature = "relief")]
-            entry_point: Some("model_relief_fs"), #[cfg(all(feature = "look-surface", not(feature = "relief")))] entry_point: Some(super::LIT_FS),
+            entry_point: Some(if lite { super::LITE_FS } else { "model_relief_fs" }), #[cfg(all(feature = "look-surface", not(feature = "relief")))] entry_point: Some(if lite { super::LITE_FS } else { super::LIT_FS }),
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: None, write_mask: wgpu::ColorWrites::ALL })],
         }),
@@ -214,9 +214,9 @@ impl ModelGpu {
     /// ones, which skip them). Returns the draw count and adds the triangles
     /// to `tris`.
     pub(super) fn draw_skinned(&self, rp: &mut wgpu::RenderPass<'_>, frame_bg: &wgpu::BindGroup, views: &[(u32, [f32; 4])], ms: bool, pipes: &Pipelines, tris: &mut u32) -> u32 {
-        let Some(pipe) = pipes.skin(ms) else {
+        #[cfg(not(feature = "material-split"))] let Some(pipe) = pipes.skin(ms) else {
             return 0;
-        };
+        }; #[cfg(feature = "material-split")] let mut cur: Option<&wgpu::RenderPipeline> = None;
         let mut draws = 0;
         let mut set = false;
         for &(off, px) in views {
@@ -232,13 +232,13 @@ impl ModelGpu {
                 };
                 if !set {
                     set = true;
-                    rp.set_pipeline(pipe);
+                    #[cfg(not(feature = "material-split"))] rp.set_pipeline(pipe);
                     rp.set_vertex_buffer(1, self.instances.slice(..));
                     rp.set_bind_group(2, &self.skin.bg, &[]);
                     rp.set_bind_group(0, frame_bg, &[off]);
                     rp.set_viewport(px[0], px[1], px[2], px[3], 0.0, 1.0);
                 }
-                rp.set_bind_group(1, mat, &[]);
+                #[cfg(feature = "material-split")] { let (code, kind) = self.recipes.split_of(r.model, p.part.material); let Some(pipe) = pipes.material(super::super::pipelines::SKIN_PASS, ms, code, kind) else { continue; }; if !cur.is_some_and(|c| core::ptr::eq(c, pipe)) { rp.set_pipeline(pipe); cur = Some(pipe); } } rp.set_bind_group(1, mat, &[]);
                 rp.set_vertex_buffer(0, p.vb.slice(..));
                 rp.set_vertex_buffer(2, sb.slice(..));
                 rp.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);

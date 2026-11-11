@@ -17,6 +17,14 @@
 //!
 //! The target pack (`kits/<id>/target/`) is not copied: it is made fresh for
 //! each game (docs/KIT_PROCESS.md step 2), and all content is original.
+//!
+//! `new-game <id> --app-dir <folder>` ([`new_game_outside`]) makes the same
+//! game in its own Cargo workspace at `<folder>`, outside the engine (an
+//! installed engine pack is read-only): `apps/<id>/` and
+//! `kits/evani-kit-<id>/` as above, a workspace `Cargo.toml` naming the
+//! engine's crates by absolute path, the engine's `Cargo.lock`, the kit's
+//! shared build script, the `[engine] version` pin, and the guidance. Every
+//! command then takes `--app-dir <folder>/apps/<id>`.
 
 use std::path::Path;
 
@@ -152,7 +160,7 @@ fn drop_proof(text: &str) -> String {
     out
 }
 
-fn copy_tree(root: &Path, from: &str, to: &str, skip: &[&str], subst: &dyn Fn(&str) -> String) -> Result<Vec<String>, String> {
+fn copy_tree(root: &Path, dest_root: &Path, from: &str, to: &str, skip: &[&str], subst: &dyn Fn(&str) -> String) -> Result<Vec<String>, String> {
     let src = root.join(from);
     let mut files = Vec::new();
     list_files(&src, &mut files);
@@ -162,7 +170,7 @@ fn copy_tree(root: &Path, from: &str, to: &str, skip: &[&str], subst: &dyn Fn(&s
         if skip.contains(&rel.as_str()) || PROOF_FILES.iter().any(|p| rel.starts_with(p)) {
             continue;
         }
-        let dest = root.join(to).join(&rel);
+        let dest = dest_root.join(to).join(&rel);
         let is_text = f.extension().and_then(|e| e.to_str()).is_some_and(|e| TEXT.contains(&e));
         if is_text {
             let text = std::fs::read_to_string(&f).map_err(|e| format!("{}: {e}", f.display()))?;
@@ -173,7 +181,7 @@ fn copy_tree(root: &Path, from: &str, to: &str, skip: &[&str], subst: &dyn Fn(&s
             }
             std::fs::copy(&f, &dest).map_err(|e| format!("{}: {e}", f.display()))?;
         }
-        out.push(crate::rel(root, &dest));
+        out.push(crate::rel(dest_root, &dest));
     }
     Ok(out)
 }
@@ -313,6 +321,137 @@ pub fn game_licence(id: &str) -> String {
 
 /// [`new_game`] with the catalog choices of `--genre` / `--effects`.
 pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Result<Vec<String>, String> {
+    make(root, root, id, look, extras)
+}
+
+/// The keys of `[workspace]` a game outside the engine doesn't take from it.
+const WORKSPACE_LISTS: &[&str] = &["members", "exclude", "default-members"];
+
+/// The workspace `Cargo.toml` of a game kept outside the engine at
+/// `engine_root`, from the engine's own (`engine_cargo`): its members are the
+/// game and its kit; `exclude` and `default-members` go; every engine crate
+/// in `[workspace.dependencies]` is named by absolute path (one line each, so
+/// `relink` can move them); the engine's own kits are left out and the
+/// game's kit is added; `[workspace.package]`, lints and profiles stay, so
+/// the game builds with the engine's settings.
+pub fn outside_workspace_toml(engine_cargo: &str, engine_root: &Path, id: &str) -> Result<String, String> {
+    let base = engine_root.to_string_lossy().replace('\\', "/");
+    let base = base.trim_end_matches('/');
+    let mut out = String::new();
+    let mut skipping_array = false;
+    let mut section = String::new();
+    let mut kit_added = false;
+    let kit = format!("evani-kit-{id} = {{ path = \"kits/evani-kit-{id}\" }}\n");
+    for line in engine_cargo.lines() {
+        if skipping_array {
+            skipping_array = !line.trim_end().ends_with(']');
+            continue;
+        }
+        let t = line.trim();
+        if t.starts_with('[') {
+            if section == "[workspace.dependencies]" && !kit_added {
+                let trimmed = out.trim_end_matches('\n').len();
+                out.truncate(trimmed);
+                out.push('\n');
+                out.push_str(&kit);
+                out.push('\n');
+                kit_added = true;
+            }
+            section = t.to_string();
+        }
+        let key = t.split(['=', ' ']).next().unwrap_or("");
+        if section == "[workspace]" && WORKSPACE_LISTS.contains(&key) {
+            if key == "members" {
+                out.push_str(&format!("members = [\"apps/{id}\", \"kits/evani-kit-{id}\"]\n"));
+            }
+            skipping_array = t.contains('[') && !t.ends_with(']');
+            continue;
+        }
+        if section == "[workspace.dependencies]" {
+            if key.starts_with("evani-kit-") {
+                continue;
+            }
+            if let Some(at) = line.find("path = \"") {
+                let start = at + "path = \"".len();
+                let rel = &line[start..];
+                if !Path::new(rel.split('"').next().unwrap_or("")).is_absolute() {
+                    out.push_str(&format!("{}{base}/{rel}\n", &line[..start]));
+                    continue;
+                }
+            }
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    if section == "[workspace.dependencies]" && !kit_added {
+        out.push_str(&kit);
+        kit_added = true;
+    }
+    if !kit_added {
+        return Err("the engine's Cargo.toml has no [workspace.dependencies]".into());
+    }
+    out.parse::<toml::Table>().map_err(|e| format!("the game's workspace Cargo.toml would not parse: {e}"))?;
+    Ok(out)
+}
+
+/// Text the game's root AGENTS.md starts with, above the engine's block.
+fn outside_note(id: &str) -> String {
+    format!(
+        "# {id}\n\nAn Evani.Dev game kept outside the engine folder. Run every engine command with `--app-dir apps/{id}` from this folder (for example `evani check --app-dir apps/{id}`, `evani build --app-dir apps/{id} --ship`); from an engine checkout, `cargo xtask <command> --app-dir <this folder>/apps/{id}` does the same. The engine version it is made with is `[engine] version` in apps/{id}/evani.toml.\n\n"
+    )
+}
+
+/// Make the game `id` in its own workspace at `dest`, outside the engine at
+/// `engine` (`new-game <id> --app-dir <dest>`). `dest` must not exist or be
+/// empty, and must not be inside the engine. Returns the files written,
+/// relative to `dest`.
+pub fn new_game_outside(engine: &Path, dest: &Path, id: &str, look: &str, extras: &Extras) -> Result<Vec<String>, String> {
+    if dest.exists() && std::fs::read_dir(dest).map_err(|e| format!("{}: {e}", dest.display()))?.next().is_some() {
+        return Err(format!("{} is not empty: give a new folder for the game", dest.display()));
+    }
+    let canon = |p: &Path| std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    if let Some(parent) = dest.ancestors().find(|a| a.exists())
+        && canon(parent).starts_with(canon(engine))
+    {
+        return Err(format!("{} is inside the engine folder {}; a game made with --app-dir lives in its own folder (without --app-dir, new-game puts it in apps/{id})", dest.display(), engine.display()));
+    }
+    let engine_cargo = std::fs::read_to_string(engine.join("Cargo.toml")).map_err(|e| format!("{}: {e}", engine.join("Cargo.toml").display()))?;
+    let ws = outside_workspace_toml(&engine_cargo, engine, id)?;
+    let mut written = make(engine, dest, id, look, extras)?;
+    crate::write_file(&dest.join("Cargo.toml"), &ws)?;
+    written.push("Cargo.toml".into());
+    // Same dependency versions as the engine (offline builds use its vendored copies).
+    if engine.join("Cargo.lock").is_file() {
+        std::fs::copy(engine.join("Cargo.lock"), dest.join("Cargo.lock")).map_err(|e| format!("Cargo.lock: {e}"))?;
+        written.push("Cargo.lock".into());
+    }
+    // The kit's build script is shared in the engine (`build = "../../tools/bake-index.rs"`).
+    let bake = "tools/bake-index.rs";
+    if engine.join(bake).is_file() {
+        std::fs::create_dir_all(dest.join("tools")).map_err(|e| e.to_string())?;
+        std::fs::copy(engine.join(bake), dest.join(bake)).map_err(|e| format!("{bake}: {e}"))?;
+        written.push(bake.into());
+    }
+    let manifest = dest.join("apps").join(id).join("evani.toml");
+    let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
+    crate::write_file(&manifest, &crate::engine_version::set_pin(&text, &crate::engine_version::running(engine)))?;
+    crate::write_file(&dest.join(".gitignore"), "target/\ndist/\n.evani/\n")?;
+    written.push(".gitignore".into());
+    // The engine's rules at the game's root, under a note on how to run them.
+    let root_md = crate::block::upsert(Some(&outside_note(id)), crate::render::ROOT_ID, crate::ENGINE_VERSION, &crate::render::root_body(engine), crate::block::Place::Top)?;
+    crate::write_file(&dest.join("AGENTS.md"), &root_md)?;
+    for (f, body) in [("CLAUDE.md", crate::render::claude_pointer()), ("GEMINI.md", crate::render::gemini_pointer())] {
+        crate::write_file(&dest.join(f), &crate::block::upsert(None, crate::render::POINTER_ID, crate::ENGINE_VERSION, &body, crate::block::Place::Top)?)?;
+    }
+    written.extend(["AGENTS.md".to_string(), "CLAUDE.md".into(), "GEMINI.md".into()]);
+    Ok(written)
+}
+
+/// Make the game from the templates in `root` into `dest` (the same folder
+/// for a game in the engine). Inside the engine the workspace gets the new
+/// members; outside, [`new_game_outside`] writes the workspace.
+fn make(root: &Path, dest: &Path, id: &str, look: &str, extras: &Extras) -> Result<Vec<String>, String> {
+    let inside = root == dest;
     if !valid_id(id) {
         return Err(format!("`{id}` is not a game id: use lowercase letters, digits and single `-`, starting with a letter (like `kart-racer`)"));
     }
@@ -324,18 +463,17 @@ pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Resu
     let kit_dir = format!("kits/evani-kit-{id}");
     let app_dir = format!("apps/{id}");
     for d in [&kit_dir, &app_dir] {
-        if root.join(d).exists() {
+        if dest.join(d).exists() {
             return Err(format!("{d} already exists"));
         }
     }
-    let spec_path = root.join("kits").join(id).join("SPEC.md");
+    let spec_path = dest.join("kits").join(id).join("SPEC.md");
     if extras.spec.is_some() && spec_path.exists() {
         return Err(format!("kits/{id}/SPEC.md already exists"));
     }
     let look_struct = look_struct(root, look).ok_or_else(|| format!("no look crate looks/evani-look-{look} with `impl LookPlugin for ..` (see looks/)"))?;
     let cargo_path = root.join("Cargo.toml");
-    let cargo = std::fs::read_to_string(&cargo_path).map_err(|e| e.to_string())?;
-    let new_cargo = add_to_workspace(&cargo, id)?;
+    let new_cargo = if inside { Some(add_to_workspace(&std::fs::read_to_string(&cargo_path).map_err(|e| e.to_string())?, id)?) } else { None };
 
     let snake = id.replace('-', "_");
     let kit_struct = format!("{}Kit", camel(id));
@@ -353,11 +491,11 @@ pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Resu
             .replace(ENGINE_LICENSE_FIELD, GAME_LICENSE_FIELD)
     };
     let kit_names2 = kit_names.clone();
-    let mut written = copy_tree(root, KIT_TEMPLATE, &kit_dir, &["README.md", "CHANGES.md"], &kit_names)?;
+    let mut written = copy_tree(root, dest, KIT_TEMPLATE, &kit_dir, &["README.md", "CHANGES.md"], &kit_names)?;
     let readme = format!(
         "# evani-kit-{id}\n\nThe gameplay of the game `{id}` (`apps/{id}`), started from `evani-kit-example` by `cargo xtask new-game`. Replace the example spinners with this game's systems; keep the conventions in kits/AGENTS.md and docs/KIT_PROCESS.md.\n"
     );
-    crate::write_file(&root.join(&kit_dir).join("README.md"), &readme)?;
+    crate::write_file(&dest.join(&kit_dir).join("README.md"), &readme)?;
     written.push(format!("{kit_dir}/README.md"));
 
     let look_snake = look.replace('-', "_");
@@ -376,9 +514,9 @@ pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Resu
         s.replace("evani-sandbox", &format!("evani-{id}")).replace("sandbox", id)
     };
     // The template's own guidance files are not copied: the new game gets fresh ones below.
-    written.extend(copy_tree(root, APP_TEMPLATE, &app_dir, &["AGENTS.md", "CLAUDE.md"], &app_names)?);
+    written.extend(copy_tree(root, dest, APP_TEMPLATE, &app_dir, &["AGENTS.md", "CLAUDE.md"], &app_names)?);
     if look != "basic" {
-        let app_cargo = root.join(&app_dir).join("Cargo.toml");
+        let app_cargo = dest.join(&app_dir).join("Cargo.toml");
         let text = std::fs::read_to_string(&app_cargo).map_err(|e| format!("{app_dir}/Cargo.toml: {e}"))?;
         let folded = fold_chosen_look(&text, look);
         if folded != text {
@@ -387,7 +525,7 @@ pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Resu
     }
     // New games start as playgrounds that support free roam (the example
     // kit does, with its test; docs/PLAYGROUNDS.md).
-    let manifest = root.join(&app_dir).join("evani.toml");
+    let manifest = dest.join(&app_dir).join("evani.toml");
     let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{app_dir}/evani.toml: {e}"))?;
     if crate::playground::parse(&text)?.is_none() {
         let sep = if text.is_empty() || text.ends_with('\n') { "" } else { "\n" };
@@ -395,21 +533,23 @@ pub fn new_game_with(root: &Path, id: &str, look: &str, extras: &Extras) -> Resu
     }
 
     let licence_path = format!("{app_dir}/LICENSE");
-    crate::write_file(&root.join(&licence_path), &game_licence(id))?;
+    crate::write_file(&dest.join(&licence_path), &game_licence(id))?;
     written.push(licence_path);
 
     if extras.physics.is_some() || extras.effects.is_some() {
-        apply_modules(root, &app_dir, extras)?;
+        apply_modules(dest, &app_dir, extras)?;
     }
     if let Some(spec) = &extras.spec {
         crate::write_file(&spec_path, spec)?;
         written.push(format!("kits/{id}/SPEC.md"));
     }
 
-    std::fs::write(&cargo_path, new_cargo).map_err(|e| e.to_string())?;
-    written.push("Cargo.toml".into());
-    for t in targets::targets(root, targets::Options::default()) {
-        if t.rel.starts_with(&format!("{app_dir}/")) && t.write(root)? {
+    if let Some(new_cargo) = new_cargo {
+        std::fs::write(&cargo_path, new_cargo).map_err(|e| e.to_string())?;
+        written.push("Cargo.toml".into());
+    }
+    for t in targets::targets(dest, targets::Options::default()) {
+        if t.rel.starts_with(&format!("{app_dir}/")) && t.write(dest)? {
             written.push(t.rel.clone());
         }
     }
@@ -497,6 +637,63 @@ mod tests {
 
         assert!(new_game(&r, "space-snake", "toon").unwrap_err().contains("already exists"));
         assert!(new_game(&r, "other", "nope").unwrap_err().contains("evani-look-nope"));
+    }
+
+    #[test]
+    fn a_game_outside_the_engine_gets_its_own_pinned_workspace() {
+        let r = crate::testutil::fake_engine("scaffold-outside");
+        let w = |p: &str, s: &str| crate::write_file(&r.join(p), s).unwrap();
+        let engine_ws = "[workspace]\nresolver = \"3\"\n# bridges are their own\nexclude = [\"bridges\"]\nmembers = [\n    \"crates/evani-core\",\n    \"kits/evani-kit-example\",\n    \"apps/sandbox\",\n]\ndefault-members = [\n    \"apps/sandbox\",\n]\n\n[workspace.package]\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[workspace.dependencies]\nserde = \"1\"\nevani-core = { path = \"crates/evani-core\" }\nevani-kit-example = { path = \"kits/evani-kit-example\" }\nevani-look-toon = { path = \"looks/evani-look-toon\" }\n\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n\n[profile.release]\nlto = true\n";
+        w("Cargo.toml", engine_ws);
+        w("Cargo.lock", "# engine lock\n");
+        w("tools/bake-index.rs", "fn main() {}\n");
+        w("packaging/engine-pack.json", r#"{"pack_version":"0.3.0"}"#);
+        w("kits/evani-kit-example/Cargo.toml", "[package]\nname = \"evani-kit-example\"\nbuild = \"../../tools/bake-index.rs\"\n");
+        w("kits/evani-kit-example/src/lib.rs", "pub struct ExampleKitPlugin;\n");
+        w("apps/sandbox/Cargo.toml", "[package]\nname = \"evani-sandbox\"\n[dependencies]\nevani-kit-example.workspace = true\nevani-look-basic.workspace = true\n");
+        w("apps/sandbox/evani.toml", "name = \"sandbox\"\nkit = \"example\"\nlook = \"basic\"\n");
+        w("apps/sandbox/src/main.rs", "use evani_kit_example::ExampleKitPlugin;\nfn main() {}\n");
+        w("looks/evani-look-toon/src/lib.rs", "pub struct ToonLook;\nimpl LookPlugin for ToonLook {}\n");
+        let games = crate::testutil::temp_root("scaffold-outside-games");
+        let dest = games.join("my sea");
+        let out = new_game_outside(&r, &dest, "sea", "toon", &Extras::default()).unwrap();
+        let read = |p: &str| std::fs::read_to_string(dest.join(p)).unwrap_or_else(|e| panic!("{p}: {e}"));
+        // Its own workspace: the game and its kit, engine crates by absolute path.
+        let ws_text = read("Cargo.toml");
+        let ws: toml::Table = ws_text.parse().unwrap();
+        let wsp = ws["workspace"].as_table().unwrap();
+        assert_eq!(wsp["members"].as_array().unwrap().iter().map(|m| m.as_str().unwrap()).collect::<Vec<_>>(), ["apps/sea", "kits/evani-kit-sea"]);
+        assert!(!wsp.contains_key("exclude") && !wsp.contains_key("default-members"), "{ws_text}");
+        let deps = wsp["dependencies"].as_table().unwrap();
+        let engine_fwd = r.to_string_lossy().replace('\\', "/");
+        assert_eq!(deps["evani-core"]["path"].as_str().unwrap(), format!("{engine_fwd}/crates/evani-core"));
+        assert_eq!(deps["evani-kit-sea"]["path"].as_str().unwrap(), "kits/evani-kit-sea");
+        assert!(!deps.contains_key("evani-kit-example") && deps["serde"].as_str() == Some("1"), "{ws_text}");
+        assert!(ws_text.contains("evani-core = { path = \"") && ws_text.contains("[profile.release]\nlto = true") && ws_text.contains("[workspace.lints.rust]"), "one line per dependency, settings kept: {ws_text}");
+        assert!(wsp["package"]["edition"].as_str() == Some("2024"));
+        // The game, pinned; the engine's lock and the kit's shared build script.
+        let manifest = read("apps/sea/evani.toml");
+        assert_eq!(crate::engine_version::pin(&manifest).unwrap().as_deref(), Some("0.3.0"));
+        assert!(manifest.contains("look = \"toon\"") && manifest.contains("[playground]"), "{manifest}");
+        assert_eq!(read("Cargo.lock"), "# engine lock\n");
+        assert_eq!(read("tools/bake-index.rs"), "fn main() {}\n");
+        assert!(read("kits/evani-kit-sea/Cargo.toml").contains("build = \"../../tools/bake-index.rs\""));
+        assert!(read(".gitignore").contains("target/"));
+        let agents = read("AGENTS.md");
+        assert!(agents.contains("# sea\n") &&agents.contains("--app-dir apps/sea") && agents.contains("BEGIN:evani-agent-rules"), "{agents}");
+        assert!(read("CLAUDE.md").contains("AGENTS.md") && dest.join("apps/sea/AGENTS.md").is_file());
+        assert!(out.contains(&"apps/sea/evani.toml".to_string()) && out.contains(&"Cargo.toml".to_string()), "{out:?}");
+        // Nothing was written into the engine.
+        assert_eq!(std::fs::read_to_string(r.join("Cargo.toml")).unwrap(), engine_ws);
+        assert!(!r.join("apps/sea").exists() && !r.join("kits/evani-kit-sea").exists());
+        // The game folder is never taken for an engine.
+        assert_eq!(crate::find_root(&dest.join("apps").join("sea")), None);
+        assert_eq!(crate::find_root(&r.join("apps").join("sandbox")).as_deref(), Some(r.as_path()));
+        // Refusals: a folder with files in it, and a folder inside the engine.
+        assert!(new_game_outside(&r, &dest, "other", "toon", &Extras::default()).unwrap_err().contains("not empty"));
+        assert!(new_game_outside(&r, &r.join("games").join("x"), "x", "toon", &Extras::default()).unwrap_err().contains("inside the engine folder"));
+        let _ = std::fs::remove_dir_all(&games);
+        let _ = std::fs::remove_dir_all(&r);
     }
 
     #[test]

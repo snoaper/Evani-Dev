@@ -1,0 +1,158 @@
+{
+  "library": "Evani.Materials",
+  "version": 1,
+  "scenes": [
+    { "id": "styles", "name": "Art styles", "icon": "◆", "family": "styles", "default": "styles.row",
+      "orbit": { "az": 0, "el": 12, "dist": 7.5, "target": [0.0, 1.0, 0.0], "min_dist": 1.5, "max_dist": 20.0 } },
+    { "id": "ball", "name": "Shader ball", "icon": "●", "family": "layers", "default": "layers.clearcoat",
+      "orbit": { "az": 28, "el": 14, "dist": 2.6, "target": [0.0, 0.4, 0.0], "min_dist": 0.8, "max_dist": 8.0, "fit": 0.42 } },
+    { "id": "cloth", "name": "Cushion", "icon": "▦", "family": "layers", "default": "layers.velvet",
+      "orbit": { "az": 24, "el": 18, "dist": 2.2, "target": [0.0, 0.24, 0.0], "min_dist": 0.7, "max_dist": 8.0, "fit": 0.45 } },
+    { "id": "head", "name": "Head", "icon": "☺", "family": "characters", "default": "characters.skin",
+      "orbit": { "az": 14, "el": 6, "dist": 1.2, "target": [0.0, 0.315, 0.0], "min_dist": 0.3, "max_dist": 4.0, "fit": 0.335, "fit_width": 0.19 },
+      "close": { "az": 20, "el": 4, "dist": 0.6, "target": [0.0, 0.505, 0.0] },
+      "light": { "sky.cloud_coverage": 0.0 } },
+    { "id": "ground", "name": "Ground", "icon": "▤", "family": "playground", "default": "playground.cobble",
+      "orbit": { "az": -24, "el": 24, "dist": 9.5, "target": [0.0, 0.4, -0.6], "min_dist": 1.5, "max_dist": 24.0, "fit": 2.0, "fit_width": 3.2, "bounds": [[-3.6, -0.1, -4.95], [4.05, 1.85, 1.55]] } },
+    { "id": "pool", "name": "Pool", "icon": "≈", "family": "nature", "default": "nature.water",
+      "orbit": { "az": 6, "el": 20, "dist": 6.2, "target": [0.4, 0.55, 0.1], "min_dist": 1.2, "max_dist": 20.0, "fit": 1.3, "fit_width": 3.6, "bounds": [[-3.2, -0.25, -3.35], [4.1, 2.5, 1.6]] } },
+    { "id": "lamp", "name": "Lamp corner", "icon": "✶", "family": "nature", "default": "nature.lamp",
+      "orbit": { "az": -40, "el": 16, "dist": 5.2, "target": [-3.0, 0.8, 0.9], "min_dist": 0.8, "max_dist": 12.0, "fit": 1.5, "bounds": [[-3.95, -0.25, -3.35], [4.1, 2.5, 1.6]] } },
+    { "id": "studio", "name": "Studio", "icon": "★", "family": "studio", "default": "studio.record",
+      "orbit": { "az": 35, "el": 12, "dist": 5.0, "target": [0.0, 0.8, 0.0], "min_dist": 0.8, "max_dist": 25.0 } },
+    { "id": "procedural", "name": "Procedural", "icon": "≋", "family": "studio", "default": "studio.proc.ocean",
+      "orbit": { "az": 18, "el": 6, "dist": 9.0, "target": [0.0, 0.8, 0.0], "min_dist": 0.8, "max_dist": 40.0 } }
+  ],
+  "families": [
+    {
+      "id": "styles", "rooms": "styles", "name": "Art styles", "feature": "material-styles",
+      "about": "The 24 art styles' starter materials on test shapes, with reference pictures.",
+      "prefixes": ["kit.material_view.style"],
+      "default": "styles.row",
+      "keep_params": true,
+      "materials": [
+        { "id": "styles.row", "name": "Style materials", "scene": "styles", "panel": [], "params": {} }
+      ]
+    },
+    {
+      "id": "layers", "rooms": "layered", "name": "Layered finishes", "feature": "material-layers",
+      "about": "Sheen, clear coat, brushed metal and thin films over a base colour.",
+      "prefixes": ["material.layers"],
+      "default": "layers.clearcoat",
+      "materials": [
+        { "id": "layers.clearcoat", "name": "Clear-coat paint", "scene": "ball", "show": "coat",
+          "panel": ["material.layers.clearcoat_strength"], "params": { "material.layers.clearcoat_strength": 1.0 } },
+        { "id": "layers.soap_film", "name": "Soap film", "scene": "ball", "show": "bubble",
+          "panel": ["material.layers.iridescence_strength"], "params": { "material.layers.iridescence_strength": 1.2 } },
+        { "id": "layers.brushed", "name": "Brushed steel", "scene": "ball", "show": "brushed",
+          "orbit": { "az": 20, "el": 22, "dist": 2.2, "target": [0.0, 0.55, 0.0] },
+          "panel": ["material.layers.anisotropy_strength"], "params": { "material.layers.anisotropy_strength": 1.0 } },
+        { "id": "layers.velvet", "name": "Velvet", "scene": "cloth", "show": "velvet",
+          "panel": ["material.layers.sheen_strength", "material.layers.weave_strength", "material.layers.weave_scale"],
+          "params": { "material.layers.sheen_strength": 1.0 } },
+        { "id": "layers.woven", "name": "Coarse weave", "scene": "cloth", "show": "velvet",
+          "orbit": { "az": 10, "el": 30, "dist": 1.1, "target": [0.0, 0.36, 0.0] },
+          "panel": ["material.layers.sheen_strength", "material.layers.weave_strength", "material.layers.weave_scale"],
+          "params": { "material.layers.sheen_strength": 0.6, "material.layers.weave_strength": 1.8, "material.layers.weave_scale": 0.5 } }
+      ]
+    },
+    {
+      "id": "characters", "rooms": "characters", "name": "Characters", "feature": "material-characters",
+      "about": "Skin, wet eyes, hair and fur for people and creatures.",
+      "prefixes": ["material.character", "material.skin", "material.eye", "material.hair"],
+      "default": "characters.skin",
+      "materials": [
+        { "id": "characters.skin", "name": "Soft skin", "scene": "head",
+          "panel": ["material.skin"], "params": {} },
+        { "id": "characters.eyes", "name": "Wet eyes", "scene": "head",
+          "orbit": { "az": 6, "el": 2, "dist": 0.34, "target": [0.0, 0.498, 0.085], "fit": 0.06 },
+          "panel": ["material.eye"], "params": {} },
+        { "id": "characters.hair", "name": "Hair", "scene": "head",
+          "orbit": { "az": 105, "el": 10, "dist": 0.8, "target": [0.0, 0.488, 0.0], "fit": 0.15 },
+          "panel": ["material.hair"], "params": {} }
+      ]
+    },
+    {
+      "id": "nature", "rooms": "nature", "name": "Nature", "feature": "material-nature",
+      "about": "Water, glass, sunlit leaves and grass, thin things and lamp glow.",
+      "prefixes": ["material.nature"],
+      "default": "nature.water",
+      "materials": [
+        { "id": "nature.water", "name": "Clear pool water", "scene": "pool",
+          "panel": ["material.nature.water", "material.nature.sky"], "params": { "material.nature.water.refraction": 0.45, "material.nature.water.deep_color": [0.3, 0.62, 0.66], "material.nature.water.clarity": 4.0, "material.nature.water.reflection": 0.75, "material.nature.foliage.cells": 34.0, "material.nature.foliage.variation": 0.65 } },
+        { "id": "nature.murky", "name": "Murky pond", "scene": "pool",
+          "panel": ["material.nature.water"],
+          "params": { "material.nature.water.clarity": 0.6, "material.nature.water.deep_color": [0.32, 0.42, 0.22], "material.nature.water.scatter_color": [0.10, 0.16, 0.06] } },
+        { "id": "nature.glass", "name": "Window and bottle glass", "scene": "pool",
+          "orbit": { "az": 30, "el": 12, "dist": 3.0, "target": [0.9, 0.95, 0.4] },
+          "panel": ["material.nature.glass"], "params": { "material.nature.foliage.cells": 34.0, "material.nature.foliage.variation": 0.65 } },
+        { "id": "nature.leaves", "name": "Sunlit leaves and grass", "scene": "pool",
+          "orbit": { "az": -160, "el": 10, "dist": 6.0, "target": [0.6, 0.6, -0.8] },
+          "panel": ["material.nature.foliage", "material.nature.grass"], "params": { "material.nature.foliage.cells": 34.0, "material.nature.foliage.variation": 0.65 } },
+        { "id": "nature.lamp", "name": "Lamp glow", "scene": "lamp",
+          "panel": ["material.nature.lamp", "material.nature.thin"], "params": { "material.nature.lamp.reach": 4.6, "material.nature.lamp.pool": 0.85 } }
+      ]
+    },
+    {
+      "id": "playground", "rooms": "playground", "name": "Playground surfaces", "feature": "material-playground",
+      "about": "Brick, cobble, tiles and planks with rain, puddles and moss.",
+      "prefixes": ["material.relief"],
+      "default": "playground.cobble",
+      "materials": [
+        { "id": "playground.cobble", "name": "Cobbles", "scene": "ground",
+          "orbit": { "az": -40, "el": 30, "dist": 4.5, "target": [-2.1, 0.3, 0.2], "fit": 1.2, "fit_width": 1.9, "bounds": [[-3.6, -0.1, -4.95], [4.05, 1.85, 1.55]] },
+          "panel": ["material.relief.cobble", "material.relief.height_strength"], "params": {} },
+        { "id": "playground.brick", "name": "Brick wall", "scene": "ground",
+          "orbit": { "az": -20, "el": 8, "dist": 4.2, "target": [-0.4, 1.3, -5.0] },
+          "panel": ["material.relief.brick", "material.relief.height_strength"], "params": {} },
+        { "id": "playground.tiles", "name": "Glazed tiles", "scene": "ground",
+          "orbit": { "az": 30, "el": 28, "dist": 4.0, "target": [2.4, 0.2, 0.4] },
+          "panel": ["material.relief.tiles", "material.relief.height_strength"], "params": {} },
+        { "id": "playground.planks", "name": "Plank deck", "scene": "ground",
+          "orbit": { "az": -10, "el": 24, "dist": 4.6, "target": [-1.0, 0.1, 6.2] },
+          "panel": ["material.relief.wood", "material.relief.height_strength"], "params": {} },
+        { "id": "playground.rain", "name": "Rain and puddles", "scene": "ground",
+          "panel": ["material.relief.wetness", "material.relief.puddles", "material.relief.puddle_scale"],
+          "params": { "material.relief.wetness": 0.75, "material.relief.puddles": 0.55 } },
+        { "id": "playground.moss", "name": "Moss", "scene": "ground",
+          "panel": ["material.relief.moss", "material.relief.moss_color", "material.relief.moss_scale"],
+          "params": { "material.relief.moss": 0.6 } }
+      ]
+    },
+    {
+      "id": "studio", "rooms": "studio", "name": "Asset & Style Studio", "feature": "material-studio",
+      "about": "Any asset in any art style and any material: the record the studio draws (asset, style, material).",
+      "prefixes": ["kit.material_view.studio"],
+      "default": "studio.record",
+      "keep_params": true,
+      "materials": [
+        { "id": "studio.record", "name": "The studio's record", "scene": "studio", "panel": [], "params": {} },
+        { "id": "studio.proc.ocean", "name": "Procedural: ocean (the spectral sea)", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 6, "el": 9, "dist": 24.0, "target": [0.0, 2.6, -6.0] } },
+        { "id": "studio.proc.water", "name": "Procedural: lake and river", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 12, "el": 13, "dist": 10.0, "target": [0.0, 0.6, -2.5] } },
+        { "id": "studio.proc.glass", "name": "Procedural: clear glass", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 28, "el": 15, "dist": 2.4, "target": [0.0, 0.3, 0.0] } },
+        { "id": "studio.proc.sky", "name": "Procedural: sky and clouds", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 0, "el": -6, "dist": 12.0, "target": [0.0, 4.0, 0.0] } },
+        { "id": "studio.proc.grass", "name": "Procedural: grass (evani-grass)", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 20, "el": 12, "dist": 7.0, "target": [0.0, 0.4, 0.0] } },
+        { "id": "studio.proc.library", "name": "Procedural: a library asset (evani-procedural-lib)", "scene": "procedural", "panel": [], "params": {},
+          "orbit": { "az": 30, "el": 24, "dist": 4.0, "target": [0.0, 0.5, 0.0] } }
+      ]
+    }
+  ],
+  "groups": {
+    "order": ["base", "finish", "detail"],
+    "names": { "base": "Base", "finish": "Finish", "detail": "Detail", "quality": "Quality" },
+    "quality": [
+      "material.layers.quality", "material.character.quality", "material.character.enabled",
+      "material.nature.enabled", "material.nature.refraction", "material.nature.max_surfaces",
+      "material.relief.bake_size"
+    ],
+    "hidden": ["material.character.slots", "material.skin.unused"],
+    "detail": ["scale", "size", "variation", "pore", "wrinkle", "weave", "fibre", "mortar", "grout", "bevel",
+               "length", "height", "width", "cells", "spacing", "rings", "jitter", "gap", "thickness", "depth"],
+    "base": ["color", "tint", "clarity", "f0", "horizon", "zenith", "match_background", "absorb"]
+  }
+}

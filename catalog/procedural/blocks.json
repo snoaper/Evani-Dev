@@ -1,0 +1,276 @@
+{
+ "about": "Building blocks: what each landscape (and each block) is made of, as a dependency graph (a DAG). A parent lists its blocks under needs, each link with its kind (how the child feeds the parent: layer, a material blended into the parent's surface by a mask; scatter, instanced copies; base, geometry or base shape, joined as merge, part or surface) and its params (docs/PROCEDURAL.md \"Composition from typed links\"; DECISIONS.md \"Typed building-block links\"); a block must reach the Asset Studio goal score before its parent's new author rounds can start (docs/ASSET_STUDIO_GUIDE.md \"Building blocks\"). Block ids: a procedural asset is its library key (<category>-<asset>, catalog/procedural/library.json); a catalogue material is material:<id> (catalog/materials/materials.json); a planned block (a merge or part with no procedural asset yet: not built, shown as not started) is planned:<id> from planned below. tools/procedural/gen_blocks.mjs checks it (every id exists, every link has its why, no cycles) and writes the tab's copy (tools/evani-commons-tab/blockdata.js), the engine's copy (crates/evani-procedural-lib/src/blocks_table.rs) and the guide's table; crates/evani-procedural-lib's tests check it too.",
+ "version": 2,
+ "draft": "Draft for Chris to review (2026-11-08): every tree below is a first guess, worked back from each landscape's reference picture where it has one, else from its framing in ref_classes.json, else from its name and its category's framing. Change it here.",
+ "rule": "Chris, 2026-11-08: every chain must directly help its end result. A block is a child only if it is a real visual ingredient of its parent (bark -> tree, pebbles -> boulders -> mountain, clouds -> sky), never an unrelated kind (no grass in the sky). Chains keep to their own kind (rock builds up by size, bark -> trees is its own branch); chains merge only where the combination is itself a real ingredient (mud + grass -> riverbank -> rivers). Every link says in one line why it helps.",
+ "landscapes": {
+  "terrain-flat-terrain": { "evidence": "picture", "source": "proc-refs/terrain-flat-terrain.jpg and its note: fine turf over lumpy ground, soil between the blades, bare soil patches" },
+  "terrain-rolling-hills": { "evidence": "picture", "source": "proc-refs/terrain-rolling-hills.jpg and its note: meadow grass, worn stony soil scars with limestone clusters, a light haze" },
+  "terrain-mountains": { "evidence": "picture", "source": "proc-refs/terrain-mountains.jpg (two views) and its note: snow cap, scree, alpine grass and moss meadows, conifer forest, boulders and shrubs at the player's feet" },
+  "terrain-mountain-ranges": { "evidence": "framing", "source": "ref_classes.json view_frame: a range of peaks and passes, snow on the highest summits, valleys and foothills" },
+  "terrain-valleys": { "evidence": "framing", "source": "ref_classes.json view_frame: a valley between two ridges, its floor with a stream and meadow" },
+  "terrain-canyons": { "evidence": "picture", "source": "proc-refs/terrain-canyons.jpg and its note: red-rock strata walls, talus, a dry gravel wash, fallen blocks, desert scrub" },
+  "terrain-cliffs": { "evidence": "framing", "source": "ref_classes.json view_frame: a cliff line, the rock face dropping to a scree slope" },
+  "terrain-plateaus": { "evidence": "framing", "source": "ref_classes.json view_frame: a flat-topped plateau, steep escarpments, the plain around its foot" },
+  "terrain-craters": { "evidence": "framing", "source": "ref_classes.json view_frame: a crater with its raised rim and floor in barren land" },
+  "terrain-sand-dunes": { "evidence": "framing", "source": "ref_classes.json view_frame: dunes with sharp crests, rippled slopes, wind ripples at the player's feet" },
+  "terrain-beaches": { "evidence": "name", "source": "its name and the terrain framing only (no reference picture or own framing yet)" },
+  "terrain-islands": { "evidence": "framing", "source": "ref_classes.json view_frame: an island ringed by shallow water and a beach, its slopes and trees, in open sea" },
+  "terrain-caves": { "evidence": "picture", "source": "proc-refs/terrain-caves.jpg and its note: bedded limestone walls, a dusty earth floor banked with grit, fallen blocks and chips; daylight only from the mouth" },
+  "terrain-ravines": { "evidence": "framing", "source": "ref_classes.json view_frame: a narrow rocky ravine, steep sides, a trickle of water, scrub on the rim" },
+  "terrain-terraced-landscapes": { "evidence": "framing", "source": "ref_classes.json view_frame: a hillside cut into terraces, retaining walls and planted steps" },
+  "water-oceans": { "evidence": "name", "source": "its name and the water framing only" },
+  "water-lakes": { "evidence": "framing", "source": "ref_classes.json view_frame: a lake with an irregular shoreline, the water reflecting the sky to the far shore, a light haze" },
+  "water-ponds": { "evidence": "name", "source": "its name and the water framing only" },
+  "water-rivers": { "evidence": "picture", "source": "proc-refs/water-rivers.jpg (two views) and its note: cut banks of loam with long grass, sand and gravel point bars, stones in the riffles, oaks along the banks, hedgerows and meadows, a light haze" },
+  "water-streams": { "evidence": "name", "source": "its name and the water framing only" },
+  "water-waterfalls": { "evidence": "framing", "source": "ref_classes.json framing: a waterfall seen from its pool below, falling water, spray and the rock behind" },
+  "water-rapids": { "evidence": "name", "source": "its name and the water framing only" },
+  "water-shorelines": { "evidence": "picture", "source": "proc-refs/water-shorelines.jpg and its note: beach sand, dunes of marram grass, a jointed granite headland, pebbles on the strandline, lace foam and swash" },
+  "water-tidal-pools": { "evidence": "name", "source": "its name and the water framing only" },
+  "water-marshes": { "evidence": "name", "source": "its name and the water framing only" }
+ },
+ "planned": {
+  "turf": { "name": "Turf", "note": "Short grass grown over soil, with worn bare patches: the ground of flat and rolling grassland." },
+  "stony-scar": { "name": "Stony soil scar", "note": "Worn bare soil on a steep bank with broken rock in it (the rolling hills' scars)." },
+  "alpine-meadow": { "name": "Alpine meadow", "note": "Short grass, low shrubs and moss in one mountain meadow." },
+  "meadow": { "name": "Meadow", "note": "Long grass with wildflowers: the fields and meadows of a valley floor." },
+  "dry-wash": { "name": "Dry wash", "note": "A dry gravel stream bed: desert sand with pebbles in it." },
+  "barren-ground": { "name": "Barren ground", "note": "Packed bare dirt strewn with small stones." },
+  "cave-floor": { "name": "Cave floor", "note": "Dusty packed earth banked with grit at the walls' feet." },
+  "riverbank": { "name": "Riverbank", "note": "A river's cut bank: bare mud with long grass growing over its top (Chris's own example, 2026-11-08)." },
+  "gravel-bar": { "name": "Gravel bar", "note": "A river's point bar: river sand with pebbles in low ridges." },
+  "lakeshore": { "name": "Lakeshore", "note": "A still-water edge: rounded stones with long grass behind them." },
+  "dune-grass": { "name": "Dune grass", "note": "Wind-bent long grass rooted in beach sand, with bare sandy gaps." },
+  "marsh-ground": { "name": "Marsh ground", "note": "Swamp mud under marsh grass." }
+ },
+ "needs": {
+  "terrain-flat-terrain": [
+   { "block": "planned:turf", "why": "the reference is a level field of fine turf with soil showing between the blades", "kind": "base", "params": { "join": "merge" } },
+   { "block": "sky-dynamic-sky-dome", "why": "a ground-level scene shows the sky above the field's horizon", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the terrain framing has a light haze in the distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-rolling-hills": [
+   { "block": "planned:turf", "why": "the hills are covered in the reference's meadow turf", "kind": "base", "params": { "join": "merge" } },
+   { "block": "planned:stony-scar", "why": "the reference shows worn stony soil scars with limestone clusters on the steeper banks", "kind": "layer", "params": { "mask": [{ "by": "slope", "min": 30 }], "blend": 1, "falloff": 0.1 } },
+   { "block": "sky-dynamic-sky-dome", "why": "the player-camera view shows the sky above the hills", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the reference note has a light haze over the far hills", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-mountains": [
+   { "block": "rocks-medium-rocks", "why": "the player view has broken grey boulders at the foot of the slope (rock chain: pebbles, boulders, mountain)", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } },
+   { "block": "rocks-scree-slopes", "why": "the reference note lists scree on the slopes under the cliffs", "kind": "base", "params": { "join": "part" } },
+   { "block": "trees-dense-forest-clusters", "why": "the reference shows forested foothills of conifers", "kind": "scatter", "params": { "density": 0.002, "scale": [0.8, 1.2], "lod": 200, "impostor": 1200, "slope": [0, 35], "height": [0, 0.6], "avoid_water": true } },
+   { "block": "planned:alpine-meadow", "why": "the reference has alpine grass, shrubs and moss meadows round the player", "kind": "layer", "params": { "mask": [{ "by": "height", "min": 0.15, "max": 0.6 }, { "by": "slope", "max": 30 }], "blend": 1, "falloff": 0.15 } },
+   { "block": "material:ground.snow.fresh", "why": "the summit dome is snow-capped in both views", "kind": "layer", "params": { "mask": [{ "by": "height", "min": 0.6 }, { "by": "slope", "max": 35 }], "blend": 0.9, "falloff": 0.15, "condition": "snow" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the mountain stands against the sky in both views", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the far ridges fade into haze in the reference", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-mountain-ranges": [
+   { "block": "terrain-mountains", "why": "a range is a line of mountains: the massif is its peak", "kind": "base", "params": { "join": "merge" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the line of peaks forms the skyline in the player view", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the far peaks of a range fade with distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-valleys": [
+   { "block": "water-streams", "why": "the framing puts a stream on the valley floor", "kind": "base", "params": { "join": "part" } },
+   { "block": "planned:meadow", "why": "the framing puts a meadow on the valley floor", "kind": "layer", "params": { "mask": [{ "by": "slope", "max": 20 }, { "by": "height", "max": 0.5 }], "blend": 1, "falloff": 0.15 } },
+   { "block": "sky-dynamic-sky-dome", "why": "a strip of sky shows above the valley slopes", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the valley runs on into the hazy distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-canyons": [
+   { "block": "material:rock.sandstone.red", "why": "the canyon walls are red sandstone in stepped strata", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-scree-slopes", "why": "the walls stand on talus slopes in the reference", "kind": "base", "params": { "join": "part" } },
+   { "block": "rocks-medium-rocks", "why": "fallen blocks lie on the canyon floors", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } },
+   { "block": "planned:dry-wash", "why": "a dry gravel wash runs along the canyon floors", "kind": "layer", "params": { "mask": [{ "by": "height", "max": 0.1 }, { "by": "curvature", "max": -0.2 }], "blend": 1, "falloff": 0.1 } },
+   { "block": "vegetation-shrubs", "why": "desert scrub grows on the plateau and floors", "kind": "scatter", "params": { "density": 0.05, "scale": [0.7, 1.3], "lod": 60, "impostor": 250, "slope": [0, 40], "avoid_water": true } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky shows over the rim in both views", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the framing has a light haze in the distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-cliffs": [
+   { "block": "rocks-rock-walls", "why": "the cliff is a layered rock face with ledges", "kind": "base", "params": { "join": "merge" } },
+   { "block": "rocks-scree-slopes", "why": "the framing has the face dropping to a scree slope", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-dynamic-sky-dome", "why": "a strip of sky shows above the clifftop", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-plateaus": [
+   { "block": "rocks-rock-walls", "why": "the plateau's sides are steep rock escarpments", "kind": "base", "params": { "join": "merge" } },
+   { "block": "terrain-flat-terrain", "why": "the plain around the plateau's foot is flat terrain", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the flat top edge stands against the sky", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the terrain framing has a light haze in the distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-craters": [
+   { "block": "planned:barren-ground", "why": "the framing sets the crater in barren land, which is also its floor", "kind": "base", "params": { "join": "merge" } },
+   { "block": "sky-dynamic-sky-dome", "why": "a strip of sky shows above the rim wall", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-sand-dunes": [
+   { "block": "material:ground.sand.desert", "why": "the dunes are wind-rippled desert sand", "kind": "base", "params": { "join": "surface" } },
+   { "block": "sky-dynamic-sky-dome", "why": "a strip of sky shows above the dune crests", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the terrain framing has a light haze in the distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-beaches": [
+   { "block": "material:ground.sand.beach", "why": "a beach is a strip of beach sand", "kind": "base", "params": { "join": "surface" } },
+   { "block": "water-oceans", "why": "a beach faces the sea", "kind": "base", "params": { "join": "part" } },
+   { "block": "water-wave-foam", "why": "the surf line's foam runs along a beach", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky meets the sea horizon above the beach", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-islands": [
+   { "block": "terrain-beaches", "why": "the framing rings the island with a beach", "kind": "base", "params": { "join": "merge" } },
+   { "block": "water-oceans", "why": "the island sits in open sea", "kind": "base", "params": { "join": "part" } },
+   { "block": "trees-tree-canopies", "why": "the framing shows trees on the island's slopes, seen as canopy from across the water", "kind": "scatter", "params": { "density": 0.005, "scale": [0.8, 1.2], "lod": 150, "impostor": 800, "avoid_water": true } },
+   { "block": "sky-dynamic-sky-dome", "why": "the island stands against the sky over the sea", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "open sea at distance takes on haze", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-caves": [
+   { "block": "material:rock.limestone", "why": "the passage walls are bedded limestone", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-jagged-rock-formations", "why": "the reference note uses the jagged rock formation's broken stones for the fallen blocks and chips", "kind": "scatter", "params": { "density": 0.01, "scale": [0.7, 1.3], "lod": 120, "impostor": 400 } },
+   { "block": "planned:cave-floor", "why": "the floor is dusty earth banked with grit at the walls' feet", "kind": "layer", "params": { "mask": [{ "by": "slope", "max": 25 }], "blend": 1, "falloff": 0.1 } }
+  ],
+  "terrain-ravines": [
+   { "block": "rocks-rock-walls", "why": "the ravine's narrow sides are steep rock", "kind": "base", "params": { "join": "merge" } },
+   { "block": "water-streams", "why": "a trickle of water runs along the bottom", "kind": "base", "params": { "join": "part" } },
+   { "block": "vegetation-shrubs", "why": "scrub grows on the rim", "kind": "scatter", "params": { "density": 0.05, "scale": [0.7, 1.3], "lod": 60, "impostor": 250, "slope": [0, 40], "avoid_water": true } },
+   { "block": "sky-dynamic-sky-dome", "why": "a narrow strip of sky shows between the walls", "kind": "base", "params": { "join": "part" } }
+  ],
+  "terrain-terraced-landscapes": [
+   { "block": "architecture-walls", "why": "each terrace is held by a retaining wall", "kind": "base", "params": { "join": "part" } },
+   { "block": "agriculture-crop-rows", "why": "the terrace steps are planted in rows", "kind": "scatter", "params": { "density": 0.05, "scale": [0.9, 1.1], "lod": 80, "impostor": 300, "slope": [0, 15] } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky shows above the slope", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the terrain framing has a light haze in the distance", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-oceans": [
+   { "block": "water-ocean-waves", "why": "the ocean's surface is its waves", "kind": "base", "params": { "join": "merge" } },
+   { "block": "water-wave-foam", "why": "breaking waves carry foam", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky meets the sea horizon and lights the water", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the far sea fades into haze at the horizon", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-lakes": [
+   { "block": "planned:lakeshore", "why": "the framing shows the lake's irregular shoreline", "kind": "base", "params": { "join": "merge" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the framing has the water reflecting the sky", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the framing has a light haze toward the far shore", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-ponds": [
+   { "block": "planned:lakeshore", "why": "a pond is ringed by a still-water shore", "kind": "base", "params": { "join": "merge" } },
+   { "block": "vegetation-reeds", "why": "reeds grow at a pond's edge", "kind": "scatter", "params": { "density": 1, "scale": [0.8, 1.2], "lod": 40, "impostor": 0, "height": [0, 0.2], "avoid_water": false } },
+   { "block": "sky-dynamic-sky-dome", "why": "the still water reflects the sky", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-rivers": [
+   { "block": "planned:riverbank", "why": "each bend has a cut bank of bare loam with long grass over it", "kind": "base", "params": { "join": "merge" } },
+   { "block": "planned:gravel-bar", "why": "the inside of each bend is a point bar of sand and gravel", "kind": "base", "params": { "join": "merge" } },
+   { "block": "rocks-rounded-river-rocks", "why": "stones break the surface in the riffles and line the banks", "kind": "scatter", "params": { "density": 0.1, "scale": [0.6, 1.3], "lod": 60, "impostor": 0, "avoid_water": false } },
+   { "block": "trees-oak-trees", "why": "oaks line the banks, a big oak at every bend", "kind": "scatter", "params": { "density": 0.002, "scale": [0.8, 1.2], "lod": 120, "impostor": 600, "slope": [0, 30], "avoid_water": true } },
+   { "block": "trees-hedgerows", "why": "hedgerows edge the valley's fields", "kind": "scatter", "params": { "density": 0.002, "scale": [0.9, 1.1], "lod": 120, "impostor": 500, "slope": [0, 20], "avoid_water": true } },
+   { "block": "planned:meadow", "why": "the valley floor is fields and meadows", "kind": "layer", "params": { "mask": [{ "by": "slope", "max": 20 }, { "by": "height", "max": 0.5 }], "blend": 1, "falloff": 0.15 } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky with fair-weather clouds fills the top of the player view", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "the reference note has a light haze over the far hills", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-streams": [
+   { "block": "planned:riverbank", "why": "a stream runs between low mud and grass banks", "kind": "base", "params": { "join": "merge" } },
+   { "block": "rocks-rounded-river-rocks", "why": "water-worn stones line a stream bed", "kind": "scatter", "params": { "density": 0.1, "scale": [0.6, 1.3], "lod": 60, "impostor": 0, "avoid_water": false } },
+   { "block": "sky-dynamic-sky-dome", "why": "the stream's surface reflects the sky", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-waterfalls": [
+   { "block": "rocks-rock-walls", "why": "the framing shows the rock face behind the falling water", "kind": "base", "params": { "join": "merge" } },
+   { "block": "effects-water-splashes", "why": "the framing shows spray where the water lands", "kind": "base", "params": { "join": "part" } },
+   { "block": "rocks-rounded-river-rocks", "why": "water-worn stones ring the pool below", "kind": "scatter", "params": { "density": 0.1, "scale": [0.6, 1.3], "lod": 60, "impostor": 0, "avoid_water": false } }
+  ],
+  "water-rapids": [
+   { "block": "rocks-rounded-river-rocks", "why": "rapids are water breaking over river stones", "kind": "scatter", "params": { "density": 0.1, "scale": [0.6, 1.3], "lod": 60, "impostor": 0, "avoid_water": false } },
+   { "block": "water-wave-foam", "why": "rapids are white with foam", "kind": "base", "params": { "join": "part" } },
+   { "block": "planned:riverbank", "why": "rapids run between river banks", "kind": "base", "params": { "join": "merge" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the sky shows above the river", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-shorelines": [
+   { "block": "material:ground.sand.beach", "why": "the cove is warm gritty beach sand, damp and wet bands at the water", "kind": "base", "params": { "join": "surface" } },
+   { "block": "planned:dune-grass", "why": "dunes of wind-bent marram grass back the beach", "kind": "layer", "params": { "mask": [{ "by": "height", "min": 0.3 }, { "by": "noise", "min": 0.4, "scale": 0.2 }], "blend": 1, "falloff": 0.2 } },
+   { "block": "rocks-medium-rocks", "why": "the headland is jointed granite blocks with fracture faces", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } },
+   { "block": "rocks-pebbles", "why": "pebbles lie in drifts along the strandline", "kind": "scatter", "params": { "density": 0.4, "scale": [0.6, 1.4], "lod": 25, "impostor": 0, "avoid_water": true } },
+   { "block": "water-wave-foam", "why": "lace foam and swash fronts run up the sand", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the player-camera view shows the sky over the bay", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-tidal-pools": [
+   { "block": "rocks-medium-rocks", "why": "tidal pools sit among rocks on the shore", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } },
+   { "block": "material:ground.mud.tidal", "why": "tidal mud lines the pools' floors", "kind": "layer", "params": { "mask": [{ "by": "height", "max": 0.3 }], "blend": 1, "falloff": 0.1, "condition": "mud" } },
+   { "block": "sky-dynamic-sky-dome", "why": "the still pools reflect the sky", "kind": "base", "params": { "join": "part" } }
+  ],
+  "water-marshes": [
+   { "block": "planned:marsh-ground", "why": "a marsh is waterlogged mud under marsh grass", "kind": "base", "params": { "join": "merge" } },
+   { "block": "vegetation-reeds", "why": "reed beds stand in the open water", "kind": "scatter", "params": { "density": 1, "scale": [0.8, 1.2], "lod": 40, "impostor": 0, "height": [0, 0.2], "avoid_water": false } },
+   { "block": "sky-dynamic-sky-dome", "why": "the flat marsh is mostly sky and its reflections", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-distance-fog", "why": "a flat marsh fades into haze", "kind": "base", "params": { "join": "part" } }
+  ],
+  "sky-dynamic-sky-dome": [
+   { "block": "sky-volumetric-looking-clouds", "why": "the dome's reference has fair-weather cumulus drawn as the cloud volume", "kind": "base", "params": { "join": "part" } },
+   { "block": "sky-sun-and-moon-discs", "why": "the dome draws the sun disc and its glow on one side of the sky", "kind": "base", "params": { "join": "part" } }
+  ],
+  "trees-oak-trees": [
+   { "block": "material:bark.oak", "why": "the trunk and limbs wear fissured oak bark", "kind": "base", "params": { "join": "surface" } },
+   { "block": "material:leaf.oak", "why": "the crown is sprays of lobed oak leaves", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "trees-dense-forest-clusters": [
+   { "block": "trees-pine-trees", "why": "the mountain forest is made of conifers, tree by tree", "kind": "scatter", "params": { "density": 0.05, "scale": [0.8, 1.25], "lod": 120, "impostor": 600, "slope": [0, 35], "avoid_water": true } }
+  ],
+  "trees-pine-trees": [
+   { "block": "material:bark.pine", "why": "a pine's trunk wears pine bark", "kind": "base", "params": { "join": "surface" } },
+   { "block": "material:needle.pine", "why": "a pine's crown is needles", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "rocks-medium-rocks": [
+   { "block": "rocks-pebbles", "why": "rock chain by size: the stone's colour, grain and fracture are proven on pebbles first", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "rocks-rounded-river-rocks": [
+   { "block": "rocks-pebbles", "why": "rock chain by size: water-worn stone proven small (pebbles) before river rocks", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "rocks-jagged-rock-formations": [
+   { "block": "rocks-pebbles", "why": "rock chain by size: the broken stone's grain and colour proven on pebbles first", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "rocks-scree-slopes": [
+   { "block": "rocks-medium-rocks", "why": "a scree slope is a talus of broken rock blocks", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } }
+  ],
+  "planned:turf": [
+   { "block": "vegetation-short-grass", "why": "turf is short grass blades", "kind": "scatter", "params": { "density": 4, "scale": [0.8, 1.2], "lod": 40, "impostor": 0, "slope": [0, 40], "avoid_water": true } },
+   { "block": "material:ground.soil.loam", "why": "soil shows between the blades and in worn bare patches", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "planned:stony-scar": [
+   { "block": "material:ground.soil.loam", "why": "a scar is worn bare soil", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-medium-rocks", "why": "broken limestone rocks stick out of the scar", "kind": "scatter", "params": { "density": 0.02, "scale": [0.7, 1.4], "lod": 80, "impostor": 250, "slope": [0, 45] } }
+  ],
+  "planned:alpine-meadow": [
+   { "block": "vegetation-short-grass", "why": "an alpine meadow is short grass", "kind": "scatter", "params": { "density": 4, "scale": [0.8, 1.2], "lod": 40, "impostor": 0, "slope": [0, 40], "avoid_water": true } },
+   { "block": "vegetation-shrubs", "why": "low shrubs grow in the mountain meadow", "kind": "scatter", "params": { "density": 0.05, "scale": [0.7, 1.3], "lod": 60, "impostor": 250, "slope": [0, 40], "avoid_water": true } },
+   { "block": "vegetation-moss-patches", "why": "the reference note has moss meadows", "kind": "layer", "params": { "mask": [{ "by": "height", "max": 0.4 }, { "by": "curvature", "max": -0.1 }], "blend": 0.8, "falloff": 0.2, "condition": "growth" } }
+  ],
+  "planned:meadow": [
+   { "block": "vegetation-long-grass", "why": "a meadow is long grass", "kind": "scatter", "params": { "density": 3, "scale": [0.8, 1.3], "lod": 40, "impostor": 0, "slope": [0, 45], "avoid_water": true } },
+   { "block": "vegetation-wildflowers", "why": "wildflowers grow in the long grass", "kind": "scatter", "params": { "density": 0.3, "scale": [0.8, 1.2], "lod": 30, "impostor": 0, "slope": [0, 30], "avoid_water": true } }
+  ],
+  "planned:dry-wash": [
+   { "block": "material:ground.sand.desert", "why": "a dry wash is a bed of sand", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-pebbles", "why": "gravel and pebbles lie in the wash", "kind": "scatter", "params": { "density": 0.4, "scale": [0.6, 1.4], "lod": 25, "impostor": 0, "avoid_water": true } }
+  ],
+  "planned:barren-ground": [
+   { "block": "material:ground.soil.packed", "why": "barren ground is packed bare dirt", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-small-stones", "why": "small stones lie strewn on it", "kind": "scatter", "params": { "density": 0.4, "scale": [0.6, 1.4], "lod": 25, "impostor": 0, "avoid_water": true } }
+  ],
+  "planned:cave-floor": [
+   { "block": "material:ground.soil.packed", "why": "the floor is dusty packed earth", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-small-stones", "why": "grit and small stones bank at the walls' feet", "kind": "scatter", "params": { "density": 0.4, "scale": [0.6, 1.4], "lod": 25, "impostor": 0, "avoid_water": true } }
+  ],
+  "planned:riverbank": [
+   { "block": "material:ground.mud.riverbank", "why": "a cut bank is bare riverbank mud", "kind": "base", "params": { "join": "surface" } },
+   { "block": "vegetation-long-grass", "why": "long grass grows over the top of the bank", "kind": "scatter", "params": { "density": 3, "scale": [0.8, 1.3], "lod": 40, "impostor": 0, "slope": [0, 45], "avoid_water": true } }
+  ],
+  "planned:gravel-bar": [
+   { "block": "material:ground.sand.river", "why": "a point bar is river sand", "kind": "base", "params": { "join": "surface" } },
+   { "block": "rocks-pebbles", "why": "gravel and pebbles lie in the bar's low ridges", "kind": "scatter", "params": { "density": 0.4, "scale": [0.6, 1.4], "lod": 25, "impostor": 0, "avoid_water": true } }
+  ],
+  "planned:lakeshore": [
+   { "block": "rocks-rounded-river-rocks", "why": "water-worn stones line a still-water edge", "kind": "scatter", "params": { "density": 0.1, "scale": [0.6, 1.3], "lod": 60, "impostor": 0, "avoid_water": false } },
+   { "block": "vegetation-long-grass", "why": "long grass grows behind the shore", "kind": "scatter", "params": { "density": 3, "scale": [0.8, 1.3], "lod": 40, "impostor": 0, "slope": [0, 45], "avoid_water": true } }
+  ],
+  "planned:dune-grass": [
+   { "block": "vegetation-long-grass", "why": "marram is long wind-bent grass", "kind": "scatter", "params": { "density": 3, "scale": [0.8, 1.3], "lod": 40, "impostor": 0, "slope": [0, 45], "avoid_water": true } },
+   { "block": "material:ground.sand.beach", "why": "it roots in beach sand that shows in the gaps", "kind": "base", "params": { "join": "surface" } }
+  ],
+  "planned:marsh-ground": [
+   { "block": "material:ground.mud.swamp", "why": "marsh ground is waterlogged mud", "kind": "base", "params": { "join": "surface" } },
+   { "block": "material:ground.grass.marsh", "why": "marsh grass covers the mud", "kind": "layer", "params": { "mask": [{ "by": "noise", "min": 0.35, "scale": 0.5 }], "blend": 0.9, "falloff": 0.2 } }
+  ]
+ }
+}

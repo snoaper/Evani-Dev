@@ -19,6 +19,12 @@ referee = ["lockstep"]
 # MessagePort the host page (or an in-page adapter) hands over; the game
 # opens no network of its own. wasm only.
 port = ["dep:wasm-bindgen", "dep:js-sys"]
+# The sync layer (src/sync.rs, docs/NET_SYNC.md): client prediction with
+# server reconciliation and error smoothing for the local entity, snapshot
+# interpolation with an adaptive delay and capped extrapolation for remote
+# ones, and the `net.sync.*` parameters. A game turns it on with
+# `evani-net/sync` in its `net` feature; without it nothing of it is built.
+sync = []
 
 [dependencies]
 evani-core.workspace = true
@@ -26,6 +32,11 @@ evani-core.workspace = true
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true, optional = true }
 js-sys = { workspace = true, optional = true }
+
+# The crate's own tests always build the sync layer (a dev-dependency on
+# itself; normal builds of a game are untouched).
+[dev-dependencies]
+evani-net = { path = ".", features = ["sync"] }
 
 [lints]
 workspace = true

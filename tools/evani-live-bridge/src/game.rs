@@ -54,19 +54,22 @@ fn read_lock(p: &Path) -> Option<(u32, u16)> {
 }
 
 impl Game {
-    /// `game` is a name (`sandbox`) or a path (`apps/sandbox`).
+    /// `game` is a name (`sandbox`) or a path (`apps/sandbox`). In an
+    /// installed engine pack (read-only) the engine's own example games build
+    /// under `<EVANI_STATE_DIR>/engine-games` instead of the engine folder.
     pub fn new(root: &Path, game: &str) -> Self {
         let name = Path::new(game)
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or(game)
             .to_string();
-        let out = root.join("target").join("evani-live").join(&name);
+        let home = if evani_guide::engine_version::pack_dir_of(root).is_some() { evani_guide::state_dir(root).join("engine-games") } else { root.to_path_buf() };
+        let out = home.join("target").join("evani-live").join(&name);
         Self {
             app_dir: root.join("apps").join(&name),
             dist: out.join("dist"),
             root: root.to_path_buf(),
-            home: root.to_path_buf(),
+            home,
             outside: false,
             name,
             own_dir: None,
@@ -191,8 +194,36 @@ impl Game {
             return false;
         }
         let Some(built) = mtime(&stamp) else { return false };
-        let newest = newest_source(&self.root, &self.app_dir).max(if self.outside { newest_in_workspace(&self.home) } else { None });
-        newest.is_none_or(|src| src <= built)
+        self.newest_source_time().is_none_or(|src| src <= built)
+    }
+
+    /// The newest modification time of everything that goes into the game
+    /// (what the rebuild watch of a game outside the engine looks at).
+    pub fn newest_source_time(&self) -> Option<SystemTime> {
+        newest_source(&self.root, &self.app_dir).max(if self.outside { newest_in_workspace(&self.home) } else { None })
+    }
+
+    /// The same, with the file that has it (the rebuild watch says which file
+    /// started a build).
+    pub fn newest_source_file(&self) -> Option<(SystemTime, PathBuf)> {
+        let mut newest: Option<(SystemTime, PathBuf)> = None;
+        let mut see = |p: &Path, t: SystemTime| {
+            if newest.as_ref().is_none_or(|(n, _)| t > *n) {
+                newest = Some((t, p.to_path_buf()));
+            }
+        };
+        for f in [self.root.join("Cargo.toml"), self.root.join("Cargo.lock")] {
+            if let Some(t) = mtime(&f) {
+                see(&f, t);
+            }
+        }
+        for dir in [self.root.join("crates"), self.root.join("kits"), self.root.join("looks"), self.app_dir.clone()] {
+            walk_files(&dir, &mut see);
+        }
+        if self.outside {
+            walk_files(&self.home, &mut see);
+        }
+        newest
     }
 
     /// Run `trunk build` (dev profile, default features + `live`).
@@ -328,6 +359,11 @@ fn outside_rustflags(set: Option<&str>) -> String {
 }
 
 fn walk(dir: &Path, newest: &mut Option<SystemTime>) {
+    walk_files(dir, &mut |_, t| *newest = (*newest).max(Some(t)));
+}
+
+/// Every source file under `dir` (not dot folders, `target`, `dist`, `node_modules`) with its time.
+fn walk_files(dir: &Path, f: &mut dyn FnMut(&Path, SystemTime)) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     for e in entries.flatten() {
         let p = e.path();
@@ -337,8 +373,12 @@ fn walk(dir: &Path, newest: &mut Option<SystemTime>) {
             continue;
         }
         match e.file_type() {
-            Ok(t) if t.is_dir() => walk(&p, newest),
-            Ok(_) => *newest = (*newest).max(mtime(&p)),
+            Ok(t) if t.is_dir() => walk_files(&p, f),
+            Ok(_) => {
+                if let Some(t) = mtime(&p) {
+                    f(&p, t);
+                }
+            }
             Err(_) => {}
         }
     }

@@ -16,6 +16,19 @@ default = []
 # Follow evani-render's per-frame near/far planes (evani-fx has the same
 # switch) when a game turns them on; without it the engine's fixed planes.
 camera-range = ["evani-render/camera-range"]
+# Dev builds with live capture: the pass follows a capture's sub-pixel
+# projection jitter (the geometry check's flicker shots), so it rebuilds each
+# pixel's position along the ray the jittered draw used. Ship builds leave it
+# off and are unchanged.
+capture = ["evani-render/capture"]
+# The spectral sea (`nature = ["spectral-sea"]`, src/sea): tall open-sea
+# waves from a wind-and-swell spectrum, ray-marched in a pass of its own
+# (`nature.sea`) with glitter, crest glow, lingering lace foam, beach
+# breakers, swash, caustics and spray, at four quality levels. Its own params
+# (`material.nature.water.wind_speed` and the rest), its own shaders and
+# the `SeaSurfaces` resource exist only with it; without it the crate, its
+# shaders and every water surface are byte for byte as before.
+spectral-sea = ["evani-render/effect-mesh"]
 
 [dependencies]
 evani-core.workspace = true

@@ -1,0 +1,31 @@
+[package]
+name = "evani-kit-scene-sunmoon-meadow"
+description = "Evani.Dev Sun and moon meadow Scene: a free-flying camera over Asset Studio column 38's golden-hour meadow, its sun and moon discs and a slow day and night"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[dependencies]
+# `touch` and `touch-look`: the on-screen move stick, look pad and Up/Down
+# buttons (README "Touch controls"); `pointer-lock`: mouse look through the
+# browser's pointer lock, asked for only after the player's click.
+evani-core = { workspace = true, features = ["touch", "touch-look", "pointer-lock"] }
+# The scene is 3D, so the kit turns on the renderer's 3D path (`forward`).
+evani-render = { workspace = true, features = ["forward"] }
+# The sky dome, the sun and moon discs and the meadow's grass (feature `sky`,
+# which the app's `procedural` feature turns on).
+evani-procedural-lib = { workspace = true, optional = true }
+
+[features]
+sky = [
+    "dep:evani-procedural-lib",
+    "evani-procedural-lib/sky-dynamic-sky-dome",
+    "evani-procedural-lib/sky-sun-and-moon-discs",
+    "evani-procedural-lib/vegetation-long-grass",
+]
+
+[lints]
+workspace = true

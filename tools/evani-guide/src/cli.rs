@@ -20,8 +20,9 @@ cargo xtask check [--app <id>].. [--full | --quick] [--strict] [--json]
                                                       clippy (warnings fail) and tests for only the crates changed since the last commit and their dependents
 cargo xtask check --app-dir <game app folder> [--full] [--strict] [--json]
                                                       the same per-game gate for one game kept outside the engine folder
-cargo xtask new-game <id> [--look <look>] [--genre <genre>] [--effects <a,b,..|none>]
-                                                      a new game (apps/<id> + kits/evani-kit-<id>) with its guidance. --genre checks the
+cargo xtask new-game <id> [--app-dir <folder>] [--look <look>] [--genre <genre>] [--effects <a,b,..|none>]
+                                                      a new game (apps/<id> + kits/evani-kit-<id>) with its guidance; --app-dir makes it in its own
+                                                      folder outside the engine (its own workspace, pinned to this engine). --genre checks the
                                                       look against the genre's compatible_looks (catalog/genres.json), takes its physics,
                                                       and writes kits/<id>/SPEC.md with the reference image prompt; --effects must exist
                                                       in catalog/effects.json and fit the look's style
@@ -29,9 +30,36 @@ cargo xtask catalog [--json]                          the genres ranked by most 
 cargo xtask ai-eval --plan [--agent <cmd>] | --score <dir> [--full]
                                                       one-shot game-making evals: the plan, or a finished worktree's score";
 
-fn root() -> Result<PathBuf, String> {
+/// The engine these commands work on: the one [`run_in`] was given (xtask
+/// passes it when `EVANI_ENGINE_ROOT` names it or it runs from an engine
+/// pack), else the project above the working folder.
+fn root_in(given: Option<&Path>) -> Result<PathBuf, String> {
+    if let Some(r) = given {
+        return Ok(r.to_path_buf());
+    }
     let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
-    crate::find_root(&cwd).ok_or_else(|| "not inside an Evani.Dev project (no Cargo.toml with [workspace] and apps/ above here)".into())
+    crate::find_root(&cwd).ok_or_else(|| "not inside an Evani.Dev project (no Cargo.toml with [workspace], apps/ and crates/evani-core above here); a game outside the engine takes `--app-dir <its app folder>`".into())
+}
+
+thread_local! {
+    static GIVEN_ROOT: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+fn root() -> Result<PathBuf, String> {
+    GIVEN_ROOT.with(|g| root_in(g.borrow().as_deref()))
+}
+
+/// [`run`] for the engine at `root` (`None`: the project above the working folder).
+pub fn run_in(root: Option<&Path>, args: &[String]) -> i32 {
+    GIVEN_ROOT.with(|g| *g.borrow_mut() = root.map(Path::to_path_buf));
+    let code = run(args);
+    GIVEN_ROOT.with(|g| *g.borrow_mut() = None);
+    code
+}
+
+/// Whether the engine at `root` is an installed (read-only) engine pack.
+fn in_pack(root: &Path) -> bool {
+    crate::engine_version::pack_dir_of(root).is_some()
 }
 
 /// Run `args` (the command first). Returns the process exit code.
@@ -112,6 +140,9 @@ fn print_fixed(root: &Path, f: &doctor::Fixed) -> i32 {
 fn init_ai(rest: &[String]) -> Result<i32, String> {
     known(rest, &["--no-mcp-build"], &["--with"])?;
     let root = root()?;
+    if in_pack(&root) {
+        return Err(format!("{} is an installed engine pack, which is read-only; a new game gets its guidance from `new-game <id> --app-dir <folder>`", root.display()));
+    }
     let o = opts(rest)?;
     let f = doctor::fix(&root, o, !flag(rest, "--no-mcp-build"));
     let code = print_fixed(&root, &f);
@@ -126,6 +157,21 @@ fn cmd_doctor(rest: &[String]) -> Result<i32, String> {
     known(rest, &["--fix", "--no-mcp-build", "--no-tools", "--blender"], &["--with"])?;
     let root = root()?;
     let o = opts(rest)?;
+    if flag(rest, "--fix") && in_pack(&root) {
+        // Blender is the one helper a pack doesn't carry: it goes into the
+        // per-user state folder, never the pack.
+        if flag(rest, "--blender") {
+            let p = extools::pin("blender").ok_or("no Blender pin")?;
+            if extools::state(&root, p) == extools::ToolState::Current {
+                println!("Blender {} is installed ({})", p.version, extools::exe_path(&root, p).display());
+                return Ok(0);
+            }
+            extools::install_one(&root, p)?;
+            println!("installed Blender {} into {} (downloaded from {}, SHA-256 checked)", p.version, extools::dir_for(&root, p).display(), p.url);
+            return Ok(0);
+        }
+        return Err(format!("{} is an installed engine pack, which is read-only (Evani.App replaces it whole); nothing to fix here (Blender for .blend files: `doctor --fix --blender` installs it into the per-user state folder)", root.display()));
+    }
     if flag(rest, "--fix") {
         let f = doctor::fix(&root, o, !flag(rest, "--no-mcp-build"));
         let mut code = print_fixed(&root, &f);
@@ -267,13 +313,38 @@ pub fn check_mode(rest: &[String]) -> Result<CheckMode, String> {
 }
 
 fn cmd_new_game(rest: &[String]) -> Result<i32, String> {
-    let usage = "usage: cargo xtask new-game <id> [--look <look>] [--genre <genre>] [--effects <a,b,..|none>]";
+    let usage = "usage: cargo xtask new-game <id> [--app-dir <folder>] [--look <look>] [--genre <genre>] [--effects <a,b,..|none>]";
     let id = rest.first().filter(|a| !a.starts_with("--")).ok_or(usage)?;
-    known(&rest[1..], &[], &["--look", "--genre", "--effects"])?;
+    known(&rest[1..], &[], &["--look", "--genre", "--effects", "--app-dir"])?;
     let look = value(rest, "--look")?;
     let genre_id = value(rest, "--genre")?;
     let effects = value(rest, "--effects")?.map(|e| genre::parse_effects(&e));
     let root = root()?;
+    if let Some(dest) = value(rest, "--app-dir")? {
+        let dest = std::path::absolute(&dest).map_err(|e| format!("{dest}: {e}"))?;
+        let (look, extras, notes) = if genre_id.is_none() && effects.is_none() {
+            (look.unwrap_or_else(|| "basic".into()), scaffold::Extras::default(), Vec::new())
+        } else {
+            let r = genre::resolve(&root, &genre::Request { genre: genre_id.clone(), look, effects })?;
+            (r.look.clone(), scaffold::Extras { physics: r.physics.clone(), effects: r.effects.clone(), spec: r.spec.clone() }, r.notes.clone())
+        };
+        let written = scaffold::new_game_outside(&root, &dest, id, &look, &extras)?;
+        for n in &notes {
+            println!("note: {n}");
+        }
+        let app = dest.join("apps").join(id);
+        println!(
+            "made the game `{id}` in {} ({} files), pinned to engine {}.",
+            dest.display(),
+            written.len(),
+            crate::engine_version::running(&root)
+        );
+        println!("next: replace the example spinners in {}, then `cargo xtask build --app-dir {}` and `cargo xtask check --app-dir {}`.", dest.join("kits").join(format!("evani-kit-{id}")).display(), app.display(), app.display());
+        return Ok(0);
+    }
+    if in_pack(&root) {
+        return Err(format!("{} is an installed engine pack, which is read-only: make the game in its own folder with `new-game {id} --app-dir <folder>`", root.display()));
+    }
     // Without the new flags this is the plain scaffold, unchanged.
     if genre_id.is_none() && effects.is_none() {
         let look = look.unwrap_or_else(|| "basic".into());

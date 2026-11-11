@@ -89,6 +89,12 @@ fn ly_v_kelemen(ldh: f32) -> f32 {
     return 0.25 / max(ldh * ldh, 1e-4);
 }
 
+// The sun's disc as a clear coat mirrors it: its brightness over the sun's,
+// before the coat's Fresnel (about 0.04 head on), so a disc seen head on is
+// about as bright as the sun on a white face: a crisp highlight that reads
+// as a reflection without flaring.
+const LY_COAT_DISC: f32 = 25.0;
+
 // The coat's lobe and its Fresnel (F0 0.04, a 1.5 IOR varnish), for one
 // light: x = D * V * F (times N.L, pi and the light), y = F at L.H (what
 // the coat takes from the light before it reaches the layers under it).

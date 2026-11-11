@@ -1,0 +1,50 @@
+# Ground textures proof (TopGun W3, docs/GROUND_TEXTURES.md): a small game
+# kept outside the engine's workspace, the way TopGun Tom is, so it also
+# proves evani-render's `kit-textures` for `--app-dir` games. The engine
+# crates are path dependencies of this checkout.
+#
+#   cargo xtask convert-textures examples/ground-textures/layers.json --out examples/ground-textures/apps/ground-textures/assets
+#   cargo xtask build --app-dir examples/ground-textures/apps/ground-textures
+
+[workspace]
+resolver = "3"
+members = ["apps/ground-textures", "kits/evani-kit-ground-textures"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+publish = false
+
+# The engine's exact pins, so Cargo unifies them.
+[workspace.dependencies]
+wasm-bindgen = "=0.2.129"
+web-sys = "=0.3.106"
+evani-core = { path = "../../crates/evani-core" }
+evani-render = { path = "../../crates/evani-render" }
+evani-fx = { path = "../../crates/evani-fx", default-features = false }
+evani-look-photoreal = { path = "../../looks/evani-look-photoreal" }
+# The material library (Evani.Materials) and the model reader it rides on:
+# optional in the app, off unless its evani.toml lists `[materials]`.
+evani-gltf = { path = "../../crates/evani-gltf" }
+evani-material-recipes = { path = "../../crates/evani-material-recipes" }
+evani-material-nature = { path = "../../crates/evani-material-nature" }
+evani-kit-ground-textures = { path = "kits/evani-kit-ground-textures" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev.package."*"]
+opt-level = 1

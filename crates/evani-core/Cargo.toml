@@ -12,6 +12,10 @@ default = []
 # Live capture support: the sim clock hold that `capture.frame`, `bench.run`
 # and `compare.ab` use. Only evani-live turns it on, so shipped games carry none of it.
 capture = []
+# The trail queue (`trails.rs`): turned on by evani-render's `trails` feature
+# (the evani-fx `trails` effect) or by a kit that feeds it. Games that do not
+# list the effect compile none of it.
+trails = []
 # Asset focus (`focus.*`): kits list their assets and one can be shown on
 # its own on a turntable camera. Only evani-live (and kits' own `live`
 # features) turn it on, so shipped games carry none of it.

@@ -1,0 +1,1055 @@
+id,name,category,subcategory,recipe,search_words,look_note,batch,exists_today,conditions
+horse.coat.bay,"Horse coat, bay",animals,horse_coats,fur,"bay, brown horse, reddish brown, black points","Warm red-brown body, black legs, short glossy coat",1,,wet mud dust snow blood
+horse.coat.dark_bay,"Horse coat, dark bay",animals,horse_coats,fur,"dark bay, mahogany, brown horse",Deep brown body fading to black on legs,5,,wet mud dust snow blood
+horse.coat.blood_bay,"Horse coat, blood bay",animals,horse_coats,fur,"blood bay, red bay, bright bay",Rich red body with black points,5,,wet mud dust snow blood
+horse.coat.chestnut,"Horse coat, chestnut",animals,horse_coats,fur,"chestnut, red horse, copper horse","Even copper-red coat, legs the same colour",5,,wet mud dust snow blood
+horse.coat.liver_chestnut,"Horse coat, liver chestnut",animals,horse_coats,fur,"liver, dark chestnut, chocolate red","Very dark red-brown, matte sheen",5,,wet mud dust snow blood
+horse.coat.sorrel,"Horse coat, sorrel",animals,horse_coats,fur,"sorrel, light chestnut, ginger horse","Light orange-red coat, often a paler mane",5,,wet mud dust snow blood
+horse.coat.flaxen_chestnut,"Horse coat, flaxen chestnut",animals,horse_coats,fur,"flaxen, blond mane, chestnut",Chestnut body meant to pair with a cream mane,5,,wet mud dust snow blood
+horse.coat.black,"Horse coat, black",animals,horse_coats,fur,"black horse, jet, raven",True black with a blue-tinted sheen,5,,wet mud dust snow blood
+horse.coat.smoky_black,"Horse coat, smoky black",animals,horse_coats,fur,"smoky black, faded black, rusty black",Black that sun-bleaches to a brownish tint,5,,wet mud dust snow blood
+horse.coat.brown,"Horse coat, brown",animals,horse_coats,fur,"brown horse, dark brown, seal",Near-black body with tan muzzle and flanks,5,,wet mud dust snow blood
+horse.coat.grey_dapple,"Horse coat, dapple grey",animals,horse_coats,fur,"dapple, dappled grey, grey horse, spotted grey",Grey with round lighter rings over the body,1,,wet mud dust snow blood
+horse.coat.grey_steel,"Horse coat, steel grey",animals,horse_coats,fur,"steel grey, iron grey, dark grey",Even dark grey mix of black and white hairs,5,,wet mud dust snow blood
+horse.coat.grey_fleabitten,"Horse coat, flea-bitten grey",animals,horse_coats,fur,"fleabitten, speckled grey, freckled white",White coat with small red-brown flecks,5,,wet mud dust snow blood
+horse.coat.white,"Horse coat, white",animals,horse_coats,fur,"white horse, pale, snow white","Pink-skinned white coat, slightly warm",5,,wet mud dust snow blood
+horse.coat.palomino,"Horse coat, palomino",animals,horse_coats,fur,"palomino, golden horse, yellow horse","Gold body, near-white mane and tail",1,,wet mud dust snow blood
+horse.coat.buckskin,"Horse coat, buckskin",animals,horse_coats,fur,"buckskin, tan horse, yellow with black",Tan-gold body with black points,5,,wet mud dust snow blood
+horse.coat.dun,"Horse coat, dun",animals,horse_coats,fur,"dun, yellow dun, dorsal stripe",Sandy body with a dark stripe down the back,5,,wet mud dust snow blood
+horse.coat.red_dun,"Horse coat, red dun",animals,horse_coats,fur,"red dun, peach dun, stripe","Pale peach body, darker red stripe and legs",5,,wet mud dust snow blood
+horse.coat.grullo,"Horse coat, grullo",animals,horse_coats,fur,"grullo, mouse grey, blue dun, slate","Smoky blue-grey body, black head and stripe",5,,wet mud dust snow blood
+horse.coat.cremello,"Horse coat, cremello",animals,horse_coats,fur,"cremello, cream, double cream","Pale cream all over, pink skin showing",5,,wet mud dust snow blood
+horse.coat.perlino,"Horse coat, perlino",animals,horse_coats,fur,"perlino, cream with rust points",Cream body with slightly darker rusty legs,5,,wet mud dust snow blood
+horse.coat.champagne,"Horse coat, champagne",animals,horse_coats,fur,"champagne, gold sheen, metallic coat","Pale gold with a strong metallic sheen, freckled skin",5,,wet mud dust snow blood
+horse.coat.silver_dapple,"Horse coat, silver dapple",animals,horse_coats,fur,"silver dapple, chocolate silver, flaxen black",Chocolate body with dapples and a silver mane,5,,wet mud dust snow blood
+horse.coat.chocolate,"Horse coat, chocolate",animals,horse_coats,fur,"chocolate, dark liver, cocoa",Flat dark cocoa brown,5,,wet mud dust snow blood
+horse.coat.sooty_bay,"Horse coat, sooty bay",animals,horse_coats,fur,"sooty, smutty bay, dark top",Bay body darkened with black hairs along the top,5,,wet mud dust snow blood
+horse.coat.mealy_bay,"Horse coat, mealy bay",animals,horse_coats,fur,"mealy, pale belly, faded bay",Bay with pale oat-coloured muzzle and belly,5,,wet mud dust snow blood
+horse.coat.red_roan,"Horse coat, red roan",animals,horse_coats,fur,"red roan, strawberry roan, pink roan","Chestnut mixed evenly with white hairs, solid head",5,,wet mud dust snow blood
+horse.coat.blue_roan,"Horse coat, blue roan",animals,horse_coats,fur,"blue roan, black roan, grey blue","Black mixed with white hairs, reads blue-grey",5,,wet mud dust snow blood
+horse.coat.bay_roan,"Horse coat, bay roan",animals,horse_coats,fur,"bay roan, red roan with black","Bay mixed with white, black legs",5,,wet mud dust snow blood
+horse.coat.rabicano,"Horse coat, rabicano",animals,horse_coats,fur,"rabicano, ticked, white flank hairs",Solid coat with white ticking on flanks and tail root,5,,wet mud dust snow blood
+horse.coat.tobiano_bay,"Horse coat, bay and white patched",animals,horse_coats,fur,"pinto, paint, patched, tobiano, bay",Large rounded white patches over a bay coat,5,,wet mud dust snow blood
+horse.coat.tobiano_black,"Horse coat, black and white patched",animals,horse_coats,fur,"pinto, piebald, paint, patched",Black with large rounded white patches,5,,wet mud dust snow blood
+horse.coat.overo_chestnut,"Horse coat, jagged-patch chestnut",animals,horse_coats,fur,"overo, frame, paint, jagged",Chestnut with jagged white patches on the sides,5,,wet mud dust snow blood
+horse.coat.sabino,"Horse coat, sabino",animals,horse_coats,fur,"sabino, white legs, speckled belly",High white legs and blaze with ragged speckled edges,5,,wet mud dust snow blood
+horse.coat.splash,"Horse coat, splash white",animals,horse_coats,fur,"splash, dipped in paint, white belly",White legs and belly as if dipped from below,5,,wet mud dust snow blood
+horse.coat.spotted_leopard,"Horse coat, leopard spotted",animals,horse_coats,fur,"leopard, spotted horse, spots, dalmatian horse",White coat covered with dark oval spots,5,,wet mud dust snow blood
+horse.coat.spotted_blanket,"Horse coat, spotted blanket",animals,horse_coats,fur,"blanket, spotted rump, spots",Solid front with a spotted white rump,5,,wet mud dust snow blood
+horse.coat.spotted_snowflake,"Horse coat, snowflake",animals,horse_coats,fur,"snowflake, white flecks, speckled dark",Dark coat with small white flecks,5,,wet mud dust snow blood
+horse.coat.brindle,"Horse coat, brindle",animals,horse_coats,fur,"brindle, striped horse, tiger stripe",Faint dark vertical stripes over a dun base,5,,wet mud dust snow blood
+horse.coat.winter_shaggy,"Horse coat, winter shaggy",animals,horse_coats,fur,"winter coat, shaggy, fluffy, pony","Long dull winter hair, softer outline",5,,wet mud dust snow blood
+horse.mane.black,"Horse mane, black",animals,horse_parts,hair,"mane, tail, black hair, horsehair",Coarse heavy black strands with blue highlight,5,,wet mud dust snow
+horse.mane.flaxen,"Horse mane, flaxen",animals,horse_parts,hair,"flaxen, blond mane, cream tail",Coarse pale cream strands,5,,wet mud dust snow
+horse.mane.white,"Horse mane, white",animals,horse_parts,hair,"white mane, grey tail, silver",White strands with a cool sheen,5,,wet mud dust snow
+horse.mane.red,"Horse mane, red",animals,horse_parts,hair,"red mane, chestnut tail, ginger",Coarse copper strands,5,,wet mud dust snow
+horse.hoof.dark,"Horse hoof, dark",animals,horse_parts,keratin,"hoof, black hoof, horn",Dark grey-black horn with fine vertical lines,5,,wet mud dust snow
+horse.hoof.pale,"Horse hoof, pale",animals,horse_parts,keratin,"white hoof, pale horn, cream","Cream horn, slightly translucent at edges",5,,wet mud dust snow
+horse.hoof.striped,"Horse hoof, striped",animals,horse_parts,keratin,"striped hoof, banded",Dark and pale vertical bands,5,,wet mud dust snow
+horse.muzzle.dark,"Horse muzzle skin, dark",animals,horse_parts,hide,"muzzle, nose, lips, soft nose",Velvety dark grey skin with sparse whiskers,5,,wet mud dust snow
+horse.muzzle.pink,"Horse muzzle skin, pink",animals,horse_parts,hide,"pink nose, pale muzzle, snip",Soft pink skin with grey freckles,5,,wet mud dust snow
+horse.eye.brown,"Horse eye, dark brown",animals,horse_parts,eye,"horse eye, animal eye, dark eye",Large dark wet eye with a bar-shaped pupil,5,,wet mud dust snow
+cattle.coat.black,"Cattle hide, black",animals,livestock,fur,"cow, bull, black cattle, beef","Short dense black hair, slight sheen",1,,wet mud dust snow blood
+cattle.coat.red,"Cattle hide, red",animals,livestock,fur,"red cow, red cattle, brown cow",Deep red-brown short hair,5,,wet mud dust snow blood
+cattle.coat.red_whiteface,"Cattle hide, red with white face",animals,livestock,fur,"white face, red and white, ranch cattle","Red body, white face, belly and legs",5,,wet mud dust snow blood
+cattle.coat.pied,"Cattle hide, black and white patched",animals,livestock,fur,"dairy cow, holstein-like, patched cow, milk cow",Sharp black and white patches,5,,wet mud dust snow blood
+cattle.coat.dun,"Cattle hide, dun",animals,livestock,fur,"dun cow, tan cattle, fawn",Pale fawn body with darker legs,5,,wet mud dust snow blood
+cattle.coat.speckled,"Cattle hide, speckled longhorn",animals,livestock,fur,"speckled, mottled, longhorn, roan cow","Mottled red, white and brown speckles",5,,wet mud dust snow blood
+cattle.coat.shaggy_red,"Cattle hide, long shaggy red",animals,livestock,fur,"shaggy, highland, long hair, fluffy cow",Long wavy ginger hair with a fringe,5,,wet mud dust snow blood
+cattle.coat.cream,"Cattle hide, cream",animals,livestock,fur,"white cow, cream cattle, pale ox","Off-white short coat, pink nose",5,,wet mud dust snow blood
+cattle.coat.brindle,"Cattle hide, brindle",animals,livestock,fur,"brindle cow, striped, tiger cow",Dark streaks over brown,5,,wet mud dust snow blood
+sheep.wool.white,"Sheep wool, white",animals,livestock,fur,"sheep, fleece, wool, lamb",Thick crimped cream-white curls,1,,wet mud dust snow blood
+sheep.wool.black,"Sheep wool, black",animals,livestock,fur,"black sheep, dark fleece",Dark brown-black crimped curls,5,,wet mud dust snow blood
+sheep.wool.brown,"Sheep wool, brown",animals,livestock,fur,"brown sheep, moorit, fleece",Warm brown crimped fleece,5,,wet mud dust snow blood
+sheep.wool.grey,"Sheep wool, grey",animals,livestock,fur,"grey sheep, silver fleece",Mixed grey and white curls,5,,wet mud dust snow blood
+sheep.skin.shorn,"Sheep, freshly shorn",animals,livestock,fur,"shorn, clipped sheep, short wool",Very short pale fleece showing pink skin,5,,wet mud dust snow blood
+sheep.face.black,"Sheep face, black",animals,livestock,fur,"black face, sheep head",Short glossy black hair on face and legs,5,,wet mud dust snow blood
+goat.coat.white,"Goat coat, white",animals,livestock,fur,"goat, white goat, billy","Straight white hair, longer at the beard",5,,wet mud dust snow blood
+goat.coat.brown,"Goat coat, brown",animals,livestock,fur,"brown goat, tan goat",Short brown hair with a dark stripe,5,,wet mud dust snow blood
+goat.coat.black,"Goat coat, black",animals,livestock,fur,"black goat, dark goat",Glossy black straight hair,5,,wet mud dust snow blood
+goat.coat.pied,"Goat coat, patched",animals,livestock,fur,"pied goat, spotted goat, patchy",White and brown patches,5,,wet mud dust snow blood
+goat.coat.long,"Goat coat, long silky",animals,livestock,fur,"long hair goat, silky, mohair-like, angora-like",Long silky white locks,5,,wet mud dust snow blood
+pig.skin.pink,"Pig skin, pink",animals,livestock,hide,"pig, hog, pink pig, swine",Pink skin with sparse pale bristles,5,,wet mud dust snow blood
+pig.skin.black,"Pig skin, black",animals,livestock,hide,"black pig, dark hog","Dark grey skin, black bristles",5,,wet mud dust snow blood
+pig.skin.spotted,"Pig skin, spotted",animals,livestock,hide,"spotted pig, patched hog",Pink skin with black blotches,5,,wet mud dust snow blood
+pig.skin.belted,"Pig skin, belted",animals,livestock,hide,"belted pig, saddleback, black with band",Black with a white band over the shoulders,5,,wet mud dust snow blood
+donkey.coat.grey,"Donkey coat, grey",animals,livestock,fur,"donkey, burro, ass, grey donkey",Dull grey coat with a cross on the shoulders,5,,wet mud dust snow blood
+donkey.coat.brown,"Donkey coat, brown",animals,livestock,fur,"brown donkey, burro",Brown with pale muzzle and eye rings,5,,wet mud dust snow blood
+mule.coat.bay,"Mule coat, bay",animals,livestock,fur,"mule, pack animal, bay mule","Short bay coat, coarse mane",5,,wet mud dust snow blood
+llama.wool.cream,"Llama wool, cream",animals,livestock,fur,"llama, alpaca, camelid, fleece",Dense soft cream fleece,5,,wet mud dust snow blood
+llama.wool.brown,"Llama wool, brown",animals,livestock,fur,"brown llama, alpaca brown",Dense warm brown fleece,5,,wet mud dust snow blood
+rabbit.fur.domestic,"Rabbit fur, domestic white",animals,livestock,fur,"pet rabbit, bunny, white rabbit",Very soft dense white fur,5,,wet mud dust snow blood
+dog.coat.tan,"Dog coat, tan short",animals,dogs_cats,fur,"dog, hound, tan dog, short hair",Short smooth tan coat,1,,wet mud dust snow blood
+dog.coat.black,"Dog coat, black short",animals,dogs_cats,fur,"black dog, short coat, glossy",Short glossy black,5,,wet mud dust snow blood
+dog.coat.black_tan,"Dog coat, black and tan",animals,dogs_cats,fur,"black and tan, rottweiler-like, hound","Black with tan eyebrows, chest and legs",5,,wet mud dust snow blood
+dog.coat.brindle,"Dog coat, brindle",animals,dogs_cats,fur,"brindle dog, striped dog",Dark stripes over fawn,5,,wet mud dust snow blood
+dog.coat.merle,"Dog coat, merle",animals,dogs_cats,fur,"merle, blue merle, marbled, sheepdog",Grey-blue marbled with black patches,5,,wet mud dust snow blood
+dog.coat.spotted,"Dog coat, spotted white",animals,dogs_cats,fur,"spotted dog, dalmatian-like, spots",White short coat with black spots,5,,wet mud dust snow blood
+dog.coat.golden_long,"Dog coat, golden long",animals,dogs_cats,fur,"golden, retriever-like, long hair, feathered",Long wavy gold coat with feathering,5,,wet mud dust snow blood
+dog.coat.sable,"Dog coat, sable",animals,dogs_cats,fur,"sable, wolfish, shepherd-like","Tan coat tipped with black, dark saddle",5,,wet mud dust snow blood
+dog.coat.white_fluffy,"Dog coat, white fluffy",animals,dogs_cats,fur,"white dog, fluffy, spitz, sled dog",Dense white double coat,5,,wet mud dust snow blood
+dog.coat.wiry_grey,"Dog coat, wiry grey",animals,dogs_cats,fur,"wire hair, terrier, scruffy",Coarse wiry grey-brown coat,5,,wet mud dust snow blood
+dog.coat.curly_brown,"Dog coat, curly brown",animals,dogs_cats,fur,"curly, poodle-like, water dog",Tight brown curls,5,,wet mud dust snow blood
+dog.coat.tricolour,"Dog coat, tricolour",animals,dogs_cats,fur,"tricolor, beagle-like, hound","White, tan and black patches",5,,wet mud dust snow blood
+cat.coat.tabby_brown,"Cat coat, brown tabby",animals,dogs_cats,fur,"cat, tabby, striped cat, kitten",Brown with dark stripes and an M on the brow,1,,wet mud dust snow blood
+cat.coat.orange,"Cat coat, orange tabby",animals,dogs_cats,fur,"ginger cat, orange cat, marmalade",Orange with soft darker stripes,5,,wet mud dust snow blood
+cat.coat.black,"Cat coat, black",animals,dogs_cats,fur,"black cat, glossy cat","Short glossy black, rusty in sunlight",5,,wet mud dust snow blood
+cat.coat.white,"Cat coat, white",animals,dogs_cats,fur,"white cat, snow cat",Fine pure white fur,5,,wet mud dust snow blood
+cat.coat.tuxedo,"Cat coat, black and white",animals,dogs_cats,fur,"tuxedo cat, bicolour cat",Black with white chest and paws,5,,wet mud dust snow blood
+cat.coat.calico,"Cat coat, calico",animals,dogs_cats,fur,"calico, tortoiseshell, patched cat",White with orange and black patches,5,,wet mud dust snow blood
+cat.coat.tortoiseshell,"Cat coat, tortoiseshell",animals,dogs_cats,fur,"tortie, mottled cat",Mottled black and orange,5,,wet mud dust snow blood
+cat.coat.grey,"Cat coat, smoky grey",animals,dogs_cats,fur,"blue cat, grey cat, silver",Plush even blue-grey,5,,wet mud dust snow blood
+cat.coat.pointed,"Cat coat, colour-pointed",animals,dogs_cats,fur,"pointed cat, siamese-like, cream cat","Cream body with dark face, ears and tail",5,,wet mud dust snow blood
+cat.coat.longhair,"Cat coat, long fluffy",animals,dogs_cats,fur,"long hair cat, fluffy, persian-like",Long soft fur with a ruff,5,,wet mud dust snow blood
+deer.coat.brown,"Deer coat, summer brown",animals,wild_mammals,fur,"deer, doe, buck, whitetail, venison","Red-brown short coat, white belly and tail",1,,wet mud dust snow blood
+deer.coat.winter,"Deer coat, winter grey",animals,wild_mammals,fur,"winter deer, grey deer, mule deer",Thick grey-brown hollow hair,6,,wet mud dust snow blood
+deer.coat.fawn,"Deer coat, spotted fawn",animals,wild_mammals,fur,"fawn, baby deer, spots",Red-brown with rows of white spots,6,,wet mud dust snow blood
+elk.coat.tan,"Elk coat, tan",animals,wild_mammals,fur,"elk, wapiti, stag, red deer","Tan body, dark brown neck and legs",6,,wet mud dust snow blood
+moose.coat.dark,"Moose coat, dark brown",animals,wild_mammals,fur,"moose, dark brown, long legs",Coarse near-black brown hair,6,,wet mud dust snow blood
+caribou.coat.grey,"Caribou coat, grey-white",animals,wild_mammals,fur,"caribou, reindeer, tundra",Grey-brown with a white mane and rump,6,,wet mud dust snow blood
+pronghorn.coat,"Pronghorn coat, tan and white",animals,wild_mammals,fur,"pronghorn, antelope, plains",Tan with bold white bands on throat and belly,6,,wet mud dust snow blood
+bighorn.coat,"Mountain sheep coat, grey-brown",animals,wild_mammals,fur,"bighorn, mountain sheep, ram",Grey-brown with white rump patch,6,,wet mud dust snow blood
+mountain_goat.coat,"Mountain goat coat, shaggy white",animals,wild_mammals,fur,"mountain goat, white goat, cliff",Long shaggy yellow-white hair,6,,wet mud dust snow blood
+bison.coat,"Bison coat, shaggy brown",animals,wild_mammals,fur,"bison, buffalo, plains, woolly","Woolly dark brown hump and mane, short hind coat",6,,wet mud dust snow blood
+bear.coat.brown,"Bear fur, brown",animals,wild_mammals,fur,"bear, brown bear, grizzly",Long coarse dark brown fur,1,,wet mud dust snow blood
+bear.coat.grizzled,"Bear fur, grizzled",animals,wild_mammals,fur,"grizzly, silvertip, frosted bear",Brown with pale silver tips,6,,wet mud dust snow blood
+bear.coat.black,"Bear fur, black",animals,wild_mammals,fur,"black bear, cub","Glossy black, tan muzzle",6,,wet mud dust snow blood
+bear.coat.cinnamon,"Bear fur, cinnamon",animals,wild_mammals,fur,"cinnamon bear, red bear",Warm red-brown long fur,6,,wet mud dust snow blood
+bear.coat.polar,"Bear fur, polar white",animals,wild_mammals,fur,"polar bear, white bear, ice bear","Yellow-white thick fur, black skin under",6,,wet mud dust snow blood
+wolf.coat.grey,"Wolf fur, grey",animals,wild_mammals,fur,"wolf, grey wolf, timber wolf",Grey agouti with tan legs and pale belly,1,,wet mud dust snow blood
+wolf.coat.white,"Wolf fur, white",animals,wild_mammals,fur,"white wolf, arctic wolf",Dense cream-white fur,6,,wet mud dust snow blood
+wolf.coat.black,"Wolf fur, black",animals,wild_mammals,fur,"black wolf, dark wolf","Charcoal black, greying at the muzzle",6,,wet mud dust snow blood
+coyote.coat,Coyote fur,animals,wild_mammals,fur,"coyote, prairie wolf, jackal",Tawny grey with rusty legs,6,,wet mud dust snow blood
+fox.coat.red,"Fox fur, red",animals,wild_mammals,fur,"fox, red fox, vixen","Bright orange-red, white chest, black socks",1,,wet mud dust snow blood
+fox.coat.grey,"Fox fur, grey",animals,wild_mammals,fur,"grey fox, silver fox",Salt-and-pepper grey with rust sides,6,,wet mud dust snow blood
+fox.coat.arctic,"Fox fur, arctic white",animals,wild_mammals,fur,"arctic fox, white fox, snow fox",Very dense pure white winter fur,6,,wet mud dust snow blood
+fox.coat.silver,"Fox fur, silver-black",animals,wild_mammals,fur,"silver fox, black fox",Black fur tipped with silver,6,,wet mud dust snow blood
+cougar.coat,"Big cat fur, tawny",animals,wild_mammals,fur,"cougar, puma, mountain lion, panther","Short plain tawny coat, pale belly",6,,wet mud dust snow blood
+lynx.coat,"Lynx fur, spotted grey",animals,wild_mammals,fur,"lynx, bobcat, wildcat, spotted",Grey-tan with faint spots and ear tufts,6,,wet mud dust snow blood
+tiger.coat,Tiger fur,animals,wild_mammals,fur,"tiger, striped cat, big cat","Orange with black vertical stripes, white belly",6,,wet mud dust snow blood
+lion.coat,Lion fur,animals,wild_mammals,fur,"lion, lioness, golden cat",Short tawny coat,6,,wet mud dust snow blood
+lion.mane,Lion mane,animals,wild_mammals,hair,"mane, lion mane, shaggy",Long dark gold to brown mane,6,,wet mud dust snow blood
+leopard.coat,"Leopard fur, rosettes",animals,wild_mammals,fur,"leopard, jaguar, spotted cat, rosettes",Gold with black rosette spots,6,,wet mud dust snow blood
+cheetah.coat,"Cheetah fur, spotted",animals,wild_mammals,fur,"cheetah, solid spots",Pale gold with solid round spots,6,,wet mud dust snow blood
+zebra.coat,Zebra coat,animals,wild_mammals,fur,"zebra, striped horse, stripes",Bold black and white stripes,6,,wet mud dust snow blood
+giraffe.coat,Giraffe coat,animals,wild_mammals,fur,"giraffe, patchwork, net pattern",Brown patches split by cream lines,6,,wet mud dust snow blood
+camel.coat,Camel coat,animals,wild_mammals,fur,"camel, dromedary, desert",Dusty sand-coloured woolly hair,6,,wet mud dust snow blood
+kangaroo.coat,Kangaroo fur,animals,wild_mammals,fur,"kangaroo, wallaby, marsupial",Short grey-red soft fur,6,,wet mud dust snow blood
+monkey.coat.brown,"Monkey fur, brown",animals,wild_mammals,fur,"monkey, macaque, primate","Grey-brown fur, pinkish face",6,,wet mud dust snow blood
+ape.coat.black,"Ape fur, black",animals,wild_mammals,fur,"ape, gorilla, chimp, primate","Coarse black hair, silver on the back",6,,wet mud dust snow blood
+rabbit.fur.wild,"Rabbit fur, wild brown",animals,wild_mammals,fur,"rabbit, cottontail, bunny","Brown agouti, white tail",6,,wet mud dust snow blood
+hare.fur.winter,"Hare fur, winter white",animals,wild_mammals,fur,"hare, snowshoe, white rabbit",Pure white with dark ear tips,6,,wet mud dust snow blood
+squirrel.fur.grey,"Squirrel fur, grey",animals,wild_mammals,fur,"squirrel, grey squirrel","Grey with a white belly, bushy tail",6,,wet mud dust snow blood
+squirrel.fur.red,"Squirrel fur, red",animals,wild_mammals,fur,"red squirrel, chipmunk-like",Russet with ear tufts,6,,wet mud dust snow blood
+chipmunk.fur,"Chipmunk fur, striped",animals,wild_mammals,fur,"chipmunk, striped rodent",Brown with black and white back stripes,6,,wet mud dust snow blood
+beaver.fur,Beaver fur,animals,wild_mammals,fur,"beaver, pelt, trapping","Dense glossy dark brown, waterproof sheen",6,,wet mud dust snow blood
+otter.fur,Otter fur,animals,wild_mammals,fur,"otter, river otter, wet fur",Sleek dark brown with a silvery throat,6,,wet mud dust snow blood
+raccoon.fur,Raccoon fur,animals,wild_mammals,fur,"raccoon, masked, ringtail",Grey with a black mask and ringed tail,6,,wet mud dust snow blood
+skunk.fur,Skunk fur,animals,wild_mammals,fur,"skunk, polecat, striped",Black with two white back stripes,6,,wet mud dust snow blood
+badger.fur,Badger fur,animals,wild_mammals,fur,"badger, striped face, digger","Grizzled grey back, black and white face stripes",6,,wet mud dust snow blood
+opossum.fur,Opossum fur,animals,wild_mammals,fur,"opossum, possum",Grizzled grey with a pale face,6,,wet mud dust snow blood
+mouse.fur,Mouse fur,animals,wild_mammals,fur,"mouse, field mouse, rodent",Fine short grey-brown fur,6,,wet mud dust snow blood
+rat.fur,Rat fur,animals,wild_mammals,fur,"rat, sewer rat, vermin",Coarse grey-brown fur,6,,wet mud dust snow blood
+boar.coat,Wild boar bristles,animals,wild_mammals,fur,"boar, wild pig, hog, bristles",Coarse dark grey-brown bristles over dark skin,6,,wet mud dust snow blood
+seal.fur,"Seal fur, spotted grey",animals,wild_mammals,fur,"seal, harbour seal, pinniped","Sleek grey with dark spots, wet look",6,,wet mud dust snow blood
+sea_otter.fur,Sea otter fur,animals,wild_mammals,fur,"sea otter, kelp, dense fur","Very dense brown fur, pale head",6,,wet mud dust snow blood
+mink.fur,Mink fur,animals,wild_mammals,fur,"mink, weasel, stoat, ermine, pelt",Glossy dark chocolate fur,6,,wet mud dust snow blood
+ermine.fur,"Ermine fur, winter white",animals,wild_mammals,fur,"ermine, stoat, white weasel",White with a black tail tip,6,,wet mud dust snow blood
+elephant.hide,Elephant hide,animals,hides,hide,"elephant, grey skin, wrinkled",Deeply wrinkled dry grey skin,6,,wet mud dust blood
+rhino.hide,Rhinoceros hide,animals,hides,hide,"rhino, armour skin, thick",Thick grey plates and folds,6,,wet mud dust blood
+hippo.hide,Hippopotamus hide,animals,hides,hide,"hippo, pink grey, wet",Smooth grey with pinkish creases,6,,wet mud dust blood
+walrus.hide,Walrus hide,animals,hides,hide,"walrus, pinniped, wrinkled",Lumpy cinnamon-pink skin with sparse bristles,6,,wet mud dust blood
+dolphin.skin,Dolphin skin,animals,hides,hide,"dolphin, porpoise, smooth grey","Smooth rubbery grey, paler belly",6,,wet mud dust blood
+orca.skin,Orca skin,animals,hides,hide,"orca, killer whale, black and white",Glossy black with white patches,6,,wet mud dust blood
+whale.skin,"Whale skin, barnacled",animals,hides,hide,"whale, humpback, barnacles",Dark grey with pale scarred barnacle clusters,6,,wet mud dust blood
+armadillo.shell,Armadillo shell,animals,hides,keratin,"armadillo, banded shell, armour","Leathery banded plates, tan grey",6,,wet mud dust blood
+bat.wing,Bat wing membrane,animals,hides,thin,"bat, wing, membrane, leathery","Thin dark brown membrane, light shows through",6,,wet mud dust blood
+antler.bone,"Antler, bone",animals,animal_parts,keratin,"antler, rack, horns, deer antler","Ridged pale brown bone, polished tips",1,,wet mud dust blood
+antler.velvet,Antler in velvet,animals,animal_parts,fur,"velvet, growing antler, soft antler",Soft fuzzy brown skin over the antler,6,,wet mud dust blood
+horn.dark,"Horn, dark",animals,animal_parts,keratin,"horn, buffalo horn, black horn","Smooth near-black horn, faint growth rings",6,,wet mud dust blood
+horn.pale_ringed,"Horn, pale ringed",animals,animal_parts,keratin,"ram horn, ringed, curled horn",Cream horn with deep ridges,6,,wet mud dust blood
+horn.cattle,"Horn, cattle",animals,animal_parts,keratin,"cow horn, longhorn horn, powder horn","Cream fading to dark tips, polished",6,,wet mud dust blood
+ivory.tusk,Ivory tusk,animals,animal_parts,keratin,"ivory, tusk, walrus tusk","Warm cream, very fine grain lines",6,,wet mud dust blood
+bone.fresh,"Bone, fresh",animals,animal_parts,keratin,"bone, rib, skeleton",Off-white bone with pinkish tint,6,,wet mud dust blood
+bone.bleached,"Bone, sun-bleached",animals,animal_parts,keratin,"skull, bleached bone, desert skull","Chalky white, small cracks",6,,wet mud dust blood
+claw.dark,"Claw, dark",animals,animal_parts,keratin,"claw, talon, nail, paw",Glossy dark grey keratin,6,,wet mud dust blood
+beak.yellow,"Beak, yellow",animals,animal_parts,keratin,"beak, bill, eagle beak",Waxy yellow keratin,6,,wet mud dust blood
+beak.black,"Beak, black",animals,animal_parts,keratin,"crow beak, black bill",Glossy black keratin,6,,wet mud dust blood
+turtle.shell,"Turtle shell, patterned",animals,animal_parts,keratin,"turtle, tortoise, carapace, shell",Plates with radiating brown and amber bands,6,,wet mud dust blood
+quill.porcupine,Porcupine quills,animals,animal_parts,keratin,"porcupine, quills, spines",Cream quills with dark tips,6,,wet mud dust blood
+paw.pad,Paw pads,animals,animal_parts,hide,"paw, pads, dog paw",Rough dark leathery pads,6,,wet mud dust blood
+nose.dog,Dog nose,animals,animal_parts,hide,"nose, wet nose, snout","Pebbled black leather, wet shine",6,,wet mud dust blood
+animal.whisker,Whiskers,animals,animal_parts,hair,"whiskers, vibrissae, cat whiskers",Stiff fine white or black strands,6,,wet mud dust blood
+crow.feather,Crow feathers,animals,birds,feather,"crow, black bird, feathers",Matte black with a faint purple sheen,1,,wet mud dust snow blood
+raven.feather,Raven feathers,animals,birds,feather,"raven, glossy black, carrion bird","Glossy blue-black, strong sheen",7,,wet mud dust snow blood
+magpie.feather,Magpie feathers,animals,birds,feather,"magpie, black and white bird",Black and white with green-blue tail sheen,7,,wet mud dust snow blood
+pigeon.feather,Pigeon feathers,animals,birds,feather,"pigeon, dove, city bird, grey",Grey with green-purple neck shimmer,7,,wet mud dust snow blood
+dove.feather,"Dove feathers, pale",animals,birds,feather,"dove, mourning dove, tan bird",Soft tan-grey with small black spots,7,,wet mud dust snow blood
+sparrow.feather,Sparrow feathers,animals,birds,feather,"sparrow, small bird, brown bird",Streaky brown and grey,7,,wet mud dust snow blood
+robin.feather,"Songbird feathers, red breast",animals,birds,feather,"robin, red breast, songbird","Grey-brown back, orange-red breast",7,,wet mud dust snow blood
+bluejay.feather,"Jay feathers, blue",animals,birds,feather,"jay, blue bird, crested",Bright blue with black bars and white tips,7,,wet mud dust snow blood
+cardinal.feather,"Songbird feathers, red",animals,birds,feather,"red bird, cardinal-like, crimson","Bright red all over, dark face",7,,wet mud dust snow blood
+goldfinch.feather,"Finch feathers, yellow",animals,birds,feather,"finch, yellow bird, canary",Lemon yellow with black wings,7,,wet mud dust snow blood
+eagle.feather.brown,"Eagle feathers, brown",animals,birds,feather,"eagle, golden eagle, raptor, bird of prey",Dark brown with golden neck feathers,1,,wet mud dust snow blood
+eagle.feather.whitehead,"Eagle feathers, white head",animals,birds,feather,"bald eagle, sea eagle, white head","Dark brown body, white head and tail",7,,wet mud dust snow blood
+hawk.feather,"Hawk feathers, red tail",animals,birds,feather,"hawk, buzzard, red tail","Brown back, pale streaked breast, rusty tail",7,,wet mud dust snow blood
+owl.feather.barred,"Owl feathers, barred",animals,birds,feather,"owl, barred owl, brown owl","Soft brown and cream bars, velvety",7,,wet mud dust snow blood
+owl.feather.snowy,"Owl feathers, snowy",animals,birds,feather,"snowy owl, white owl",White with scattered black flecks,7,,wet mud dust snow blood
+vulture.feather,Vulture feathers,animals,birds,feather,"vulture, buzzard, carrion","Dull black-brown, bare head",7,,wet mud dust snow blood
+turkey.feather,"Turkey feathers, bronze",animals,birds,feather,"turkey, wild turkey, gobbler",Bronze with copper-green shimmer and barred tail,7,,wet mud dust snow blood
+chicken.feather.white,"Chicken feathers, white",animals,birds,feather,"chicken, hen, white hen",Clean white soft feathers,7,,wet mud dust snow blood
+chicken.feather.red,"Chicken feathers, red-brown",animals,birds,feather,"hen, brown hen, farm bird",Rusty red-brown,7,,wet mud dust snow blood
+rooster.feather,Rooster feathers,animals,birds,feather,"rooster, cockerel, tail feathers","Copper neck, glossy green-black tail",7,,wet mud dust snow blood
+duck.feather.drake,"Duck feathers, green head",animals,birds,feather,"mallard, drake, duck","Iridescent green head, grey body, brown chest",7,,wet mud dust snow blood
+duck.feather.hen,"Duck feathers, brown",animals,birds,feather,"female duck, brown duck",Mottled brown and buff,7,,wet mud dust snow blood
+goose.feather,"Goose feathers, grey",animals,birds,feather,"goose, grey goose, wild goose",Grey-brown with pale edges,7,,wet mud dust snow blood
+swan.feather,Swan feathers,animals,birds,feather,"swan, white bird","Pure white, dense and soft",7,,wet mud dust snow blood
+heron.feather,Heron feathers,animals,birds,feather,"heron, crane, wading bird",Blue-grey with black crest,7,,wet mud dust snow blood
+egret.feather,Egret feathers,animals,birds,feather,"egret, white heron, plume",White with wispy long plumes,7,,wet mud dust snow blood
+flamingo.feather,Flamingo feathers,animals,birds,feather,"flamingo, pink bird","Salmon pink, deeper on the wings",7,,wet mud dust snow blood
+pelican.feather,Pelican feathers,animals,birds,feather,"pelican, sea bird",Grey-white with a yellow-tinged head,7,,wet mud dust snow blood
+parrot.feather.green,"Parrot feathers, green",animals,birds,feather,"parrot, green bird, parakeet",Bright leaf green with blue wing edges,7,,wet mud dust snow blood
+macaw.feather.red,"Macaw feathers, red",animals,birds,feather,"macaw, red parrot, tropical",Scarlet with yellow and blue wing bands,7,,wet mud dust snow blood
+macaw.feather.blue,"Macaw feathers, blue and yellow",animals,birds,feather,"blue macaw, yellow parrot","Turquoise back, golden-yellow front",7,,wet mud dust snow blood
+peacock.feather,Peacock feathers,animals,birds,feather,"peacock, eye feather, train",Bronze-green with blue eye spots,7,,wet mud dust snow blood
+pheasant.feather,Pheasant feathers,animals,birds,feather,"pheasant, game bird, copper","Copper with black scale marks, long tail",7,,wet mud dust snow blood
+quail.feather,Quail feathers,animals,birds,feather,"quail, partridge, grouse",Speckled grey-brown with white scallops,7,,wet mud dust snow blood
+hummingbird.feather,Hummingbird feathers,animals,birds,feather,"hummingbird, tiny bird, iridescent",Metallic green with a ruby throat,7,,wet mud dust snow blood
+gull.feather,Gull feathers,animals,birds,feather,"gull, seagull, sea bird",White with pale grey wings and black tips,7,,wet mud dust snow blood
+penguin.feather,Penguin feathers,animals,birds,feather,"penguin, tuxedo bird, flightless","Black back, white front, short and dense",7,,wet mud dust snow blood
+ostrich.feather,Ostrich feathers,animals,birds,feather,"ostrich, emu, plume, large bird",Loose black plumes with white tips,7,,wet mud dust snow blood
+kingfisher.feather,Kingfisher feathers,animals,birds,feather,"kingfisher, blue bird, river bird","Electric blue back, orange breast",7,,wet mud dust snow blood
+woodpecker.feather,Woodpecker feathers,animals,birds,feather,"woodpecker, red cap, barred","Black and white bars, red crown",7,,wet mud dust snow blood
+quill.feather,Writing quill,animals,birds,feather,"quill, pen, feather pen","Single large white flight feather, clear shaft",7,,wet mud dust snow blood
+snake.rattle,"Snake scales, diamond-back",animals,reptiles_amphibians,scales,"rattlesnake, diamond back, viper, snake","Tan with dark-edged diamonds, keeled scales",1,,wet mud dust blood
+snake.garter,"Snake scales, striped",animals,reptiles_amphibians,scales,"garter snake, striped snake",Dark green with three yellow stripes,7,,wet mud dust blood
+snake.black,"Snake scales, glossy black",animals,reptiles_amphibians,scales,"black snake, racer, rat snake","Smooth glossy black, white chin",7,,wet mud dust blood
+snake.banded,"Snake scales, banded red",animals,reptiles_amphibians,scales,"banded snake, coral, king snake, red yellow black","Red, black and yellow rings",7,,wet mud dust blood
+snake.python,"Snake scales, blotched",animals,reptiles_amphibians,scales,"python, constrictor, boa","Large tan and brown blotches, satin sheen",7,,wet mud dust blood
+snake.green,"Snake scales, green",animals,reptiles_amphibians,scales,"green snake, tree snake, vine snake",Bright smooth leaf green,7,,wet mud dust blood
+alligator.back,Alligator back,animals,reptiles_amphibians,scales,"alligator, gator, croc, swamp",Dark bumpy armoured scutes,7,,wet mud dust blood
+alligator.belly,Alligator belly,animals,reptiles_amphibians,scales,"gator belly, croc belly, cream scales",Cream rectangular scales in rows,7,,wet mud dust blood
+crocodile.skin,Crocodile skin,animals,reptiles_amphibians,scales,"crocodile, croc, saltwater",Olive-grey with dark bands,7,,wet mud dust blood
+iguana.skin,Iguana skin,animals,reptiles_amphibians,scales,"iguana, lizard, green lizard","Green with darker bands, fine bead scales",7,,wet mud dust blood
+chameleon.skin,Chameleon skin,animals,reptiles_amphibians,scales,"chameleon, colour change, lizard",Bright green with turquoise and yellow bands,7,,wet mud dust blood
+gecko.skin,Gecko skin,animals,reptiles_amphibians,scales,"gecko, small lizard, spotted lizard","Yellow with dark spots, velvety tiny scales",7,,wet mud dust blood
+beaded_lizard.skin,Beaded lizard skin,animals,reptiles_amphibians,scales,"beaded lizard, venomous lizard, desert",Black and orange bead-like scales,7,,wet mud dust blood
+horned_lizard.skin,Horned lizard skin,animals,reptiles_amphibians,scales,"horned lizard, desert lizard, spiky",Sandy with small spikes and dark spots,7,,wet mud dust blood
+tortoise.skin,Tortoise skin,animals,reptiles_amphibians,scales,"tortoise legs, scaly, turtle skin",Grey-brown heavy scales,7,,wet mud dust blood
+frog.green,"Frog skin, green",animals,reptiles_amphibians,hide,"frog, bullfrog, pond, wet",Wet green skin with dark blotches,1,,wet mud dust blood
+toad.warty,"Toad skin, warty",animals,reptiles_amphibians,hide,"toad, warts, bumpy",Dry brown bumpy skin,7,,wet mud dust blood
+frog.poison_blue,"Frog skin, bright blue",animals,reptiles_amphibians,hide,"poison frog, tropical frog, blue",Glossy bright blue with black spots,7,,wet mud dust blood
+salamander.spotted,"Salamander skin, spotted",animals,reptiles_amphibians,hide,"salamander, newt, spotted",Glossy black with yellow spots,7,,wet mud dust blood
+newt.orange,"Newt skin, orange",animals,reptiles_amphibians,hide,"newt, eft, orange",Matte orange with small red dots,7,,wet mud dust blood
+axolotl.skin,Axolotl skin,animals,reptiles_amphibians,hide,"axolotl, pink amphibian","Soft pale pink, slightly translucent",7,,wet mud dust blood
+trout.skin,Trout skin,animals,fish_sea,scales,"trout, rainbow trout, fish",Silver with pink band and black speckles,1,,wet blood
+salmon.skin,"Salmon skin, silver",animals,fish_sea,scales,"salmon, fish, silver fish","Bright silver, blue-green back",7,,wet blood
+salmon.spawning,"Salmon skin, spawning red",animals,fish_sea,scales,"spawning, red salmon","Deep red body, green head",7,,wet blood
+bass.skin,Bass skin,animals,fish_sea,scales,"bass, perch, green fish",Olive green with a dark side stripe,7,,wet blood
+perch.skin,Perch skin,animals,fish_sea,scales,"perch, striped fish","Yellow-green with dark bars, orange fins",7,,wet blood
+carp.skin,"Carp skin, gold",animals,fish_sea,scales,"carp, goldfish, koi, gold",Large gold scales with dark edges,7,,wet blood
+koi.skin,"Koi skin, patched",animals,fish_sea,scales,"koi, pond fish, patterned",White with orange and black patches,7,,wet blood
+pike.skin,Pike skin,animals,fish_sea,scales,"pike, predator fish",Green with pale bean-shaped spots,7,,wet blood
+catfish.skin,Catfish skin,animals,fish_sea,hide,"catfish, whiskers, mud fish","Smooth slimy grey-brown, no scales",7,,wet blood
+sturgeon.skin,Sturgeon skin,animals,fish_sea,scales,"sturgeon, armoured fish",Grey with bony plates along the sides,7,,wet blood
+shark.skin,Shark skin,animals,fish_sea,hide,"shark, grey shark","Fine rough grey skin, white belly",7,,wet blood
+eel.skin,Eel skin,animals,fish_sea,hide,"eel, slippery, snake fish",Slick olive-black,7,,wet blood
+mackerel.skin,Mackerel skin,animals,fish_sea,scales,"mackerel, striped fish, sea fish",Green-blue with wavy black lines,7,,wet blood
+tuna.skin,Tuna skin,animals,fish_sea,scales,"tuna, big fish","Dark navy back, silver belly",7,,wet blood
+sardine.skin,Sardine skin,animals,fish_sea,scales,"sardine, small fish, silver",Mirror-bright silver,7,,wet blood
+octopus.skin,Octopus skin,animals,fish_sea,hide,"octopus, tentacle, cephalopod",Mottled red-brown soft skin with bumps,7,,wet blood
+squid.skin,Squid skin,animals,fish_sea,thin,"squid, calamari",Translucent cream with red-brown dots,7,,wet blood
+jellyfish.bell,Jellyfish,animals,fish_sea,thin,"jellyfish, jelly, translucent","Clear glowing bell, see-through",7,,wet blood
+crab.shell,Crab shell,animals,fish_sea,keratin,"crab, shell, crustacean",Hard red-orange shell with bumps,7,,wet blood
+lobster.shell,Lobster shell,animals,fish_sea,keratin,"lobster, claws, crustacean","Dark blue-green, turns red when cooked",7,,wet blood
+shrimp.shell,Shrimp shell,animals,fish_sea,thin,"shrimp, prawn",Translucent grey-pink segments,7,,wet blood
+clam.shell,Clam shell,animals,fish_sea,keratin,"clam, seashell, shell, beach",Ridged cream shell with growth rings,7,,wet blood
+shell.nacre,Mother-of-pearl,animals,fish_sea,keratin,"nacre, mother of pearl, oyster, abalone",Rainbow shimmer inside a shell,7,,wet blood
+starfish.skin,Starfish,animals,fish_sea,hide,"starfish, sea star",Orange bumpy surface,7,,wet blood
+coral.living,"Coral, living",animals,fish_sea,stone,"coral, reef",Pink-orange branching with tiny polyps,7,,wet blood
+beetle.black,"Beetle shell, black",animals,insects,keratin,"beetle, bug, black beetle, carapace",Glossy black hard shell,1,,wet dust
+beetle.green,"Beetle shell, iridescent green",animals,insects,keratin,"green beetle, jewel beetle, scarab",Metallic green-gold shell,7,,wet dust
+ladybird.shell,Ladybird shell,animals,insects,keratin,"ladybird, ladybug, red beetle","Red with black spots, high gloss",7,,wet dust
+scorpion.shell,Scorpion shell,animals,insects,keratin,"scorpion, desert bug",Amber-brown segmented shell,7,,wet dust
+ant.shell,Ant body,animals,insects,keratin,"ant, red ant, worker ant",Small glossy red-brown segments,7,,wet dust
+butterfly.orange,"Butterfly wing, orange",animals,insects,thin,"butterfly, monarch-like, orange wing",Orange with black veins and white spots,7,,wet dust
+butterfly.blue,"Butterfly wing, blue",animals,insects,thin,"blue butterfly, morpho-like, shimmer",Shimmering electric blue,7,,wet dust
+moth.wing,Moth wing,animals,insects,thin,"moth, dusty wing",Soft dusty grey-brown,7,,wet dust
+dragonfly.wing,Dragonfly wing,animals,insects,thin,"dragonfly, clear wing, insect wing",Clear wing with dark veins and a rainbow film,7,,wet dust
+bee.fuzz,Bee fuzz,animals,insects,fur,"bee, bumblebee, fuzzy, honey bee",Black and yellow fuzzy bands,7,,wet dust
+spider.hairy,"Spider, hairy",animals,insects,fur,"spider, tarantula, hairy legs",Dark brown hairy body,7,,wet dust
+spider.silk,Spider silk,animals,insects,thin,"web, cobweb, silk",Thin white threads catching light,7,,wet dust
+snail.shell,Snail shell,animals,insects,keratin,"snail, shell, spiral",Brown spiral with cream bands,7,,wet dust
+worm.skin,Earthworm,animals,insects,hide,"worm, earthworm, bait",Moist pink-brown segments,7,,wet dust
+caterpillar.skin,Caterpillar,animals,insects,hide,"caterpillar, larva, grub",Soft green body with spots,7,,wet dust
+skin.tone.01.warm,"Skin, tone 01 (very fair), warm",people,skin_tones,skin,"skin, porcelain, palest, golden","Step 01 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.01.neutral,"Skin, tone 01 (very fair), neutral",people,skin_tones,skin,"skin, porcelain, palest, neutral","Step 01 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.01.cool,"Skin, tone 01 (very fair), cool",people,skin_tones,skin,"skin, porcelain, palest, pink","Step 01 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.02.warm,"Skin, tone 02 (fair), warm",people,skin_tones,skin,"skin, fair, light, golden","Step 02 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",1,,wet mud dust snow blood
+skin.tone.02.neutral,"Skin, tone 02 (fair), neutral",people,skin_tones,skin,"skin, fair, light, neutral","Step 02 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.02.cool,"Skin, tone 02 (fair), cool",people,skin_tones,skin,"skin, fair, light, pink","Step 02 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.03.warm,"Skin, tone 03 (light), warm",people,skin_tones,skin,"skin, light, cream, golden","Step 03 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.03.neutral,"Skin, tone 03 (light), neutral",people,skin_tones,skin,"skin, light, cream, neutral","Step 03 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.03.cool,"Skin, tone 03 (light), cool",people,skin_tones,skin,"skin, light, cream, pink","Step 03 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.04.warm,"Skin, tone 04 (light-medium), warm",people,skin_tones,skin,"skin, light medium, beige, golden","Step 04 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.04.neutral,"Skin, tone 04 (light-medium), neutral",people,skin_tones,skin,"skin, light medium, beige, neutral","Step 04 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.04.cool,"Skin, tone 04 (light-medium), cool",people,skin_tones,skin,"skin, light medium, beige, pink","Step 04 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.05.warm,"Skin, tone 05 (medium), warm",people,skin_tones,skin,"skin, medium, mid, golden","Step 05 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.05.neutral,"Skin, tone 05 (medium), neutral",people,skin_tones,skin,"skin, medium, mid, neutral","Step 05 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",1,yes:character,wet mud dust snow blood
+skin.tone.05.cool,"Skin, tone 05 (medium), cool",people,skin_tones,skin,"skin, medium, mid, pink","Step 05 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.06.warm,"Skin, tone 06 (medium-tan), warm",people,skin_tones,skin,"skin, tan, olive, golden","Step 06 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.06.neutral,"Skin, tone 06 (medium-tan), neutral",people,skin_tones,skin,"skin, tan, olive, neutral","Step 06 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.06.cool,"Skin, tone 06 (medium-tan), cool",people,skin_tones,skin,"skin, tan, olive, pink","Step 06 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.07.warm,"Skin, tone 07 (medium-deep), warm",people,skin_tones,skin,"skin, brown, medium deep, golden","Step 07 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.07.neutral,"Skin, tone 07 (medium-deep), neutral",people,skin_tones,skin,"skin, brown, medium deep, neutral","Step 07 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.07.cool,"Skin, tone 07 (medium-deep), cool",people,skin_tones,skin,"skin, brown, medium deep, pink","Step 07 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.08.warm,"Skin, tone 08 (deep), warm",people,skin_tones,skin,"skin, deep, dark, golden","Step 08 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.08.neutral,"Skin, tone 08 (deep), neutral",people,skin_tones,skin,"skin, deep, dark, neutral","Step 08 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.08.cool,"Skin, tone 08 (deep), cool",people,skin_tones,skin,"skin, deep, dark, pink","Step 08 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",1,,wet mud dust snow blood
+skin.tone.09.warm,"Skin, tone 09 (very deep), warm",people,skin_tones,skin,"skin, very deep, dark brown, golden","Step 09 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.09.neutral,"Skin, tone 09 (very deep), neutral",people,skin_tones,skin,"skin, very deep, dark brown, neutral","Step 09 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.09.cool,"Skin, tone 09 (very deep), cool",people,skin_tones,skin,"skin, very deep, dark brown, pink","Step 09 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.10.warm,"Skin, tone 10 (deepest), warm",people,skin_tones,skin,"skin, deepest, darkest, golden","Step 10 of 10 from light to deep, golden-peach undertone; soft scatter under the surface",1,,wet mud dust snow blood
+skin.tone.10.neutral,"Skin, tone 10 (deepest), neutral",people,skin_tones,skin,"skin, deepest, darkest, neutral","Step 10 of 10 from light to deep, balanced undertone, neither pink nor gold; soft scatter under the surface",4,,wet mud dust snow blood
+skin.tone.10.cool,"Skin, tone 10 (deepest), cool",people,skin_tones,skin,"skin, deepest, darkest, pink","Step 10 of 10 from light to deep, rosy-pink undertone; soft scatter under the surface",4,,wet mud dust snow blood
+skin.trait.freckled,"Skin trait, freckles",people,skin_traits,skin,"freckles, freckled, spots, sun spots",Scattered small warm-brown dots over any tone,1,,wet mud dust snow blood
+skin.trait.sun_weathered,"Skin trait, sun-weathered",people,skin_traits,skin,"weathered, tanned, outdoor, rugged, leathery","Darker, drier, deeper creases at eyes and neck",4,,wet mud dust snow blood
+skin.trait.elder,"Skin trait, elder",people,skin_traits,skin,"old, aged, elderly, wrinkles, age spots","Thin skin, fine wrinkles, age spots, less scatter",1,,wet mud dust snow blood
+skin.trait.child,"Skin trait, child",people,skin_traits,skin,"child, young, baby, smooth","Very smooth, pinker, almost no pores",4,,wet mud dust snow blood
+skin.trait.rosy,"Skin trait, rosy cheeks",people,skin_traits,skin,"blush, rosy, flushed, cold cheeks","Red flush on cheeks, nose and ears",4,,wet mud dust snow blood
+skin.trait.pale_ill,"Skin trait, sickly pale",people,skin_traits,skin,"ill, sick, pale, ashen, fever","Grey-green pallor, dark under the eyes",4,,wet mud dust snow blood
+skin.trait.stubble,"Skin trait, stubble shadow",people,skin_traits,skin,"stubble, five o'clock shadow, unshaven",Blue-grey shadow of short hairs on jaw and lip,4,,wet mud dust snow blood
+skin.trait.scar,"Skin trait, scar tissue",people,skin_traits,skin,"scar, old wound, scarred","Shiny raised pale lines, no pores",4,,wet mud dust snow blood
+skin.trait.burn_scar,"Skin trait, burn scar",people,skin_traits,skin,"burn, burn scar, mottled",Mottled pink and pale tight skin,4,,wet mud dust snow blood
+skin.trait.bruise,"Skin trait, bruise",people,skin_traits,skin,"bruise, black eye, injury",Purple to yellow-green patches under the skin,4,,wet mud dust snow blood
+skin.trait.tattoo,"Skin trait, tattoo ink",people,skin_traits,skin,"tattoo, ink, body art",Blue-black ink softened under the skin,4,,wet mud dust snow blood
+skin.trait.vitiligo,"Skin trait, pale patches",people,skin_traits,skin,"pale patches, depigmented, two-tone skin",Clear pale patches with soft edges over any tone,4,,wet mud dust snow blood
+skin.trait.callused,"Skin trait, callused hands",people,skin_traits,skin,"calluses, rough hands, worker hands",Thick dry yellowed patches on palms and fingers,4,,wet mud dust snow blood
+skin.lips.natural,"Lips, natural",people,skin_traits,skin,"lips, mouth, natural lips","Slightly darker and pinker than the skin, soft sheen",4,,wet mud dust snow blood
+skin.lips.chapped,"Lips, chapped",people,skin_traits,skin,"chapped, dry lips, cracked lips","Dry flaking lips, matte",4,,wet mud dust snow blood
+skin.lips.painted_red,"Lips, painted red",people,skin_traits,skin,"lipstick, red lips, makeup",Satin red paint over the lips,4,,wet mud dust snow blood
+skin.makeup.powder,"Makeup, face powder",people,skin_traits,skin,"powder, makeup, rouge, matte face",Matte pale layer over the skin,4,,wet mud dust snow blood
+skin.makeup.kohl,"Makeup, eye kohl",people,skin_traits,skin,"kohl, eyeliner, dark eyes",Soft smudged black around the eyes,4,,wet mud dust snow blood
+skin.makeup.warpaint,Face and body paint,people,skin_traits,skin,"body paint, face paint, war paint, clay paint","Matte pigment over skin, chalky edges",4,,wet mud dust snow blood
+hair.black,"Hair, black",people,hair,hair,"black hair, jet, raven hair",Blue-black strands with a strong highlight,1,yes:character,wet mud dust snow blood
+hair.dark_brown,"Hair, dark brown",people,hair,hair,"brunette, dark brown hair",Very dark brown with warm highlight,4,,wet mud dust snow blood
+hair.mid_brown,"Hair, medium brown",people,hair,hair,"brown hair, chestnut hair",Even mid brown,4,,wet mud dust snow blood
+hair.light_brown,"Hair, light brown",people,hair,hair,"light brown, mousy, ash brown","Soft light brown, ash tint",4,,wet mud dust snow blood
+hair.dark_blond,"Hair, dark blond",people,hair,hair,"dark blonde, dirty blond, honey",Golden brown blond,4,,wet mud dust snow blood
+hair.blond,"Hair, blond",people,hair,hair,"blonde, golden hair, fair hair","Golden yellow, bright highlight",1,,wet mud dust snow blood
+hair.platinum,"Hair, platinum",people,hair,hair,"platinum, white blonde, ash blonde",Very pale cool blond,4,,wet mud dust snow blood
+hair.auburn,"Hair, auburn",people,hair,hair,"auburn, red-brown, mahogany",Brown with red highlights,4,,wet mud dust snow blood
+hair.ginger,"Hair, ginger",people,hair,hair,"ginger, red hair, redhead",Bright orange-red,1,,wet mud dust snow blood
+hair.copper,"Hair, deep copper",people,hair,hair,"copper, deep red, fiery",Deep coppery red,4,,wet mud dust snow blood
+hair.grey,"Hair, grey",people,hair,hair,"grey hair, gray, silver",Mixed grey and white strands,1,,wet mud dust snow blood
+hair.white,"Hair, white",people,hair,hair,"white hair, snow white, elder","Pure white, slightly yellowed at roots",4,,wet mud dust snow blood
+hair.salt_pepper,"Hair, salt and pepper",people,hair,hair,"salt and pepper, greying, mixed grey",Dark strands mixed with grey,4,,wet mud dust snow blood
+hair.dyed_blue,"Hair, dyed blue",people,hair,hair,"blue hair, dyed, punk",Vivid blue with darker roots,4,,wet mud dust snow blood
+hair.dyed_pink,"Hair, dyed pink",people,hair,hair,"pink hair, dyed, pastel",Bright pink fading to pastel,4,,wet mud dust snow blood
+hair.dyed_green,"Hair, dyed green",people,hair,hair,"green hair, dyed",Emerald green,4,,wet mud dust snow blood
+hair.dyed_purple,"Hair, dyed violet",people,hair,hair,"purple hair, violet, dyed",Deep violet,4,,wet mud dust snow blood
+hair.coily_black,"Hair, tight coils, black",people,hair,hair,"coily, afro, tight curls, kinky hair","Dense tight coils, soft matte sheen",4,,wet mud dust snow blood
+hair.curly_brown,"Hair, curly brown",people,hair,hair,"curly, ringlets, wavy brown",Springy loose curls,4,,wet mud dust snow blood
+hair.braided,"Hair, braided",people,hair,hair,"braids, plaits, cornrows",Tight rope-like braided strands,4,,wet mud dust snow blood
+beard.short_dark,"Beard, short dark",people,beards_body,hair,"beard, short beard, dark beard",Short dense dark facial hair,4,,wet mud dust snow blood
+beard.full_brown,"Beard, full brown",people,beards_body,hair,"full beard, bushy, mountain man",Long thick brown beard,4,,wet mud dust snow blood
+beard.grey,"Beard, grey",people,beards_body,hair,"grey beard, old beard, white beard",Wiry grey and white,4,,wet mud dust snow blood
+beard.red,"Beard, red",people,beards_body,hair,"red beard, ginger beard",Coarse copper-red beard,4,,wet mud dust snow blood
+moustache.waxed,"Moustache, waxed",people,beards_body,hair,"moustache, mustache, waxed, handlebar",Stiff shaped strands with a wax shine,4,,wet mud dust snow blood
+hair.eyebrow,Eyebrows,people,beards_body,hair,"eyebrows, brows",Short fine hairs in a soft band,4,,wet mud dust snow blood
+hair.eyelash,Eyelashes,people,beards_body,hair,"eyelashes, lashes",Fine dark curved hairs,4,,wet mud dust snow blood
+hair.body,Body hair,people,beards_body,hair,"body hair, arm hair, chest hair",Sparse fine hairs over skin,4,,wet mud dust snow blood
+eye.brown_dark,"Eyes, dark brown",people,eyes,eye,"brown eyes, dark eyes","Deep brown iris, wet cornea shine",1,yes:character,blood
+eye.brown,"Eyes, brown",people,eyes,eye,"brown eyes, warm brown",Warm mid-brown iris,4,,blood
+eye.hazel,"Eyes, hazel",people,eyes,eye,"hazel, green-brown","Green outer ring, gold-brown centre",4,,blood
+eye.amber,"Eyes, amber",people,eyes,eye,"amber, golden eyes, honey",Even golden-amber iris,4,,blood
+eye.green,"Eyes, green",people,eyes,eye,"green eyes, emerald",Grey-green iris with gold flecks,4,,blood
+eye.grey,"Eyes, grey",people,eyes,eye,"grey eyes, steel eyes","Pale grey iris, dark limbal ring",4,,blood
+eye.blue,"Eyes, blue",people,eyes,eye,"blue eyes, blue, sky blue",Clear mid-blue fibrous iris,4,,blood
+eye.blue_pale,"Eyes, pale blue",people,eyes,eye,"ice blue, pale blue, light eyes","Very pale blue, almost grey",4,,blood
+eye.violet_pale,"Eyes, pale red-violet",people,eyes,eye,"albino eyes, pink eyes, violet","Pale lilac iris, reddish pupil glow",4,,blood
+eye.clouded,"Eyes, clouded",people,eyes,eye,"cataract, blind eye, milky eye",Milky film over the iris,4,,blood
+eye.glass,Glass eye,people,eyes,eye,"glass eye, false eye, prosthetic","Too-perfect painted iris, hard glass shine",4,,blood
+teeth.healthy,"Teeth, healthy",people,teeth_nails,keratin,"teeth, smile, white teeth","Off-white enamel, slight translucency at the edge",1,,blood mud
+teeth.stained,"Teeth, stained",people,teeth_nails,keratin,"yellow teeth, stained, tobacco",Yellow-brown stains near the gums,4,,blood mud
+teeth.gold,"Tooth, gold",people,teeth_nails,metal,"gold tooth, cap, crown",Bright polished gold cap,4,,blood mud
+mouth.gums,Gums and tongue,people,teeth_nails,skin,"gums, tongue, mouth",Wet pink soft tissue,4,,blood mud
+nails.natural,"Nails, natural",people,teeth_nails,keratin,"nails, fingernails, toenails",Pink-tinted keratin with pale tips,4,,blood mud
+nails.painted,"Nails, painted",people,teeth_nails,paint,"nail polish, lacquer, painted nails",Glossy red lacquer,4,,blood mud
+cloth.cotton.white,"Cotton, white",clothing,plain_weaves,cloth,"cotton, white shirt, plain cloth, calico","Soft matte plain weave, slightly warm white",1,yes:layers,wet mud dust snow wear blood
+cloth.cotton.unbleached,"Cotton, unbleached",clothing,plain_weaves,cloth,"unbleached, natural cotton, muslin, ecru",Creamy off-white with flecks,4,,wet mud dust snow wear blood
+cloth.cotton.chambray,"Chambray, blue",clothing,plain_weaves,cloth,"chambray, work shirt, light denim","Blue warp and white weft, soft mottle",4,,wet mud dust snow wear blood
+cloth.linen.natural,"Linen, natural",clothing,plain_weaves,cloth,"linen, flax, summer cloth","Uneven slubby weave, crisp sheen",4,,wet mud dust snow wear blood
+cloth.linen.white,"Linen, bleached",clothing,plain_weaves,cloth,"white linen, tablecloth, sheet",Bright white with visible slubs,4,,wet mud dust snow wear blood
+cloth.muslin,"Muslin, sheer",clothing,plain_weaves,cloth,"muslin, gauze, cheesecloth, sheer","Open loose weave, light passes through",4,,wet mud dust snow wear blood
+cloth.calico_print,"Printed cotton, small flowers",clothing,plain_weaves,cloth,"calico print, floral print, dress print",Tiny repeated flowers on cotton,4,,wet mud dust snow wear blood
+cloth.gingham,Gingham check,clothing,plain_weaves,cloth,"gingham, check, picnic cloth",Small even two-colour checks,4,,wet mud dust snow wear blood
+cloth.plaid,Plaid flannel,clothing,plain_weaves,cloth,"plaid, flannel, lumberjack, check shirt",Brushed soft weave with bold crossing stripes,4,,wet mud dust snow wear blood
+cloth.tartan,Wool tartan,clothing,plain_weaves,cloth,"tartan, kilt, clan check",Dense twill with many-coloured crossing bands,4,,wet mud dust snow wear blood
+cloth.pinstripe,Pinstripe suiting,clothing,plain_weaves,cloth,"pinstripe, suit, banker",Dark wool with fine pale stripes,4,,wet mud dust snow wear blood
+cloth.ticking,Ticking stripe,clothing,plain_weaves,cloth,"ticking, mattress stripe, striped canvas",Stiff cotton with narrow blue stripes,4,,wet mud dust snow wear blood
+cloth.burlap,Burlap,clothing,plain_weaves,cloth,"burlap, hessian, jute, sack, gunny sack","Coarse open brown weave, hairy fibres",1,,wet mud dust snow wear blood
+cloth.canvas.natural,"Canvas, natural",clothing,plain_weaves,cloth,"canvas, duck, tent cloth, sail","Heavy tight weave, stiff and matte",1,,wet mud dust snow wear blood
+cloth.canvas.waxed,"Canvas, waxed",clothing,plain_weaves,cloth,"waxed canvas, oilcloth, coat",Darker canvas with a waxy sheen and creases,4,,wet mud dust snow wear blood
+cloth.canvas.army,"Canvas, olive drab",clothing,plain_weaves,cloth,"army canvas, olive drab, military",Olive-green heavy canvas,4,,wet mud dust snow wear blood
+cloth.denim.indigo,"Denim, indigo",clothing,twills,cloth,"denim, jeans, blue jeans, indigo","Diagonal twill, blue face, white back",1,,wet mud dust snow wear blood
+cloth.denim.faded,"Denim, faded",clothing,twills,cloth,"faded jeans, washed denim, worn denim",Pale washed blue with whitened seams,4,,wet mud dust snow wear blood
+cloth.denim.black,"Denim, black",clothing,twills,cloth,"black jeans, black denim","Charcoal twill, faded at folds",4,,wet mud dust snow wear blood
+cloth.gabardine,Gabardine,clothing,twills,cloth,"gabardine, trench coat, raincoat","Tight smooth twill, slight sheen",4,,wet mud dust snow wear blood
+cloth.drill.khaki,Khaki drill,clothing,twills,cloth,"khaki, chino, drill, safari",Sand-coloured cotton twill,4,,wet mud dust snow wear blood
+cloth.serge.navy,"Serge, navy",clothing,twills,cloth,"serge, uniform, navy wool, sailor",Navy wool twill with a fine rib,4,,wet mud dust snow wear blood
+cloth.tweed.brown,"Tweed, brown",clothing,twills,cloth,"tweed, country, jacket",Rough flecked brown wool,4,,wet mud dust snow wear blood
+cloth.tweed.herringbone,"Tweed, herringbone",clothing,twills,cloth,"herringbone, zigzag, overcoat",Zigzag grey wool twill,4,,wet mud dust snow wear blood
+cloth.houndstooth,Houndstooth,clothing,twills,cloth,"houndstooth, dogtooth, check",Broken black and white jagged check,4,,wet mud dust snow wear blood
+cloth.wool.homespun,"Wool, homespun",clothing,wool_felt,cloth,"homespun, rough wool, peasant cloth","Uneven heavy wool, fuzzy surface",4,,wet mud dust snow wear blood
+cloth.wool.fine_black,"Wool, fine black",clothing,wool_felt,cloth,"fine wool, broadcloth, suit cloth","Dense smooth black, soft sheen",4,,wet mud dust snow wear blood
+cloth.wool.red,"Wool, red",clothing,wool_felt,cloth,"red wool, coat, uniform",Rich red dense wool,4,,wet mud dust snow wear blood
+cloth.wool.blanket,"Wool blanket, striped",clothing,wool_felt,cloth,"blanket, trade blanket, striped wool",Thick fuzzy wool with bold stripes,1,,wet mud dust snow wear blood
+cloth.wool.boiled,Boiled wool,clothing,wool_felt,cloth,"boiled wool, felted coat, loden","Dense felted surface, no visible weave",4,,wet mud dust snow wear blood
+cloth.felt.hat,"Felt, hat",clothing,wool_felt,cloth,"felt, hat felt, fedora, wide-brim hat","Smooth dense brushed felt, slight sheen",4,,wet mud dust snow wear blood
+cloth.felt.craft,"Felt, craft",clothing,wool_felt,cloth,"craft felt, toy felt, fuzzy",Fuzzy flat felt with stray fibres,4,,wet mud dust snow wear blood
+cloth.knit.jersey,Jersey knit,clothing,knits,cloth,"jersey, t-shirt, knit","Fine stretchy knit, small loops",9,,wet mud dust snow wear blood
+cloth.knit.chunky,Chunky knit,clothing,knits,cloth,"chunky, cable knit, sweater, jumper",Big rope-like cable loops,1,,wet mud dust snow wear blood
+cloth.knit.ribbed,Ribbed knit,clothing,knits,cloth,"rib knit, cuffs, beanie",Vertical ridges of knit loops,9,,wet mud dust snow wear blood
+cloth.knit.patterned,Patterned knit,clothing,knits,cloth,"nordic, pattern knit, jumper motifs",Small coloured motifs in knit loops,9,,wet mud dust snow wear blood
+cloth.knit.socks,Wool socks,clothing,knits,cloth,"socks, stockings, wool socks","Thick soft knit, darned heels",9,,wet mud dust snow wear blood
+cloth.crochet,Crochet,clothing,knits,cloth,"crochet, doily, lace knit",Open loop pattern with holes,9,,wet mud dust snow wear blood
+cloth.velvet.red,"Velvet, red",clothing,sheen_fabrics,cloth,"velvet, plush, theatre, curtain",Deep pile with bright sheen at edges,1,yes:layers,wet mud dust wear blood
+cloth.velvet.black,"Velvet, black",clothing,sheen_fabrics,cloth,"black velvet, evening, mourning","Near-black pile, soft rim light",9,,wet mud dust wear blood
+cloth.velvet.green,"Velvet, green",clothing,sheen_fabrics,cloth,"green velvet, emerald",Bottle-green pile,9,,wet mud dust wear blood
+cloth.corduroy,Corduroy,clothing,sheen_fabrics,cloth,"corduroy, cord, wale",Raised soft ridges in rows,9,,wet mud dust wear blood
+cloth.satin.white,"Satin, white",clothing,sheen_fabrics,cloth,"satin, bridal, wedding, smooth",Smooth glossy face with long highlights,9,,wet mud dust wear blood
+cloth.satin.black,"Satin, black",clothing,sheen_fabrics,cloth,"black satin, lining",Black with silvery sharp highlights,9,,wet mud dust wear blood
+cloth.silk.plain,"Silk, plain",clothing,sheen_fabrics,cloth,"silk, scarf, fine cloth","Fine smooth weave, soft liquid sheen",1,,wet mud dust wear blood
+cloth.silk.shot,"Silk, shot two-tone",clothing,sheen_fabrics,cloth,"shot silk, taffeta, two tone",Colour shifts between two hues as it turns,9,,wet mud dust wear blood
+cloth.silk.brocade,Brocade,clothing,sheen_fabrics,cloth,"brocade, damask, jacquard, rich",Raised woven pattern in gold thread,9,,wet mud dust wear blood
+cloth.chiffon,Chiffon,clothing,sheen_fabrics,thin,"chiffon, sheer, veil",Very sheer floaty fabric,9,,wet mud dust wear blood
+cloth.lace.white,"Lace, white",clothing,sheen_fabrics,thin,"lace, doily, veil, bridal","Open floral thread pattern, see-through",1,,wet mud dust wear blood
+cloth.lace.black,"Lace, black",clothing,sheen_fabrics,thin,"black lace, mourning veil",Fine black thread pattern,9,,wet mud dust wear blood
+cloth.tulle,Tulle netting,clothing,sheen_fabrics,thin,"tulle, net, mesh, veil",Fine hexagon net,9,,wet mud dust wear blood
+cloth.fleece,Fleece,clothing,sheen_fabrics,cloth,"fleece, polar fleece, fuzzy jacket",Soft fuzzy synthetic pile,9,,wet mud dust wear blood
+cloth.terry,Terry towelling,clothing,sheen_fabrics,cloth,"towel, terry, bath robe","Dense small loops, soft and matte",9,,wet mud dust wear blood
+cloth.embroidery,Embroidery thread,clothing,sheen_fabrics,cloth,"embroidery, stitching, needlework",Raised satin-stitch pattern over cloth,9,,wet mud dust wear blood
+cloth.nylon,Nylon,clothing,synthetics,cloth,"nylon, windbreaker, synthetic",Thin smooth shiny fabric,9,,wet mud dust wear blood
+cloth.ripstop,Ripstop,clothing,synthetics,cloth,"ripstop, parachute, tent",Fine grid in a light shiny weave,9,,wet mud dust wear blood
+cloth.vinyl,"Vinyl, glossy",clothing,synthetics,plastic,"vinyl, pvc, raincoat, shiny",Very glossy plastic sheet with creases,9,,wet mud dust wear blood
+cloth.rubberised,Rubberised cloth,clothing,synthetics,plastic,"oilskin, mackintosh, rubber coat",Matte rubber coating over cloth,9,,wet mud dust wear blood
+cloth.sequins,Sequins,clothing,synthetics,metal,"sequins, sparkle, glitter, stage",Tiny overlapping mirror discs,9,,wet mud dust wear blood
+cloth.camo.woodland,"Camouflage, woodland",clothing,synthetics,cloth,"camo, camouflage, woodland, hunting","Green, brown and black blotches",9,,wet mud dust wear blood
+cloth.camo.desert,"Camouflage, desert",clothing,synthetics,cloth,"desert camo, sand camo",Tan and brown blotches,9,,wet mud dust wear blood
+cloth.hi_vis,High-visibility,clothing,synthetics,cloth,"hi vis, safety vest, fluorescent",Fluorescent yellow with reflective strips,9,,wet mud dust wear blood
+leather.saddle_tan,"Leather, saddle tan",clothing,leather,leather,"saddle leather, tan leather, tooling",Smooth warm tan with soft sheen,1,,wet mud dust snow wear blood
+leather.dark_brown,"Leather, dark brown",clothing,leather,leather,"brown leather, boots, belt","Deep brown, polished highlights",4,,wet mud dust snow wear blood
+leather.black,"Leather, black",clothing,leather,leather,"black leather, jacket, polished",Black with sharp polish highlights,4,,wet mud dust snow wear blood
+leather.oxblood,"Leather, oxblood",clothing,leather,leather,"oxblood, burgundy leather, red leather",Deep red-brown polish,4,,wet mud dust snow wear blood
+leather.rough_out,"Leather, rough-out",clothing,leather,leather,"rough out, roughout, chaps","Fuzzy flesh side, matte",4,,wet mud dust snow wear blood
+leather.suede,Suede,clothing,leather,leather,"suede, nubuck, soft leather","Velvety short nap, colour shifts when brushed",1,,wet mud dust snow wear blood
+leather.buckskin,Buckskin,clothing,leather,leather,"buckskin, deerskin, brain-tan, fringe","Soft pale smoked hide, creamy matte",4,,wet mud dust snow wear blood
+leather.rawhide,Rawhide,clothing,leather,leather,"rawhide, untanned, lacing",Stiff translucent yellowish hide,4,,wet mud dust snow wear blood
+leather.tooled,"Leather, tooled",clothing,leather,leather,"tooled, carved, floral leather, saddle",Carved floral patterns pressed into tan leather,4,,wet mud dust snow wear blood
+leather.patent,Patent leather,clothing,leather,leather,"patent, glossy shoes, shiny",Mirror-glossy black,4,,wet mud dust snow wear blood
+leather.embossed_scale,"Leather, embossed scale",clothing,leather,leather,"embossed, scale print, exotic","Pressed scale pattern, glossy",4,,wet mud dust snow wear blood
+leather.snake,Snakeskin leather,clothing,leather,scales,"snakeskin, boots, exotic",Fine scale leather with patterned bands,4,,wet mud dust snow wear blood
+leather.cracked_old,"Leather, old cracked",clothing,leather,leather,"old leather, cracked, aged",Dry dark leather with crazed cracks,4,,wet mud dust snow wear blood
+trim.fur.fox,"Fur trim, fox",clothing,fur_trims,fur,"fur collar, fox fur, trim",Fluffy orange-red collar fur,9,,wet mud dust snow blood
+trim.fur.rabbit,"Fur trim, rabbit",clothing,fur_trims,fur,"rabbit fur, hood trim, soft",Short soft grey-white fur,9,,wet mud dust snow blood
+trim.fur.sheepskin,Sheepskin,clothing,fur_trims,fur,"sheepskin, shearling, coat lining",Cream curly wool on a suede back,1,,wet mud dust snow blood
+trim.fur.beaver,Beaver fur trim,clothing,fur_trims,fur,"beaver fur, hat fur, pelt",Dense glossy brown fur,9,,wet mud dust snow blood
+trim.fur.wolf,"Fur trim, wolf",clothing,fur_trims,fur,"wolf fur, parka trim",Long grey guard hairs,9,,wet mud dust snow blood
+trim.fur.dark_mink,"Fur trim, dark mink",clothing,fur_trims,fur,"mink stole, fur stole, luxury",Glossy dark short fur,9,,wet mud dust snow blood
+trim.fur.ermine,"Fur trim, white with tail spots",clothing,fur_trims,fur,"ermine, royal, robe trim",White fur with black tail-tip spots,9,,wet mud dust snow blood
+trim.fur.bear,Bear pelt,clothing,fur_trims,fur,"bear rug, bear skin, pelt",Long coarse brown fur,9,,wet mud dust snow blood
+trim.fur.buffalo,Buffalo robe,clothing,fur_trims,fur,"buffalo robe, bison robe, hide coat",Thick woolly brown fur,9,,wet mud dust snow blood
+fit.button.brass,"Button, brass",clothing,fittings,metal,"brass button, uniform button",Polished brass dome,9,,wet mud dust wear oxide
+fit.button.horn,"Button, horn",clothing,fittings,keratin,"horn button, toggle",Mottled brown polished horn,9,,wet mud dust wear oxide
+fit.button.shell,"Button, shell",clothing,fittings,keratin,"shell button, pearl button",Pearly white shimmer,9,,wet mud dust wear oxide
+fit.button.bone,"Button, bone",clothing,fittings,keratin,"bone button, button, pale button",Off-white polished bone,9,,wet mud dust wear oxide
+fit.buckle.silver,"Buckle, silver",clothing,fittings,metal,"belt buckle, silver buckle, trophy buckle",Bright engraved silver,9,,wet mud dust wear oxide
+fit.buckle.iron,"Buckle, iron",clothing,fittings,metal,"iron buckle, harness, plain buckle",Dark plain iron,9,,wet mud dust wear oxide
+fit.zip,"Zip, metal",clothing,fittings,metal,"zip, zipper, teeth",Small interlocking brass teeth,9,,wet mud dust wear oxide
+fit.rivet.copper,"Rivet, copper",clothing,fittings,metal,"rivet, jeans rivet, copper stud",Small domed copper,9,,wet mud dust wear oxide
+fit.spur,"Spur, steel",clothing,fittings,metal,"spur, rowel, riding spur",Brushed steel with a spiked wheel,9,,wet mud dust wear oxide
+fit.concho,"Concho, silver",clothing,fittings,metal,"concho, silver disc, decoration",Stamped silver disc,9,,wet mud dust wear oxide
+fit.bead.glass,Glass beads,clothing,beads_misc,glass,"beads, seed beads, beadwork",Tiny glossy coloured beads,9,,dust wear
+fit.bead.wood,Wooden beads,clothing,beads_misc,wood,"wood beads, prayer beads",Small rounded polished wood,9,,dust wear
+fit.quillwork,Quillwork,clothing,beads_misc,keratin,"quill embroidery, dyed quills",Flattened dyed quills in bands,9,,dust wear
+fit.ribbon,"Ribbon, satin",clothing,beads_misc,cloth,"ribbon, bow, hat band",Narrow glossy satin strip,9,,dust wear
+fit.straw_hat,"Straw, woven hat",clothing,beads_misc,foliage,"straw hat, sun hat, boater, weave",Woven pale straw,9,,dust wear
+fit.cork_sole,Cork sole,clothing,beads_misc,wood,"cork, sandal sole",Tan cork grain,9,,dust wear
+fit.rubber_sole,Rubber sole,clothing,beads_misc,plastic,"rubber sole, boot sole, tread",Matte black rubber with tread,9,,dust wear
+fit.celluloid,Celluloid,clothing,beads_misc,plastic,"celluloid, collar, early plastic",Ivory-like smooth plastic,9,,dust wear
+fit.clog_wood,Clog wood,clothing,beads_misc,wood,"clog, wooden shoe, sabot",Painted pale smooth wood,9,,dust wear
+fit.badge_enamel,Enamel badge,clothing,beads_misc,ceramic,"badge, enamel pin, star badge",Coloured glossy enamel in a metal edge,9,,dust wear
+metal.steel.blued,"Steel, blued",weapons_tools,metals,metal,"blued steel, gun metal, barrel, revolver",Deep blue-black with soft highlights,1,,wet mud dust snow wear oxide blood
+metal.steel.case_hardened,"Steel, case-hardened",weapons_tools,metals,metal,"case hardened, colour case, receiver","Mottled blue, straw and purple swirls",9,,wet mud dust snow wear oxide blood
+metal.steel.brushed,"Steel, brushed",weapons_tools,metals,metal,"brushed steel, stainless, satin metal",Fine straight grain stretching the highlight,1,yes:layers,wet mud dust snow wear oxide blood
+metal.steel.polished,"Steel, polished",weapons_tools,metals,metal,"polished steel, mirror, chrome-like, blade",Bright mirror steel,9,,wet mud dust snow wear oxide blood
+metal.steel.forged,"Steel, black forged",weapons_tools,metals,metal,"forged, blacksmith, hammered, scale",Dark hammer-marked with grey scale,1,,wet mud dust snow wear oxide blood
+metal.steel.damascus,"Steel, pattern-welded",weapons_tools,metals,metal,"damascus, pattern welded, wavy blade",Flowing light and dark wavy lines,9,,wet mud dust snow wear oxide blood
+metal.steel.parkerized,"Steel, matte grey phosphate",weapons_tools,metals,metal,"parkerized, military finish, matte gun",Flat grey-green fine-grain finish,9,,wet mud dust snow wear oxide blood
+metal.iron.cast,"Iron, cast",weapons_tools,metals,metal,"cast iron, skillet, stove, rough iron","Grainy dark grey, sandy surface",1,,wet mud dust snow wear oxide blood
+metal.iron.wrought,"Iron, wrought",weapons_tools,metals,metal,"wrought iron, fence, railings",Dark iron with fibrous streaks,9,,wet mud dust snow wear oxide blood
+metal.brass.polished,"Brass, polished",weapons_tools,metals,metal,"brass, gold-coloured metal, frame, trigger guard",Warm yellow mirror shine,1,,wet mud dust snow wear oxide blood
+metal.brass.aged,"Brass, aged",weapons_tools,metals,metal,"old brass, antique brass, dull brass","Brown-gold, dull and darker in recesses",9,,wet mud dust snow wear oxide blood
+metal.bronze,Bronze,weapons_tools,metals,metal,"bronze, statue, bell metal","Deep red-gold, softer highlight",9,,wet mud dust snow wear oxide blood
+metal.copper.polished,"Copper, polished",weapons_tools,metals,metal,"copper, penny, pipe, orange metal",Bright orange-pink mirror shine,1,,wet mud dust snow wear oxide blood
+metal.copper.hammered,"Copper, hammered",weapons_tools,metals,metal,"hammered copper, pot, kettle",Dimpled copper catching many highlights,9,,wet mud dust snow wear oxide blood
+metal.silver.polished,"Silver, polished",weapons_tools,metals,metal,"silver, sterling, cutlery, jewellery",Bright cool white mirror,1,,wet mud dust snow wear oxide blood
+metal.silver.engraved,"Silver, engraved",weapons_tools,metals,metal,"engraved silver, scrollwork, inlay",Silver with fine cut scroll patterns,9,,wet mud dust snow wear oxide blood
+metal.gold.polished,"Gold, polished",weapons_tools,metals,metal,"gold, gold leaf, jewellery, bullion","Rich yellow mirror, warm reflections",1,,wet mud dust snow wear oxide blood
+metal.gold.rose,"Gold, rose",weapons_tools,metals,metal,"rose gold, pink gold",Pinkish gold,9,,wet mud dust snow wear oxide blood
+metal.nickel,Nickel plate,weapons_tools,metals,metal,"nickel, plated, shiny grey, revolver plate",Warm grey-white bright plating,9,,wet mud dust snow wear oxide blood
+metal.chrome,Chrome,weapons_tools,metals,metal,"chrome, chromium, mirror metal",Perfect cold mirror,9,,wet mud dust snow wear oxide blood
+metal.pewter,Pewter,weapons_tools,metals,metal,"pewter, tankard, tin alloy",Soft dull blue-grey,9,,wet mud dust snow wear oxide blood
+metal.tin,Tin plate,weapons_tools,metals,metal,"tin, tin can, tinware",Light grey thin bright metal,9,,wet mud dust snow wear oxide blood
+metal.lead,Lead,weapons_tools,metals,metal,"lead, bullet, sinker, heavy metal","Dull blue-grey, very soft sheen",9,,wet mud dust snow wear oxide blood
+metal.zinc.galvanised,Galvanised steel,weapons_tools,metals,metal,"galvanised, zinc, bucket, spangle",Grey with crystal spangle pattern,9,,wet mud dust snow wear oxide blood
+metal.aluminium,Aluminium,weapons_tools,metals,metal,"aluminium, aluminum, light metal","Light grey, slightly milky shine",9,,wet mud dust snow wear oxide blood
+metal.titanium,Titanium,weapons_tools,metals,metal,"titanium, anodised, modern metal",Dark grey with faint rainbow heat tint,9,,wet mud dust snow wear oxide blood
+metal.gunmetal,Gunmetal alloy,weapons_tools,metals,metal,"gunmetal, dark bronze",Dark grey-bronze,9,,wet mud dust snow wear oxide blood
+metal.heat_tinted,"Steel, heat-tinted",weapons_tools,metals,metal,"heat tint, temper colours, rainbow steel",Straw to blue bands from heat,9,,wet mud dust snow wear oxide blood
+wood.walnut.stock,"Walnut, oiled stock",weapons_tools,wood_handles,wood,"walnut, gun stock, oiled wood",Dark brown with swirling grain and oil sheen,1,,wet mud dust wear blood
+wood.maple.curly,"Maple, curly",weapons_tools,wood_handles,wood,"curly maple, tiger maple, rifle stock",Golden wood with rippling bars of light,9,,wet mud dust wear blood
+wood.ash.handle,"Ash, tool handle",weapons_tools,wood_handles,wood,"ash, axe handle, tool handle","Pale straight grain, smooth from use",9,,wet mud dust wear blood
+wood.hickory.handle,"Hickory, handle",weapons_tools,wood_handles,wood,"hickory, hammer handle",Light-brown tough straight grain,9,,wet mud dust wear blood
+wood.ebony,Ebony,weapons_tools,wood_handles,wood,"ebony, black wood, grip","Near-black fine grain, polished",9,,wet mud dust wear blood
+wood.rosewood,Rosewood,weapons_tools,wood_handles,wood,"rosewood, grips, dark red wood",Red-brown with dark streaks,9,,wet mud dust wear blood
+grip.ivory,"Grip, ivory",weapons_tools,grips_parts,keratin,"ivory grips, pistol grips",Cream with fine grain,9,,wet mud dust wear blood
+grip.pearl,"Grip, mother-of-pearl",weapons_tools,grips_parts,keratin,"pearl grips, nacre",Rainbow pearly shimmer,9,,wet mud dust wear blood
+grip.stag,"Grip, stag horn",weapons_tools,grips_parts,keratin,"stag grips, antler handle",Knobbly brown and cream antler,9,,wet mud dust wear blood
+grip.bakelite,"Grip, early plastic",weapons_tools,grips_parts,plastic,"phenolic, hard rubber, black grip",Glossy dark brown moulded plastic,9,,wet mud dust wear blood
+grip.leather_wrap,"Grip, leather wrap",weapons_tools,grips_parts,leather,"wrapped handle, sword grip",Spiral-wrapped dark leather,9,,wet mud dust wear blood
+grip.cord_wrap,"Grip, cord wrap",weapons_tools,grips_parts,cloth,"cord wrap, paracord, wrapped",Wound cord in a diamond pattern,9,,wet mud dust wear blood
+ammo.cartridge.brass,Cartridge brass,weapons_tools,ammo_powder,metal,"cartridge, shell, bullet, casing",Bright yellow brass with a copper tip,9,,wet dust wear oxide
+ammo.shotgun_shell,Shotgun shell,weapons_tools,ammo_powder,plastic,"shotgun shell, paper shell, buckshot",Red paper tube with a brass base,9,,wet dust wear oxide
+ammo.powder,Black powder,weapons_tools,ammo_powder,ground,"gunpowder, powder, black powder",Dull grainy black,9,,wet dust wear oxide
+ammo.lead_ball,Lead ball,weapons_tools,ammo_powder,metal,"musket ball, round shot",Dull grey sphere,9,,wet dust wear oxide
+tool.blade.edge,Sharpened edge,weapons_tools,blades_tools,metal,"blade edge, knife, honed",Bright bevel line on a dull blade,9,,wet mud dust wear oxide blood
+tool.saw_blade,Saw blade,weapons_tools,blades_tools,metal,"saw, saw teeth, crosscut",Thin bright steel with etched teeth,9,,wet mud dust wear oxide blood
+tool.file,"File, steel",weapons_tools,blades_tools,metal,"file, rasp, cross cut",Dark steel with fine diagonal teeth,9,,wet mud dust wear oxide blood
+tool.anvil,Anvil face,weapons_tools,blades_tools,metal,"anvil, blacksmith, forge",Polished face over dark rough iron,9,,wet mud dust wear oxide blood
+tool.chain,"Chain, iron",weapons_tools,blades_tools,metal,"chain, links, shackle","Dark iron links, worn bright at contact",9,,wet mud dust wear oxide blood
+tool.wire_barbed,Barbed wire,weapons_tools,blades_tools,metal,"barbed wire, fence wire, ranch",Galvanised grey twisted wire,9,,wet mud dust wear oxide blood
+tool.rope.hemp,"Rope, hemp",weapons_tools,blades_tools,cloth,"rope, lasso, lariat, hemp",Twisted golden-brown fibres,1,,wet mud dust wear oxide blood
+tool.rope.manila,"Rope, manila",weapons_tools,blades_tools,cloth,"manila, ship rope, heavy rope",Thick coarse tan twist,9,,wet mud dust wear oxide blood
+tool.twine,Twine,weapons_tools,blades_tools,cloth,"twine, string, cord",Thin hairy brown string,9,,wet mud dust wear oxide blood
+tool.whetstone,Whetstone,weapons_tools,blades_tools,stone,"whetstone, sharpening stone, hone","Fine grey stone, oily centre",9,,wet mud dust wear oxide blood
+tool.grindstone,Grindstone,weapons_tools,blades_tools,stone,"grindstone, sandstone wheel",Coarse buff sandstone,9,,wet mud dust wear oxide blood
+armour.plate,Armour plate,weapons_tools,armour_misc,metal,"armour, plate, breastplate, knight",Polished steel with hammer ripples,9,,wet mud dust wear oxide blood
+armour.mail,Chain mail,weapons_tools,armour_misc,metal,"chainmail, mail, ring armour",Tiny interlocked rings,9,,wet mud dust wear oxide blood
+armour.scale,Scale armour,weapons_tools,armour_misc,metal,"scale armour, lamellar",Overlapping small metal plates,9,,wet mud dust wear oxide blood
+armour.leather_hard,Hardened leather,weapons_tools,armour_misc,leather,"boiled leather, cuir bouilli, armour",Stiff glossy dark leather,9,,wet mud dust wear oxide blood
+armour.gambeson,Padded cloth,weapons_tools,armour_misc,cloth,"gambeson, quilted, padded armour",Quilted thick linen,9,,wet mud dust wear oxide blood
+armour.kevlar,Woven aramid,weapons_tools,armour_misc,cloth,"aramid, body armour, modern vest",Tight yellow woven fibre,9,,wet mud dust wear oxide blood
+armour.carbon,Carbon fibre,weapons_tools,armour_misc,paint,"carbon fibre, composite, modern",Woven black check under clear resin,9,,wet mud dust wear oxide blood
+brick.red.common,"Brick, red common",buildings,brick,masonry,"brick, red brick, wall, house",Uneven red bricks in grey mortar,1,yes:playground,wet dust snow wear growth blood
+brick.red.clean,"Brick, red pressed",buildings,brick,masonry,"pressed brick, smart brick, facade","Sharp even red bricks, thin joints",3,,wet dust snow wear growth blood
+brick.yellow,"Brick, yellow",buildings,brick,masonry,"yellow brick, buff brick, london-like",Sandy yellow bricks,3,,wet dust snow wear growth blood
+brick.brown,"Brick, brown",buildings,brick,masonry,"brown brick, dark brick","Chocolate-brown bricks, dark mortar",3,,wet dust snow wear growth blood
+brick.white_painted,"Brick, painted white",buildings,brick,masonry,"painted brick, whitewash brick","White paint over brick, bumps showing",3,,wet dust snow wear growth blood
+brick.glazed,"Brick, glazed",buildings,brick,masonry,"glazed brick, tiled wall, subway",Glossy cream bricks,3,,wet dust snow wear growth blood
+brick.adobe,Adobe bricks,buildings,brick,masonry,"adobe, mud brick, sun-dried, pueblo",Large straw-flecked earth bricks,3,,wet dust snow wear growth blood
+brick.firebrick,Firebrick,buildings,brick,masonry,"firebrick, kiln, chimney lining","Pale buff bricks, sooty",3,,wet dust snow wear growth blood
+brick.herringbone,"Brick, herringbone path",buildings,brick,masonry,"herringbone, brick path, paving",Bricks laid in zigzag rows,3,,wet dust snow wear growth blood
+brick.basket,"Brick, basket weave",buildings,brick,masonry,"basket weave, brick floor",Pairs of bricks alternating direction,3,,wet dust snow wear growth blood
+stonework.cobble,Cobblestones,buildings,stonework,masonry,"cobble, cobblestone, street, setts",Rounded stones with deep gaps,1,yes:playground,wet dust snow wear growth blood
+stonework.setts,Granite setts,buildings,stonework,masonry,"setts, paving, square cobbles",Square grey stones in rows,3,,wet dust snow wear growth blood
+stonework.ashlar,"Ashlar, cut stone",buildings,stonework,masonry,"ashlar, cut stone, block wall, bank","Smooth large cut blocks, thin joints",1,,wet dust snow wear growth blood
+stonework.rubble,Rubble wall,buildings,stonework,masonry,"rubble, fieldstone, rough wall",Irregular stones in thick mortar,3,,wet dust snow wear growth blood
+stonework.drystone,Dry-stone wall,buildings,stonework,masonry,"dry stone, field wall, stacked stone",Flat stones stacked without mortar,3,,wet dust snow wear growth blood
+stonework.flagstone,Flagstone paving,buildings,stonework,masonry,"flagstone, patio, slab path",Large irregular flat slabs,3,,wet dust snow wear growth blood
+stonework.river_rock,River-rock wall,buildings,stonework,masonry,"river rock, round stones, chimney",Rounded grey stones in mortar,3,,wet dust snow wear growth blood
+stonework.sandstone,Sandstone blocks,buildings,stonework,masonry,"sandstone, red stone, desert building","Warm layered blocks, soft edges",3,yes:proc,wet dust snow wear growth blood
+stonework.limestone,Limestone blocks,buildings,stonework,masonry,"limestone, pale stone, church",Pale cream blocks with fossil specks,3,,wet dust snow wear growth blood
+stonework.marble_floor,"Marble floor, chequered",buildings,stonework,stone,"marble floor, chequer, hall",Black and white polished squares,3,,wet dust snow wear growth blood
+stonework.terrazzo,Terrazzo,buildings,stonework,stone,"terrazzo, chip floor, mosaic",Polished stone chips in cement,3,,wet dust snow wear growth blood
+stonework.mosaic,Mosaic,buildings,stonework,ceramic,"mosaic, tesserae, tiles",Small coloured tiles in patterns,3,,wet dust snow wear growth blood
+plaster.white,"Plaster, white",buildings,plaster_concrete,plaster,"plaster, render, white wall",Smooth matte white with faint trowel marks,1,yes:proc,wet dust snow wear growth blood
+plaster.peach,"Plaster, warm painted",buildings,plaster_concrete,plaster,"painted plaster, stucco, peach wall","Warm tinted plaster, soft",3,,wet dust snow wear growth blood
+plaster.lime_wash,Limewash,buildings,plaster_concrete,plaster,"limewash, whitewash, chalky","Chalky uneven white, patchy",3,,wet dust snow wear growth blood
+plaster.stucco,"Stucco, textured",buildings,plaster_concrete,plaster,"stucco, rough render, spanish",Swirled coarse texture,3,,wet dust snow wear growth blood
+plaster.cracked,"Plaster, cracked old",buildings,plaster_concrete,plaster,"cracked plaster, crumbling, old wall","Crazed cracks, chunks missing showing lath",3,,wet dust snow wear growth blood
+plaster.pebbledash,Pebbledash,buildings,plaster_concrete,plaster,"pebbledash, roughcast, render",Tiny pebbles stuck in render,3,,wet dust snow wear growth blood
+plaster.mud_daub,Wattle and daub,buildings,plaster_concrete,plaster,"daub, mud wall, wattle",Brown mud with straw over woven sticks,3,,wet dust snow wear growth blood
+concrete.smooth,"Concrete, smooth",buildings,plaster_concrete,plaster,"concrete, cement, slab",Light grey with small air holes,1,yes:proc,wet dust snow wear growth blood
+concrete.board,"Concrete, board-formed",buildings,plaster_concrete,plaster,"board formed, shuttered, bunker",Wood-grain imprint in grey concrete,3,,wet dust snow wear growth blood
+concrete.block,Concrete block,buildings,plaster_concrete,masonry,"cinder block, breeze block, blockwork",Grey blocks with grainy face,3,,wet dust snow wear growth blood
+concrete.aggregate,"Concrete, exposed aggregate",buildings,plaster_concrete,plaster,"aggregate, pebble concrete",Pebbles showing through grey cement,3,,wet dust snow wear growth blood
+concrete.polished,"Concrete, polished",buildings,plaster_concrete,plaster,"polished concrete, floor",Smooth sheen with soft mottling,3,,wet dust snow wear growth blood
+asphalt.road,Asphalt,buildings,plaster_concrete,ground,"asphalt, road, blacktop",Dark grey with small stones,3,,wet dust snow wear growth blood
+asphalt.cracked,"Asphalt, cracked",buildings,plaster_concrete,ground,"cracked road, old asphalt",Grey asphalt with tar-filled cracks,3,,wet dust snow wear growth blood
+wood.plank.deck,Plank deck,buildings,wood_build,wood,"planks, boardwalk, deck, porch",Long planks with gaps and nail heads,1,yes:playground,wet mud dust snow wear growth blood
+wood.plank.weathered,Weathered grey boards,buildings,wood_build,wood,"barn wood, weathered, silver wood",Sun-greyed boards with raised grain,1,,wet mud dust snow wear growth blood
+wood.plank.painted,"Painted boards, flaking",buildings,wood_build,wood,"painted wood, chipped paint, clapboard",Paint peeling to bare wood,3,,wet mud dust snow wear growth blood
+wood.clapboard,Clapboard siding,buildings,wood_build,wood,"clapboard, siding, weatherboard",Overlapping horizontal boards,3,,wet mud dust snow wear growth blood
+wood.board_batten,Board and batten,buildings,wood_build,wood,"board and batten, barn wall",Vertical boards with narrow strips,3,,wet mud dust snow wear growth blood
+wood.log.peeled,"Log wall, peeled",buildings,wood_build,wood,"log cabin, logs, peeled log",Round golden logs with chinking,3,,wet mud dust snow wear growth blood
+wood.log.bark,"Log wall, bark on",buildings,wood_build,bark,"rough logs, bark logs",Logs still in bark,3,,wet mud dust snow wear growth blood
+wood.shingle,Wood shingles,buildings,wood_build,wood,"shingles, shakes, roof shingles",Overlapping split cedar shakes,3,,wet mud dust snow wear growth blood
+wood.floor.oak,Oak floorboards,buildings,wood_build,wood,"oak floor, parquet, floorboards","Warm honey boards, varnished",3,,wet mud dust snow wear growth blood
+wood.floor.pine,Pine floorboards,buildings,wood_build,wood,"pine floor, softwood, cabin floor",Pale yellow with dark knots,3,,wet mud dust snow wear growth blood
+wood.parquet,Parquet,buildings,wood_build,wood,"parquet, herringbone floor",Small blocks in a herringbone,3,,wet mud dust snow wear growth blood
+wood.panelling,Wood panelling,buildings,wood_build,wood,"wainscot, panelling, wall panel",Dark polished raised panels,3,,wet mud dust snow wear growth blood
+wood.beam.oak,Oak beam,buildings,wood_build,wood,"beam, timber frame, rafter",Adze-marked dark oak,3,,wet mud dust snow wear growth blood
+wood.railway_tie,Railway sleeper,buildings,wood_build,wood,"sleeper, railroad tie, tarred wood",Dark creosoted heavy timber,3,,wet mud dust snow wear growth blood
+wood.crate,Wooden crate,buildings,wood_build,wood,"crate, box, pallet",Rough pine slats,3,yes:proc,wet mud dust snow wear growth blood
+wood.lattice,Lattice,buildings,wood_build,wood,"lattice, trellis, screen",Thin crossed slats,3,,wet mud dust snow wear growth blood
+wood.bamboo,Bamboo,buildings,wood_build,wood,"bamboo, cane, poles",Jointed glossy green-yellow poles,3,,wet mud dust snow wear growth blood
+roof.tile.terracotta,"Roof tiles, terracotta",buildings,roofing,ceramic,"terracotta, clay tiles, spanish roof",Curved orange clay tiles,3,,wet dust snow wear growth
+roof.tile.slate,Slate roof,buildings,roofing,stone,"slate, roof slate, grey roof",Thin overlapping blue-grey slates,3,,wet dust snow wear growth
+roof.tile.flat_clay,"Roof tiles, flat clay",buildings,roofing,ceramic,"plain tiles, red roof",Small flat red-brown tiles,3,,wet dust snow wear growth
+roof.tin_corrugated,Corrugated tin,buildings,roofing,metal,"corrugated iron, tin roof, shed",Wavy galvanised sheet,1,,wet dust snow wear growth
+roof.tin_standing,Standing-seam metal roof,buildings,roofing,metal,"metal roof, seam roof",Painted sheets with raised seams,3,,wet dust snow wear growth
+roof.thatch,Thatch,buildings,roofing,foliage,"thatch, straw roof, reed roof",Thick bundled golden straw,1,,wet dust snow wear growth
+roof.tar_paper,Tar paper,buildings,roofing,plastic,"tar paper, roofing felt",Black gritty sheet with seams,3,,wet dust snow wear growth
+roof.sod,Sod roof,buildings,roofing,foliage,"sod roof, turf roof, grass roof",Grass growing over earth,3,,wet dust snow wear growth
+build.iron.railing,Painted iron railing,buildings,metalwork,paint,"railing, fence, black iron",Black paint over iron,3,,wet dust snow wear oxide
+build.iron.rivet_plate,Riveted iron plate,buildings,metalwork,metal,"riveted, boiler plate, bridge",Iron plates with rows of rivets,3,,wet dust snow wear oxide
+build.steel.girder,Steel girder,buildings,metalwork,paint,"girder, I-beam, bridge",Painted steel with rivets,3,,wet dust snow wear oxide
+build.metal.painted_crate,Painted metal,buildings,metalwork,paint,"painted metal, container, crate",Painted sheet with chipped edges,3,yes:proc,wet dust snow wear oxide
+build.copper.roof,Copper roof,buildings,metalwork,metal,"copper roof, dome, spire",Sheet copper with seams,3,,wet dust snow wear oxide
+build.lead.flashing,Lead flashing,buildings,metalwork,metal,"flashing, lead sheet",Soft dull grey sheet with creases,3,,wet dust snow wear oxide
+build.grate,Steel grating,buildings,metalwork,metal,"grate, grating, walkway",Open grid of steel bars,3,,wet dust snow wear oxide
+build.diamond_plate,Diamond plate,buildings,metalwork,metal,"tread plate, checker plate",Raised diamond pattern on steel,3,,wet dust snow wear oxide
+build.chain_link,Chain-link fence,buildings,metalwork,metal,"chain link, wire fence",Woven wire diamonds,3,,wet dust snow wear oxide
+build.mesh,Wire mesh,buildings,metalwork,metal,"wire mesh, screen, chicken wire",Fine hexagonal wire,3,,wet dust snow wear oxide
+tile.glazed.white,"Glazed tiles, white",buildings,tiles,ceramic,"tiles, bathroom, glazed tile, kitchen",Glossy squares in grey grout,1,yes:playground,wet dust wear growth blood
+tile.glazed.green,"Glazed tiles, green",buildings,tiles,ceramic,"green tiles, pub tiles, art tiles",Deep green crackled glaze,3,,wet dust wear growth blood
+tile.subway,"Tiles, brick-pattern",buildings,tiles,ceramic,"subway tile, metro tile",Bevelled white rectangles,3,,wet dust wear growth blood
+tile.encaustic,Patterned floor tiles,buildings,tiles,ceramic,"encaustic, cement tile, pattern tile",Matte tiles with coloured patterns,3,,wet dust wear growth blood
+tile.quarry,Quarry tiles,buildings,tiles,ceramic,"quarry tile, terracotta floor",Matte red-brown squares,3,,wet dust wear growth blood
+tile.hex,Hexagon tiles,buildings,tiles,ceramic,"hex tile, honeycomb tile",Small white hexagons,3,,wet dust wear growth blood
+tile.blue_painted,"Painted tiles, blue on white",buildings,tiles,ceramic,"delft-like, painted tile, blue white",Hand-painted blue motifs on white glaze,3,,wet dust wear growth blood
+tile.mexican,"Painted tiles, bright",buildings,tiles,ceramic,"talavera-like, bright tile",Bright yellow and blue patterns,3,,wet dust wear growth blood
+wall.paper.damask,"Wallpaper, damask",buildings,interior,thin,"wallpaper, damask, victorian",Repeating tone-on-tone flourish,1,,dust wear wet growth blood
+wall.paper.stripe,"Wallpaper, striped",buildings,interior,thin,"striped wallpaper, regency",Vertical stripes,3,,dust wear wet growth blood
+wall.paper.floral,"Wallpaper, floral",buildings,interior,thin,"floral wallpaper, flowers",Faded flower print,3,,dust wear wet growth blood
+wall.paper.peeling,"Wallpaper, peeling",buildings,interior,thin,"peeling wallpaper, abandoned",Curling sheets showing plaster,3,,dust wear wet growth blood
+wall.tin_ceiling,Pressed tin ceiling,buildings,interior,metal,"tin ceiling, pressed metal",White-painted embossed squares,3,,dust wear wet growth blood
+wall.paint.matte,"Painted wall, matte",buildings,interior,plaster,"paint, wall paint, emulsion",Flat even painted plaster,3,,dust wear wet growth blood
+wall.paint.gloss,"Painted wall, gloss",buildings,interior,paint,"gloss paint, enamel paint, door paint",Shiny hard paint with brush marks,3,,dust wear wet growth blood
+wall.carpet.wool,"Carpet, wool",buildings,interior,cloth,"carpet, rug, wool carpet",Dense short pile,3,,dust wear wet growth blood
+wall.carpet.patterned,"Carpet, patterned",buildings,interior,cloth,"patterned carpet, hotel carpet, rug",Pile with a bold repeating pattern,3,,dust wear wet growth blood
+wall.rug.woven,Woven rug,buildings,interior,cloth,"woven rug, kilim-like, flat weave",Flat-woven geometric wool rug,3,,dust wear wet growth blood
+wall.linoleum,Linoleum,buildings,interior,plastic,"linoleum, lino, vinyl floor",Smooth mottled sheet floor,3,,dust wear wet growth blood
+wall.cork,Cork board,buildings,interior,wood,"cork, cork tiles, notice board",Tan granular cork,3,,dust wear wet growth blood
+glass.window.clear,Window glass,buildings,glass_build,glass,"window, glass pane, window glass",Clear with faint sky reflection,1,yes:nature,wet dust snow wear
+glass.window.wavy,Old window glass,buildings,glass_build,glass,"old glass, wavy glass, crown glass","Slightly wavy, distorted view",3,,wet dust snow wear
+glass.window.frosted,Frosted glass,buildings,glass_build,glass,"frosted, obscure glass, bathroom window",Milky blurred see-through,3,,wet dust snow wear
+glass.stained.red,"Stained glass, red",buildings,glass_build,glass,"stained glass, church window, red glass",Deep ruby glowing when backlit,3,,wet dust snow wear
+glass.stained.blue,"Stained glass, blue",buildings,glass_build,glass,"stained glass, cobalt, blue window",Rich cobalt blue,3,,wet dust snow wear
+glass.stained.amber,"Stained glass, amber",buildings,glass_build,glass,"amber glass, yellow window",Warm honey yellow,3,,wet dust snow wear
+glass.leaded,Leaded window,buildings,glass_build,glass,"leaded glass, diamond panes",Small panes in dark lead lines,3,,wet dust snow wear
+glass.wired,Wired safety glass,buildings,glass_build,glass,"wired glass, safety glass",Clear glass with a wire grid inside,3,,wet dust snow wear
+glass.glass_block,Glass block,buildings,glass_build,glass,"glass brick, glass block",Thick rippled glass bricks,3,,wet dust snow wear
+glass.mirror,Mirror,buildings,glass_build,metal,"mirror, looking glass",Silvered perfect reflection,3,,wet dust snow wear
+glass.mirror_old,Old mirror,buildings,glass_build,metal,"antique mirror, foxed mirror",Mirror with dark speckled patches,3,,wet dust snow wear
+ground.soil.loam,"Soil, dark loam",land,soil,ground,"soil, dirt, earth, garden soil",Crumbly dark brown with small clods,1,,wet snow growth blood
+ground.soil.clay_red,"Soil, red clay",land,soil,ground,"red clay, red dirt, laterite","Dense orange-red, cracks when dry",2,,wet snow growth blood
+ground.soil.clay_grey,"Soil, grey clay",land,soil,ground,"grey clay, potter's clay",Smooth sticky blue-grey,2,,wet snow growth blood
+ground.soil.ploughed,Ploughed field,land,soil,ground,"ploughed, furrows, farmland, tilled",Rows of turned dark earth,2,,wet snow growth blood
+ground.soil.packed,Packed dirt,land,soil,ground,"dirt road, packed earth, trail",Hard flattened light-brown earth,1,,wet snow growth blood
+ground.soil.wagon_ruts,Dirt road with ruts,land,soil,ground,"ruts, wagon track, dirt road",Packed earth with two deep wheel ruts,2,,wet snow growth blood
+ground.soil.trail,Footpath,land,soil,ground,"footpath, trail, track, path",Narrow worn earth line through grass,2,,wet snow growth blood
+ground.soil.forest_floor,Forest floor,land,soil,ground,"forest floor, leaf litter, duff","Dark soil under needles, twigs and leaves",2,,wet snow growth blood
+ground.soil.peat,Peat,land,soil,ground,"peat, bog, turf",Fibrous very dark brown,2,,wet snow growth blood
+ground.soil.ash_volcanic,Volcanic soil,land,soil,ground,"volcanic soil, ash soil, black earth",Fine black gritty soil,2,,wet snow growth blood
+ground.soil.cracked_dry,Cracked dry earth,land,soil,ground,"cracked earth, drought, dry lake",Pale crust split into polygons,2,,wet snow growth blood
+ground.soil.alkali,Alkali flat,land,soil,ground,"salt flat, alkali, playa",White crusty crystals over grey,2,,wet snow growth blood
+ground.mud.swamp,Swamp mud,land,soil,ground,"swamp, bog mud, mire, marsh",Dark glossy mud with standing water,1,,wet snow growth blood
+ground.mud.riverbank,Riverbank mud,land,soil,ground,"riverbank, silt, mudflat",Smooth grey-brown silt with ripples,2,,wet snow growth blood
+ground.mud.tidal,Tidal mudflat,land,soil,ground,"mudflat, tidal flat, estuary",Shiny grey mud with worm casts,2,,wet snow growth blood
+ground.corral_dirt,Corral dirt,land,soil,ground,"corral, paddock, trampled ground, hoof prints",Churned earth with hoof prints and straw,2,,wet snow growth blood
+ground.sand.beach,"Sand, beach",land,sand,ground,"sand, beach, seaside",Fine pale gold sand with ripples,1,,wet snow blood
+ground.sand.desert,"Sand, desert dune",land,sand,ground,"dune, desert sand, red sand",Wind-rippled orange sand,2,,wet snow blood
+ground.sand.white,"Sand, white",land,sand,ground,"white sand, coral sand, tropical",Very pale fine sand,2,,wet snow blood
+ground.sand.black,"Sand, black",land,sand,ground,"black sand, volcanic beach",Glittering dark sand,2,,wet snow blood
+ground.sand.wet,"Sand, tide-packed",land,sand,ground,"wet sand, packed sand, shore",Dark firm sand with a sheen,2,,wet snow blood
+ground.sand.river,River sand,land,sand,ground,"river sand, sandbar, coarse sand",Coarse grey-brown sand with pebbles,2,,wet snow blood
+ground.gravel.road,Gravel road,land,gravel,ground,"gravel, road, crushed stone",Grey angular gravel,2,,wet snow dust growth
+ground.gravel.pea,Pea gravel,land,gravel,ground,"pea gravel, garden gravel, shingle",Small rounded mixed pebbles,2,,wet snow dust growth
+ground.gravel.shingle,Shingle beach,land,gravel,ground,"shingle, pebble beach, stones",Rounded grey and white pebbles,2,,wet snow dust growth
+ground.gravel.scree,Scree,land,gravel,ground,"scree, talus, loose rock",Sharp broken rock fragments on a slope,2,,wet snow dust growth
+ground.gravel.railway,Railway ballast,land,gravel,ground,"ballast, track bed, railway",Dark angular stone chips,2,,wet snow dust growth
+ground.gravel.cinders,Cinders,land,gravel,ground,"cinders, clinker, slag, mining",Black porous lumps,2,,wet snow dust growth
+ground.gravel.creek,Creek bed,land,gravel,ground,"creek, stream bed, pebbles",Round wet stones in clear shallows,2,,wet snow dust growth
+rock.granite.grey,"Granite, grey",land,rock,stone,"granite, rock, boulder",Speckled grey with mica glints,1,,wet dust snow wear growth blood
+rock.granite.pink,"Granite, pink",land,rock,stone,"pink granite, red granite",Pink with black flecks,2,,wet dust snow wear growth blood
+rock.basalt,Basalt,land,rock,stone,"basalt, lava rock, columns, black rock","Dark grey fine rock, columnar cracks",1,,wet dust snow wear growth blood
+rock.sandstone.red,"Sandstone, red",land,rock,stone,"red rock, canyon, mesa, butte",Layered rusty red with pale bands,1,,wet dust snow wear growth blood
+rock.sandstone.buff,"Sandstone, buff",land,rock,stone,"buff sandstone, yellow rock",Pale cream layered rock,2,,wet dust snow wear growth blood
+rock.sandstone.striped,"Sandstone, banded",land,rock,stone,"banded rock, striped cliff, wave rock","Swirling red, orange and cream bands",2,,wet dust snow wear growth blood
+rock.limestone,Limestone,land,rock,stone,"limestone, cliff, karst",Pale grey with pits and fossils,2,,wet dust snow wear growth blood
+rock.chalk,Chalk,land,rock,stone,"chalk cliff, white cliff","Soft bright white, crumbly",2,,wet dust snow wear growth blood
+rock.slate,Slate,land,rock,stone,"slate, shale, layered rock",Dark grey thin flaking layers,2,,wet dust snow wear growth blood
+rock.shale,Shale,land,rock,stone,"shale, mudstone, crumbling",Dark brittle layers,2,,wet dust snow wear growth blood
+rock.marble.white,"Marble, white",land,rock,stone,"marble, statue, white stone","White with soft grey veins, translucent edge",2,,wet dust snow wear growth blood
+rock.marble.green,"Marble, green",land,rock,stone,"green marble, serpentine",Dark green with white veins,2,,wet dust snow wear growth blood
+rock.obsidian,Obsidian,land,rock,gem,"obsidian, volcanic glass, black glass","Glossy black, sharp curved fractures",2,,wet dust snow wear growth blood
+rock.pumice,Pumice,land,rock,stone,"pumice, lava foam, light stone",Pale grey full of holes,2,,wet dust snow wear growth blood
+rock.lava.cooled,Cooled lava,land,rock,stone,"lava field, pahoehoe, flow",Black ropy wrinkled rock,2,,wet dust snow wear growth blood
+rock.quartzite,Quartzite,land,rock,stone,"quartzite, quartz rock",Sugary white and pink,2,,wet dust snow wear growth blood
+rock.flint,Flint,land,rock,stone,"flint, chert, arrowhead stone",Dark glassy with a white crust,2,,wet dust snow wear growth blood
+rock.conglomerate,Conglomerate,land,rock,stone,"conglomerate, puddingstone",Pebbles cemented in sandy rock,2,,wet dust snow wear growth blood
+rock.travertine,Travertine,land,rock,stone,"travertine, hot spring rock, terraces",Cream with small holes and bands,2,,wet dust snow wear growth blood
+rock.mossy_boulder,"Boulder, lichen-spotted",land,rock,stone,"boulder, lichen rock, field stone",Grey with pale green and orange lichen spots,2,,wet dust snow wear growth blood
+rock.cave_wall,Cave wall,land,rock,stone,"cave, cavern, rock wall","Damp dark rock, smooth flowstone",2,,wet dust snow wear growth blood
+rock.stalactite,Flowstone,land,rock,stone,"stalactite, stalagmite, dripstone",Wet cream-orange drapery stone,2,,wet dust snow wear growth blood
+rock.ore.iron,Iron ore,land,rock,stone,"iron ore, red ore, haematite",Rusty red-black heavy rock,2,,wet dust snow wear growth blood
+rock.ore.copper,Copper ore,land,rock,stone,"copper ore, malachite, azurite",Grey rock with green and blue streaks,2,,wet dust snow wear growth blood
+rock.ore.gold_vein,Gold-bearing quartz,land,rock,stone,"gold vein, quartz vein, gold ore",White quartz with gold flecks,2,,wet dust snow wear growth blood
+rock.ore.coal,Coal,land,rock,stone,"coal, coal seam, mine",Shiny black layered lumps,2,,wet dust snow wear growth blood
+rock.salt,Rock salt,land,rock,gem,"salt, halite, salt mine",Translucent pink-white crystals,2,,wet dust snow wear growth blood
+ground.grass.lawn,"Grass, short lawn",land,grass_ground,foliage,"lawn, grass, turf, green",Even short green blades,1,yes:nature,wet mud snow dust blood
+ground.grass.meadow,"Grass, meadow",land,grass_ground,foliage,"meadow, field, long grass",Tall mixed grasses with seed heads,1,yes:nature,wet mud snow dust blood
+ground.grass.prairie,"Grass, dry prairie",land,grass_ground,foliage,"prairie, plains grass, golden grass",Knee-high gold-brown grass,2,,wet mud snow dust blood
+ground.grass.bunch,Bunchgrass,land,grass_ground,foliage,"bunchgrass, tussock, clumps",Separate tufts with bare soil between,2,,wet mud snow dust blood
+ground.grass.marsh,Marsh grass,land,grass_ground,foliage,"marsh grass, reeds, wetland",Tall green blades in water,2,,wet mud snow dust blood
+ground.grass.alpine,Alpine turf,land,grass_ground,foliage,"alpine, tundra, mountain grass",Short tight green with tiny flowers,2,,wet mud snow dust blood
+ground.grass.burnt,"Grass, burnt",land,grass_ground,foliage,"burnt grass, wildfire, scorched",Black stubble with grey ash,2,,wet mud snow dust blood
+ground.grass.frosted,"Grass, frosted",land,grass_ground,foliage,"frosty grass, frost",White frost crystals on blade tips,2,,wet mud snow dust blood
+ground.grass.dead,"Grass, dead winter",land,grass_ground,foliage,"dead grass, winter grass, straw",Flattened pale tan blades,2,,wet mud snow dust blood
+ground.clover,Clover patch,land,grass_ground,foliage,"clover, lawn weeds","Round three-part leaves, low mat",2,,wet mud snow dust blood
+ground.moss.carpet,Moss carpet,land,grass_ground,foliage,"moss, forest moss, mossy ground",Thick soft bright green cushion,2,,wet mud snow dust blood
+ground.leaf_litter,"Leaf litter, autumn",land,grass_ground,foliage,"leaves, autumn, fallen leaves","Red, orange and brown fallen leaves",2,,wet mud snow dust blood
+ground.pine_needles,Pine needles,land,grass_ground,foliage,"pine needles, forest floor, conifer",Rust-brown needle carpet,2,,wet mud snow dust blood
+ground.snow.fresh,"Snow, fresh powder",land,snow_ice_ground,ice,"snow, fresh snow, powder",Soft bright white with blue shadows and sparkle,1,,dust mud blood
+ground.snow.packed,"Snow, packed",land,snow_ice_ground,ice,"packed snow, trail snow, road snow",Compressed slightly grey with tracks,2,,dust mud blood
+ground.snow.crust,"Snow, wind crust",land,snow_ice_ground,ice,"crusty snow, sastrugi, wind-blown",Shiny ridged crust,2,,dust mud blood
+ground.snow.slush,Slush,land,snow_ice_ground,ice,"slush, melting snow, wet snow",Grey wet translucent heaps,2,,dust mud blood
+ground.snow.dirty,"Snow, roadside grey",land,snow_ice_ground,ice,"dirty snow, old snow, town snow",Grey-brown speckled old snow,2,,dust mud blood
+ground.ice.lake,Lake ice,land,snow_ice_ground,ice,"frozen lake, ice sheet, pond ice",Dark clear ice with white cracks and bubbles,2,,dust mud blood
+ground.ice.glacier,Glacier ice,land,snow_ice_ground,ice,"glacier, blue ice, ice cave",Deep blue compressed ice,2,,dust mud blood
+ground.ice.sheet_road,Black ice,land,snow_ice_ground,ground,"black ice, glaze, icy road",Thin invisible glossy layer,2,,wet dust snow wear growth blood
+ground.permafrost,Frozen ground,land,snow_ice_ground,ground,"permafrost, frozen earth, tundra",Hard grey earth with frost crystals,2,,dust mud blood
+ground.ash.volcanic,Volcanic ash,land,special_ground,ground,"ash, ash fall, grey dust",Soft fine grey powder,10,,wet snow dust
+ground.sulphur,Sulphur crust,land,special_ground,ground,"sulphur, sulfur, hot spring, vent",Bright yellow crystal crust,10,,wet snow dust
+ground.hot_spring_mat,Hot spring mat,land,special_ground,ground,"hot spring, bacterial mat, colourful pool",Orange and green slimy bands,10,,wet snow dust
+ground.mine_tailings,Mine tailings,land,special_ground,ground,"tailings, mine waste, spoil heap",Grey-orange crushed rock waste,10,,wet snow dust
+ground.sawdust,Sawdust floor,land,special_ground,wood,"sawdust, wood shavings, mill floor",Pale scattered wood chips,10,,wet snow dust
+ground.straw_floor,Straw floor,land,special_ground,foliage,"straw, stable floor, hay floor",Loose golden straw,10,,wet snow dust
+ground.manure,Manure,land,special_ground,ground,"manure, dung, barnyard",Dark brown fibrous mush,10,,wet snow dust
+ground.bones_field,Bone-strewn ground,land,special_ground,ground,"bones, graveyard, battlefield",Earth with scattered bleached bones,10,,wet snow dust
+ground.salt_crust,Salt crust,land,special_ground,ground,"salt crust, salt pan",Hexagon-ridged white crust,10,,wet snow dust
+ground.coral_sand,Reef floor,land,special_ground,ground,"reef floor, seabed, coral rubble",Pale coral rubble and sand,10,,wet snow dust
+ground.seabed_mud,Seabed silt,land,special_ground,ground,"seabed, ocean floor, silt",Soft grey-green silt,10,,wet snow dust
+ground.mars_dust,Red dust plain,land,special_ground,ground,"red planet, alien dust, rust desert",Fine rust-red dust with rocks,10,,wet snow dust
+leaf.oak,"Leaves, oak",plants,leaves,foliage,"oak leaves, broadleaf, tree crown","Lobed mid-green leaves, glow when backlit",1,yes:nature,wet snow dust growth
+leaf.maple.green,"Leaves, maple green",plants,leaves,foliage,"maple, broadleaf, summer leaves",Five-pointed bright green leaves,2,,wet snow dust growth
+leaf.maple.autumn,"Leaves, maple autumn",plants,leaves,foliage,"autumn, fall, red leaves, maple","Red and orange, strong backlit glow",1,,wet snow dust growth
+leaf.birch,"Leaves, birch",plants,leaves,foliage,"birch, aspen, small leaves, yellow leaves","Small round leaves, yellow in autumn",2,,wet snow dust growth
+leaf.cottonwood,"Leaves, cottonwood",plants,leaves,foliage,"cottonwood, poplar, river tree","Glossy triangular leaves, pale underside",2,,wet snow dust growth
+leaf.willow,"Leaves, willow",plants,leaves,foliage,"willow, weeping willow, drooping",Long narrow silvery-green leaves,2,,wet snow dust growth
+leaf.elm,"Leaves, elm",plants,leaves,foliage,"elm, street tree",Rough oval serrated leaves,2,,wet snow dust growth
+leaf.magnolia,"Leaves, magnolia",plants,leaves,foliage,"magnolia, glossy leaf, southern","Thick glossy dark leaves, rusty underside",2,,wet snow dust growth
+leaf.palm,Palm fronds,plants,leaves,foliage,"palm, frond, tropical, coconut",Long feathery green fronds,2,,wet snow dust growth
+leaf.banana,Banana leaves,plants,leaves,foliage,"banana leaf, tropical, jungle",Huge torn bright green leaves,2,,wet snow dust growth
+leaf.fern,Fern fronds,plants,leaves,foliage,"fern, bracken, frond, forest",Fine lacy fronds,2,,wet snow dust growth
+leaf.ivy,Ivy,plants,leaves,foliage,"ivy, climbing plant, creeper",Glossy dark heart-shaped leaves,2,,wet snow dust growth
+leaf.vine.grape,Grape vine leaves,plants,leaves,foliage,"vine, grapevine, vineyard",Broad lobed leaves with curling tendrils,2,,wet snow dust growth
+leaf.jungle,"Jungle leaves, broad",plants,leaves,foliage,"jungle, rainforest, monstera-like",Big split glossy leaves,2,,wet snow dust growth
+leaf.dead_brown,"Leaves, dead brown",plants,leaves,foliage,"dead leaves, dry leaves, withered","Curled dry brown, no glow",2,,wet snow dust growth
+needle.pine,"Needles, pine",plants,needles,foliage,"pine, conifer, evergreen",Long clustered dark green needles,1,,wet snow dust
+needle.spruce,"Needles, spruce",plants,needles,foliage,"spruce, christmas tree, fir",Short dense blue-green needles,2,,wet snow dust
+needle.fir,"Needles, fir",plants,needles,foliage,"fir, balsam, evergreen",Flat soft dark green needles,2,,wet snow dust
+needle.cedar,"Foliage, cedar",plants,needles,foliage,"cedar, juniper, scale leaves",Flat scaly sprays,2,,wet snow dust
+needle.juniper,Juniper with berries,plants,needles,foliage,"juniper, berries, shrub",Prickly grey-green with blue berries,2,,wet snow dust
+needle.dead,"Needles, dead rust",plants,needles,foliage,"dead pine, beetle kill, rust needles",Orange-brown dry needles,2,,wet snow dust
+bark.oak,"Bark, oak",plants,bark,bark,"oak bark, tree trunk, rough bark",Deep grey furrows and ridges,1,,wet snow dust growth blood
+bark.pine,"Bark, pine",plants,bark,bark,"pine bark, plates, red bark",Orange-brown flaking plates,2,,wet snow dust growth blood
+bark.birch,"Bark, birch",plants,bark,bark,"birch bark, white bark, paper bark","White with black marks, peeling strips",1,,wet snow dust growth blood
+bark.aspen,"Bark, aspen",plants,bark,bark,"aspen, smooth bark, white tree",Smooth pale green-white with eye marks,2,,wet snow dust growth blood
+bark.beech,"Bark, beech",plants,bark,bark,"beech, smooth grey bark",Smooth silver-grey,2,,wet snow dust growth blood
+bark.cottonwood,"Bark, cottonwood",plants,bark,bark,"cottonwood bark, deep furrows",Thick corky grey ridges,2,,wet snow dust growth blood
+bark.redwood,"Bark, redwood",plants,bark,bark,"redwood, sequoia, fibrous bark",Thick soft red-brown fibres,2,,wet snow dust growth blood
+bark.cherry,"Bark, cherry",plants,bark,bark,"cherry bark, banded bark",Glossy red-brown with horizontal bands,2,,wet snow dust growth blood
+bark.palm,Palm trunk,plants,bark,bark,"palm trunk, palm bark",Grey rings and fibrous scars,2,,wet snow dust growth blood
+bark.mangrove,Mangrove roots,plants,bark,bark,"mangrove, swamp roots",Grey-brown arching wet roots,2,,wet snow dust growth blood
+bark.cypress,"Bark, swamp cypress",plants,bark,bark,"cypress, bald cypress, swamp tree",Stringy reddish grey bark,2,,wet snow dust growth blood
+bark.dead_snag,"Dead tree, bare wood",plants,bark,bark,"dead tree, snag, bleached wood","Weathered silver-grey dead wood, split along the grain, no bark",2,,wet snow dust growth blood
+bark.burnt,"Bark, charred",plants,bark,bark,"burnt tree, charcoal, wildfire",Black cracked charcoal with glowing seams possible,2,,wet snow dust growth blood
+bark.vine_woody,Woody vine,plants,bark,bark,"liana, woody vine, creeper",Twisted brown cords,2,,wet snow dust growth blood
+timber.oak,"Oak, cut",plants,timber,wood,"oak, hardwood, oak wood",Honey-brown with ray flecks,1,,wet dust wear growth blood
+timber.pine,"Pine, cut",plants,timber,wood,"pine, softwood, deal, lumber",Pale yellow with brown knots,1,,wet dust wear growth blood
+timber.cedar,"Cedar, cut",plants,timber,wood,"cedar, red cedar, aromatic",Pink-red with soft grain,8,,wet dust wear growth blood
+timber.birch,"Birch, cut",plants,timber,wood,"birch wood, plywood",Very pale fine grain,8,,wet dust wear growth blood
+timber.cherry,"Cherry, cut",plants,timber,wood,"cherry wood, furniture","Warm red-brown, smooth",8,,wet dust wear growth blood
+timber.mahogany,Mahogany,plants,timber,wood,"mahogany, dark red wood, furniture","Deep red-brown, interlocked grain",8,,wet dust wear growth blood
+timber.teak,Teak,plants,timber,wood,"teak, ship deck, oily wood","Golden brown, oily sheen",8,,wet dust wear growth blood
+timber.walnut,"Walnut, cut",plants,timber,wood,"walnut, dark wood",Chocolate with darker streaks,8,,wet dust wear growth blood
+timber.redwood,"Redwood, cut",plants,timber,wood,"redwood, sequoia, red timber","Light red, straight grain",8,,wet dust wear growth blood
+timber.ash,"Ash, cut",plants,timber,wood,"ash wood, pale hardwood",Pale with strong straight grain,8,,wet dust wear growth blood
+timber.elm,"Elm, cut",plants,timber,wood,"elm wood, wild grain",Brown with wild wavy grain,8,,wet dust wear growth blood
+timber.olive,Olive wood,plants,timber,wood,"olive wood, bowl wood",Cream with dark swirling lines,8,,wet dust wear growth blood
+timber.driftwood,Driftwood,plants,timber,wood,"driftwood, beach wood, bleached",Smooth silver-grey worn wood,8,,wet dust wear growth blood
+timber.charred,Charred wood,plants,timber,wood,"charred, burnt wood, alligatored",Black cracked squares of char,8,,wet dust wear growth blood
+timber.end_grain,End grain,plants,timber,wood,"end grain, chopping block, stump top",Concentric growth rings,8,,wet dust wear growth blood
+timber.plywood,Plywood,plants,timber,wood,"plywood, sheet wood, ply","Thin face veneer, layered edge",8,,wet dust wear growth blood
+flower.rose.red,"Rose petals, red",plants,flowers,thin,"rose, red flower, petals",Velvety deep red petals,1,,wet snow dust
+flower.rose.white,"Rose petals, white",plants,flowers,thin,"white rose, wedding flower",Cream-white petals,10,,wet snow dust
+flower.daisy,Daisy,plants,flowers,thin,"daisy, white flower, meadow flower","White rays, yellow centre",10,,wet snow dust
+flower.sunflower,Sunflower,plants,flowers,thin,"sunflower, yellow flower, big flower","Bright yellow petals, dark seed disc",10,,wet snow dust
+flower.poppy,Poppy,plants,flowers,thin,"poppy, red poppy, field flower","Papery red, black centre",10,,wet snow dust
+flower.lavender,Lavender,plants,flowers,thin,"lavender, purple flowers, herb",Small purple spikes,10,,wet snow dust
+flower.bluebonnet,"Lupin, blue",plants,flowers,thin,"lupin, blue flower, wildflower, bluebonnet-like",Blue pea-flower spikes,10,,wet snow dust
+flower.cactus_bloom,Cactus flower,plants,flowers,thin,"cactus flower, desert bloom",Waxy magenta petals,10,,wet snow dust
+flower.tulip,Tulip,plants,flowers,thin,"tulip, spring flower",Smooth cupped petals,10,,wet snow dust
+flower.lily,Lily,plants,flowers,thin,"lily, white lily, trumpet flower",Large waxy trumpets,10,,wet snow dust
+flower.orchid,Orchid,plants,flowers,thin,"orchid, tropical flower",Speckled pale purple petals,10,,wet snow dust
+flower.cherry_blossom,"Blossom, pale pink",plants,flowers,thin,"blossom, cherry blossom, spring tree",Clusters of pale pink petals,10,,wet snow dust
+flower.dandelion,Dandelion,plants,flowers,thin,"dandelion, weed, clock",Yellow head or white seed puff,10,,wet snow dust
+flower.lotus,Water lily,plants,flowers,thin,"water lily, lotus, pond flower",Pink petals on flat pads,10,,wet snow dust
+crop.wheat.ripe,"Wheat, ripe",plants,crops,foliage,"wheat, grain, field, harvest",Golden stalks with heavy heads,1,,wet mud snow dust
+crop.wheat.green,"Wheat, green",plants,crops,foliage,"young wheat, green field",Soft green shoots,8,,wet mud snow dust
+crop.corn,Maize,plants,crops,foliage,"corn, maize, cornfield",Tall stalks with long leaves,8,,wet mud snow dust
+crop.cotton,Cotton plant,plants,crops,foliage,"cotton boll, cotton field",White fluffy bolls on dry stems,8,,wet mud snow dust
+crop.tobacco,Tobacco leaf,plants,crops,foliage,"tobacco, leaf crop, drying leaf",Broad leaves drying to brown,8,,wet mud snow dust
+crop.hay,Hay,plants,crops,foliage,"hay, hay bale, dried grass",Dry pale green-gold strands,1,,wet mud snow dust
+crop.straw,Straw,plants,crops,foliage,"straw, bale, bedding",Hollow golden stalks,8,,wet mud snow dust
+crop.sugarcane,Sugar cane,plants,crops,foliage,"sugarcane, cane field",Tall jointed green-purple stems,8,,wet mud snow dust
+crop.rice,Rice paddy,plants,crops,foliage,"rice, paddy, wet field",Bright green shoots in water,8,,wet mud snow dust
+crop.vegetable_patch,Vegetable patch,plants,crops,foliage,"garden, vegetable bed, lettuce",Leafy rows over dark soil,8,,wet mud snow dust
+plant.cactus.saguaro,"Cactus, tall ribbed",plants,desert_plants,foliage,"saguaro-like, cactus, desert",Ribbed waxy green with spines,10,,dust snow wet
+plant.cactus.prickly_pear,"Cactus, flat pads",plants,desert_plants,foliage,"prickly pear, paddle cactus",Flat green pads with spine clusters,10,,dust snow wet
+plant.cactus.barrel,"Cactus, barrel",plants,desert_plants,foliage,"barrel cactus, round cactus",Round ribbed with hooked spines,10,,dust snow wet
+plant.agave,Agave,plants,desert_plants,foliage,"agave, aloe, succulent",Thick blue-grey spiked leaves,10,,dust snow wet
+plant.sagebrush,Sagebrush,plants,desert_plants,foliage,"sagebrush, sage, desert scrub",Silvery grey-green shrub,10,,dust snow wet
+plant.tumbleweed,Tumbleweed,plants,desert_plants,foliage,"tumbleweed, dry bush",Tangle of dry tan twigs,10,,dust snow wet
+plant.yucca,Yucca,plants,desert_plants,foliage,"yucca, spiky plant, desert lily",Stiff sword leaves,10,,dust snow wet
+fungus.cap_red,"Mushroom, red spotted",plants,fungi_mosses,organic,"toadstool, red mushroom, fairy mushroom",Red cap with white spots,10,,wet snow dust
+fungus.cap_brown,"Mushroom, brown",plants,fungi_mosses,organic,"mushroom, brown cap, forest mushroom","Smooth brown cap, pale gills",10,,wet snow dust
+fungus.bracket,Bracket fungus,plants,fungi_mosses,organic,"bracket fungus, shelf fungus",Tough ringed shelves on wood,10,,wet snow dust
+fungus.puffball,Puffball,plants,fungi_mosses,organic,"puffball, white fungus",Round white leathery ball,10,,wet snow dust
+fungus.glow,Glowing fungus,plants,fungi_mosses,glow,"glowing mushroom, bioluminescent, foxfire",Faint green-blue glow at night,10,,wet snow dust
+lichen.crust,Lichen crust,plants,fungi_mosses,foliage,"lichen, rock crust, orange lichen",Flat orange and grey-green patches,10,,wet snow dust
+moss.hanging,Hanging moss,plants,fungi_mosses,foliage,"hanging moss, spanish moss-like, swamp",Grey-green beard hanging from branches,10,,wet snow dust
+algae.pond,Pond algae,plants,fungi_mosses,water,"algae, pond scum, green water",Slimy green floating mat,10,,wet snow dust
+seaweed.kelp,Kelp,plants,fungi_mosses,thin,"kelp, seaweed, sea plant",Leathery olive-brown ribbons,10,,wet snow dust
+plant.pinecone,Pine cone,plants,plant_parts,wood,"pine cone, cone, seed",Woody brown scales,10,,wet dust snow
+plant.acorn,Acorn,plants,plant_parts,wood,"acorn, nut, oak seed",Glossy brown with a rough cap,10,,wet dust snow
+plant.thorn,Thorny bramble,plants,plant_parts,foliage,"thorns, bramble, briar, blackberry bush",Arching red-green stems with thorns,10,,wet dust snow
+plant.reed,Reeds,plants,plant_parts,foliage,"reeds, cattail, bulrush","Tall stiff stems, brown seed heads",10,,wet dust snow
+plant.bamboo_live,"Bamboo, living",plants,plant_parts,foliage,"bamboo grove, green bamboo",Green jointed stems with leaves,10,,wet dust snow
+plant.root_tangle,Exposed roots,plants,plant_parts,bark,"roots, tree roots, tangle",Twisted brown roots over soil,10,,wet dust snow
+plant.sap,Tree sap,plants,plant_parts,glass,"sap, resin, amber resin",Sticky translucent golden drops,10,,wet dust snow
+pot.terracotta,Terracotta pot,household,pottery,ceramic,"terracotta, flower pot, clay pot","Unglazed orange clay, chalky",1,,wet dust wear blood
+pot.stoneware.brown,"Stoneware, brown glaze",household,pottery,ceramic,"stoneware, crock, jug, salt glaze",Glossy brown glaze with speckles,8,,wet dust wear blood
+pot.stoneware.grey,"Stoneware, grey salt-glazed",household,pottery,ceramic,"salt glaze, crock, blue decoration",Orange-peel grey glaze with blue marks,8,,wet dust wear blood
+pot.porcelain.white,"Porcelain, white",household,pottery,ceramic,"porcelain, china, fine china, teacup","Bright white glossy, thin and slightly translucent",1,,wet dust wear blood
+pot.porcelain.blue_white,"Porcelain, blue and white",household,pottery,ceramic,"blue and white, willow-like pattern, plate",Cobalt painted scenes under clear glaze,8,,wet dust wear blood
+pot.enamel.white,"Enamelware, white",household,pottery,ceramic,"enamel mug, camp mug, enamel","White enamel with dark rim, chips show black",1,,wet dust wear blood
+pot.enamel.speckled,"Enamelware, speckled blue",household,pottery,ceramic,"graniteware, speckled enamel, coffee pot",Blue with white speckles,8,,wet dust wear blood
+pot.earthenware,"Earthenware, glazed",household,pottery,ceramic,"earthenware, bowl, rustic pottery","Thick creamy glaze, crazed",8,,wet dust wear blood
+pot.crackle,Crackle glaze,household,pottery,ceramic,"crackle, raku, crazed glaze",Fine dark crack network in glaze,8,,wet dust wear blood
+pot.celadon,Celadon glaze,household,pottery,ceramic,"celadon, jade glaze, green pottery",Soft pale green-grey glass glaze,8,,wet dust wear blood
+pot.lustre,Lustreware,household,pottery,ceramic,"lustre, iridescent glaze",Metallic sheen on glaze,8,,wet dust wear blood
+pot.bisque,"Bisque, unglazed white",household,pottery,ceramic,"bisque, biscuit, unglazed porcelain, doll",Matte chalky white,8,,wet dust wear blood
+glass.bottle.green,"Bottle glass, green",household,glassware,glass,"bottle, wine bottle, beer bottle","Thick green glass, darker at edges",1,yes:nature,wet dust wear
+glass.bottle.brown,"Bottle glass, brown",household,glassware,glass,"brown bottle, amber bottle, medicine",Dark amber glass,8,,wet dust wear
+glass.bottle.clear,"Bottle glass, clear",household,glassware,glass,"clear bottle, jar, flask",Clear with faint green edge,8,,wet dust wear
+glass.bottle.cobalt,"Bottle glass, cobalt",household,glassware,glass,"blue bottle, poison bottle",Deep cobalt blue,8,,wet dust wear
+glass.crystal.cut,Cut crystal,household,glassware,glass,"cut glass, crystal, decanter, whisky glass",Sharp facets with rainbow sparkle,1,,wet dust wear
+glass.milk,Milk glass,household,glassware,glass,"milk glass, opal glass, lamp shade",Opaque soft white glass,8,,wet dust wear
+glass.lamp_chimney,Lamp chimney,household,glassware,glass,"lamp glass, chimney, hurricane","Thin clear glass, sooty at the top",8,,wet dust wear
+glass.jar.mason,Preserving jar,household,glassware,glass,"mason jar, jar, preserving",Slightly blue-green moulded glass,8,,wet dust wear
+glass.frosted_bulb,Frosted bulb,household,glassware,glass,"light bulb, frosted glass",Milky glass glowing from inside,8,,wet dust wear
+glass.vaseline,Glowing uranium glass,household,glassware,glass,"uranium glass, canary glass","Yellow-green glass, glows under black light",8,,wet dust wear
+kitchen.cast_iron_pan,"Cast-iron pan, seasoned",household,kitchen_metal,metal,"skillet, frying pan, dutch oven",Black satin with a smooth cooking surface,8,,wet dust wear oxide blood
+kitchen.copper_pot,"Copper pot, tinned",household,kitchen_metal,metal,"copper pan, copper pot, kitchen","Polished copper outside, silver tin inside",8,,wet dust wear oxide blood
+kitchen.tin_cup,Tin cup,household,kitchen_metal,metal,"tin cup, camp cup, tin plate",Dull dented grey tin,8,,wet dust wear oxide blood
+kitchen.stainless,Stainless steel,household,kitchen_metal,metal,"stainless, sink, cutlery",Satin steel with smudges,8,,wet dust wear oxide blood
+kitchen.silverware,"Silverware, plated",household,kitchen_metal,metal,"cutlery, silverware, spoon",Bright plating worn at the edges,8,,wet dust wear oxide blood
+kitchen.cast_stove,Cast-iron stove,household,kitchen_metal,metal,"stove, range, potbelly",Black iron with nickel trim,8,,wet dust wear oxide blood
+kitchen.enamel_stove,Enamelled stove,household,kitchen_metal,ceramic,"enamel stove, cream range",Cream enamel with chrome handles,8,,wet dust wear oxide blood
+kitchen.coffee_grinder,Brass and iron grinder,household,kitchen_metal,paint,"grinder, coffee mill",Painted iron with a brass hopper,8,,wet dust wear oxide blood
+kitchen.lantern,Tin lantern,household,kitchen_metal,metal,"lantern, oil lamp, punched tin",Punched tin with light leaking out,8,,wet dust wear oxide blood
+kitchen.oil_can,Painted oil can,household,kitchen_metal,paint,"oil can, kerosene can, red can","Red paint over tin, dented",8,,wet dust wear oxide blood
+finish.varnish.dark,Varnished dark wood,household,furniture_finish,wood,"varnish, dark furniture, polished wood",Deep brown wood under glossy varnish,8,,wet dust wear growth blood
+finish.varnish.golden,Varnished golden wood,household,furniture_finish,wood,"golden oak, varnished, honey wood",Warm amber gloss,8,,wet dust wear growth blood
+finish.lacquer.black,Black lacquer,household,furniture_finish,paint,"lacquer, piano black, japanned",Deep mirror-black,8,,wet dust wear growth blood
+finish.lacquer.red,Red lacquer,household,furniture_finish,paint,"red lacquer, cinnabar",Deep glossy red,8,,wet dust wear growth blood
+finish.painted.cream,"Painted furniture, cream",household,furniture_finish,paint,"painted furniture, shabby, cream","Soft cream paint, brush marks",8,,wet dust wear growth blood
+finish.painted.green,"Painted furniture, sage",household,furniture_finish,paint,"painted cabinet, sage, farmhouse",Dull sage-green paint,8,,wet dust wear growth blood
+finish.milk_paint,"Milk paint, blue",household,furniture_finish,paint,"milk paint, folk paint, chalky","Chalky blue, uneven",8,,wet dust wear growth blood
+finish.gilt,Gilt,household,furniture_finish,metal,"gilt, gilded, gold leaf, frame",Thin gold leaf with red base showing,8,,wet dust wear growth blood
+finish.clearcoat,Clear-coat paint,household,furniture_finish,paint,"clear coat, car paint, glossy paint",Coloured base under a deep clear layer,1,yes:layers,wet dust wear growth blood
+finish.soap_film,Soap film,household,furniture_finish,paint,"soap bubble, thin film, oil slick",Swirling rainbow film,1,yes:layers,wet dust wear growth blood
+finish.wax_polish,Waxed wood,household,furniture_finish,wood,"wax polish, beeswax finish",Soft low gloss over wood,8,,wet dust wear growth blood
+finish.marquetry,Marquetry,household,furniture_finish,wood,"marquetry, inlay, veneer pattern",Pieces of light and dark veneer,8,,wet dust wear growth blood
+uph.leather_button,Buttoned leather seat,household,upholstery,leather,"chesterfield-like, button leather, club chair",Deep-buttoned oxblood leather,8,,wet dust wear blood
+uph.horsehair,Horsehair cloth,household,upholstery,cloth,"horsehair cloth, haircloth",Stiff glossy black weave,8,,wet dust wear blood
+uph.chintz,Chintz,household,upholstery,cloth,"chintz, glazed cotton, floral sofa","Glazed floral cotton, light sheen",8,,wet dust wear blood
+uph.mattress,"Mattress ticking, stained",household,upholstery,cloth,"mattress, bed, ticking",Striped cotton with lumps of stuffing,8,,wet dust wear blood
+uph.quilt,Patchwork quilt,household,upholstery,cloth,"quilt, patchwork, bedspread","Many small printed squares, stitched",8,,wet dust wear blood
+uph.cushion_velvet,Velvet cushion,household,upholstery,cloth,"cushion, pillow, velvet",Soft plush pile,8,yes:layers,wet dust wear blood
+paper.newsprint,Newsprint,household,paper_books,thin,"newspaper, newsprint, paper",Grey-cream thin paper with printed columns,1,,wet dust wear blood
+paper.parchment,Parchment,household,paper_books,thin,"parchment, vellum, scroll",Yellowed translucent sheet,8,,wet dust wear blood
+paper.kraft,Brown paper,household,paper_books,thin,"kraft paper, wrapping, parcel",Brown fibrous paper,8,,wet dust wear blood
+paper.cardboard,Cardboard,household,paper_books,thin,"cardboard, box, corrugated",Brown board with ridged edges,8,,wet dust wear blood
+paper.book_cloth,Book cloth cover,household,paper_books,cloth,"book cover, cloth binding, hardback","Woven cloth over board, gold title",8,,wet dust wear blood
+paper.book_leather,Leather book cover,household,paper_books,leather,"leather book, bible, ledger",Worn leather with gilt edges,8,,wet dust wear blood
+paper.map,Old map,household,paper_books,thin,"map, chart, treasure map",Faded inked lines on folded paper,8,,wet dust wear blood
+paper.playing_card,Playing card,household,paper_books,thin,"playing cards, card, deck",Glossy white card with printed pips,8,,wet dust wear blood
+paper.banknote,Paper money,household,paper_books,thin,"money, banknote, dollar, cash",Engraved green and black on soft paper,8,,wet dust wear blood
+paper.wanted_poster,Printed poster,household,paper_books,thin,"poster, notice, wanted poster",Bold black type on cheap paper,8,,wet dust wear blood
+paper.paper_lantern,Paper lantern,household,paper_books,thin,"paper lantern, rice paper",Thin paper glowing from inside,8,,wet dust wear blood
+wax.candle.white,"Candle wax, white",household,wax_soap,thin,"candle, wax, tallow","Creamy wax, warm glow near the flame",1,yes:nature,dust wear
+wax.candle.beeswax,Beeswax,household,wax_soap,thin,"beeswax, honey candle, yellow wax",Warm yellow wax with honeycomb texture,8,,dust wear
+wax.candle.red,"Candle wax, red",household,wax_soap,thin,"red candle, sealing wax","Deep red wax, glossy drips",8,,dust wear
+wax.soap,Soap bar,household,wax_soap,thin,"soap, bar soap, lye soap",Pale smooth slightly translucent bar,8,,dust wear
+wax.lampshade,Fabric lampshade,household,wax_soap,thin,"lampshade, lamp, shade",Pleated cloth glowing from the bulb,8,yes:nature,dust wear
+plastic.glossy.red,"Plastic, glossy",household,toys_plastic,plastic,"plastic, toy, red plastic, shiny",Bright smooth glossy plastic,1,,dust wear wet blood
+plastic.matte.grey,"Plastic, matte",household,toys_plastic,plastic,"matte plastic, casing, grey plastic",Dull fine-texture plastic,8,,dust wear wet blood
+plastic.clear,"Plastic, clear",household,toys_plastic,glass,"clear plastic, acrylic sheet",Clear with soft edges,8,,dust wear wet blood
+plastic.rubber.black,"Rubber, black",household,toys_plastic,plastic,"rubber, tyre rubber, gasket","Matte black, soft highlight",1,,dust wear wet blood
+plastic.rubber.red,"Rubber, red",household,toys_plastic,plastic,"rubber ball, red rubber",Soft red matte rubber,8,,dust wear wet blood
+plastic.rubber_duck,"Toy rubber, yellow",household,toys_plastic,plastic,"rubber duck, squeaky toy",Glossy yellow vinyl,8,,dust wear wet blood
+plastic.bakelite,Early phenolic plastic,household,toys_plastic,plastic,"phenolic, early plastic, old phone, radio",Glossy dark brown mottled plastic,8,,dust wear wet blood
+plastic.toy_brick,Toy brick plastic,household,toys_plastic,plastic,"toy brick, building brick",Very glossy saturated colour,8,,dust wear wet blood
+plastic.foam,Foam,household,toys_plastic,plastic,"foam, sponge, padding",Soft open-cell pale surface,8,,dust wear wet blood
+plastic.marble_toy,Glass marble,household,toys_plastic,glass,"marble, toy marble, cat's eye",Clear sphere with a coloured twist inside,8,,dust wear wet blood
+food.bread.crust,Bread crust,household,food,organic,"bread, loaf, crust",Golden-brown crust with flour dust,1,,wet dust blood
+food.bread.crumb,Bread crumb,household,food,organic,"bread inside, crumb",Airy pale soft inside,8,,wet dust blood
+food.meat.raw,"Meat, raw",household,food,organic,"raw meat, steak, beef",Red muscle with white fat marbling,8,,wet dust blood
+food.meat.cooked,"Meat, roasted",household,food,organic,"roast, cooked meat, grilled",Browned crisp outside,8,,wet dust blood
+food.meat.bacon,Bacon,household,food,organic,"bacon, ham, cured meat",Pink and white streaks,8,,wet dust blood
+food.meat.jerky,Jerky,household,food,organic,"jerky, dried meat",Dark red-brown leathery strips,8,,wet dust blood
+food.fish.cooked,"Fish, cooked",household,food,organic,"cooked fish, fillet","White flaky flesh, golden skin",8,,wet dust blood
+food.cheese.hard,"Cheese, hard",household,food,organic,"cheese, cheddar-like, wheel",Pale yellow with a waxy rind,8,,wet dust blood
+food.cheese.holes,Cheese with holes,household,food,organic,"holey cheese, swiss-like",Pale yellow with round holes,8,,wet dust blood
+food.egg,Egg,household,food,keratin,"egg, eggshell, brown egg","Matte brown shell, glossy yolk inside",8,,wet dust blood
+food.apple,Apple,household,food,thin,"apple, fruit, red apple",Waxy red skin with a speckled shine,8,,wet dust blood
+food.orange,Orange,household,food,thin,"orange, citrus, fruit",Dimpled bright orange peel,8,,wet dust blood
+food.grapes,Grapes,household,food,thin,"grapes, vineyard fruit",Dusty purple translucent skins,8,,wet dust blood
+food.banana,Banana,household,food,thin,"banana, fruit",Yellow skin with brown flecks,8,,wet dust blood
+food.potato,Potato,household,food,organic,"potato, root, tuber",Dusty brown skin with eyes,8,,wet dust blood
+food.carrot,Carrot,household,food,organic,"carrot, root vegetable",Bright orange with fine rings,8,,wet dust blood
+food.corn_cob,Corn cob,household,food,organic,"corn, maize cob",Shiny yellow kernels in rows,8,,wet dust blood
+food.beans,Beans in sauce,household,food,organic,"beans, baked beans, stew",Glossy brown beans in sauce,8,,wet dust blood
+food.stew,Stew,household,food,water,"stew, soup, chili",Thick brown liquid with chunks,8,,wet dust blood
+food.pie,Fruit pie,household,food,organic,"pie, pastry, tart","Flaky golden pastry, red filling",8,,wet dust blood
+food.cake,Iced cake,household,food,organic,"cake, icing, frosting","Smooth white icing, soft sponge",8,,wet dust blood
+food.chocolate,Chocolate,household,food,organic,"chocolate, cocoa",Glossy dark brown with a snap edge,8,,wet dust blood
+food.honey,Honey,household,food,glass,"honey, syrup, golden",Thick clear golden liquid,8,,wet dust blood
+food.coffee,Coffee,household,food,water,"coffee, black coffee",Dark brown liquid with crema,8,,wet dust blood
+food.milk,Milk,household,food,water,"milk, cream",Opaque soft white liquid,8,,wet dust blood
+food.whiskey,Whiskey,household,food,water,"whiskey, liquor, spirits",Clear amber liquid,8,,wet dust blood
+food.beer,Beer with foam,household,food,water,"beer, ale, foam",Golden liquid with white foam,8,,wet dust blood
+food.wine,Red wine,household,food,water,"wine, red wine",Deep ruby liquid,8,,wet dust blood
+misc.tobacco,"Tobacco, cut",household,misc_props,organic,"tobacco, pipe tobacco, cigar",Shredded brown leaf,8,,wet dust wear
+misc.cigar_ash,Cigar ash,household,misc_props,ground,"ash, cigarette ash, cigar",Grey flaky ash,8,,wet dust wear
+misc.coal_lump,Coal lumps,household,misc_props,stone,"coal, fuel, stove coal",Black shiny lumps,8,,wet dust wear
+misc.charcoal,Charcoal,household,misc_props,wood,"charcoal, embers dead, burnt wood",Matte black with wood grain,8,,wet dust wear
+misc.ivory_comb,"Comb, horn",household,misc_props,keratin,"comb, hair comb",Translucent brown horn,8,,wet dust wear
+misc.taxidermy_glass_eye,Taxidermy eye,household,misc_props,eye,"glass eye, mounted head",Hard glass eye in fur,8,,wet dust wear
+misc.feather_duster,Feather duster,household,misc_props,feather,"duster, feathers",Fluffy grey feathers on a stick,8,,wet dust wear
+misc.wicker,Wicker,household,misc_props,wood,"wicker, basket, rattan",Woven pale cane strips,8,,wet dust wear
+misc.rattan,Rattan,household,misc_props,wood,"rattan, cane chair, woven",Glossy woven cane,8,,wet dust wear
+misc.cork,Cork,household,misc_props,wood,"cork, bottle cork, stopper",Tan spongy granular,8,,wet dust wear
+misc.sponge,Sea sponge,household,misc_props,organic,"sponge, natural sponge",Tan porous soft blob,8,,wet dust wear
+misc.leather_strap,Leather strap,household,misc_props,leather,"strap, belt, harness",Smooth brown leather strip,8,,wet dust wear
+jewel.garnet,"Garnet, cut",household,jewellery,gem,"garnet, red stone, jewel, ring stone",Dark wine-red facets with sharp sparkle,1,,dust wear
+jewel.paste,Paste gem,household,jewellery,glass,"paste, costume jewel, fake gem, rhinestone","Bright glass facets, a little too even",8,,dust wear
+jewel.jet,Jet bead,household,jewellery,stone,"jet, mourning jewellery, black bead","Polished deep black, warm to the eye",8,,dust wear
+jewel.coral_bead,Coral bead,household,jewellery,stone,"coral, red bead, necklace",Polished orange-red with fine pores,8,,dust wear
+water.pool.clear,"Water, clear pool",elements,water,water,"pool, clear water, swimming pool",Clear blue-green with sky reflection and caustics,1,yes:nature,dust snow
+water.pond.murky,"Water, murky pond",elements,water,water,"pond, murky, swamp water, brown water","Brown-green, sun fades fast with depth",1,yes:nature,dust snow
+water.lake.deep,"Water, deep lake",elements,water,water,"lake, deep water, mountain lake","Dark blue, strong sky reflection",10,,dust snow
+water.river.flowing,"Water, flowing river",elements,water,water,"river, stream, current",Moving ripples with white streaks,1,,dust snow
+water.rapids,"Water, white rapids",elements,water,water,"rapids, white water, cascade",Churning white foam over rocks,10,,dust snow
+water.waterfall,Waterfall sheet,elements,water,water,"waterfall, falls, cascade",Falling white sheet with mist,10,,dust snow
+water.ocean.open,"Water, open ocean",elements,water,water,"ocean, sea, deep sea, waves",Deep navy with rolling waves and foam caps,1,,dust snow
+water.ocean.tropical,"Water, tropical shallows",elements,water,water,"tropical, lagoon, turquoise",Bright turquoise over pale sand,10,,dust snow
+water.surf_foam,Surf foam,elements,water,water,"foam, surf, breaking wave",Bubbly white lace on the shore,10,,dust snow
+water.puddle,Puddle,elements,water,water,"puddle, rain puddle, wet road",Thin mirror water on the ground,10,yes:playground,dust snow
+water.swamp_green,"Water, swamp green",elements,water,water,"swamp, bayou, algae water",Opaque green with floating specks,10,,dust snow
+water.muddy_flood,"Water, muddy flood",elements,water,water,"flood, muddy water, brown river",Opaque brown churning water,10,,dust snow
+water.hot_spring,"Water, hot spring",elements,water,water,"hot spring, steaming pool, geyser",Vivid blue with rising steam,10,,dust snow
+water.trough,"Water, trough",elements,water,water,"trough, horse trough, still water",Still dark water in a wooden box,10,,dust snow
+water.oil_slick,Oil on water,elements,water,water,"oil slick, petrol, rainbow water",Rainbow swirls on dark water,10,,dust snow
+water.tar,Tar,elements,water,water,"tar, pitch, bitumen",Thick glossy black liquid,10,,dust snow
+water.blood_pool,Blood pool,elements,water,water,"blood, gore, pool of blood","Dark red glossy liquid, thick",10,,dust snow
+ice.cube,"Ice, clear block",elements,ice,ice,"ice cube, clear ice, ice block",Clear with cloudy centre and cracks,1,,dust snow blood
+ice.icicle,Icicles,elements,ice,ice,"icicle, frozen drip",Clear rippled spikes,10,,dust snow blood
+ice.frost,Frost,elements,ice,ice,"frost, hoar frost, frozen window",Feathery white crystals on surfaces,10,,dust snow blood
+ice.sea_ice,Sea ice,elements,ice,ice,"sea ice, floe, pack ice",White slabs with blue edges,10,,dust snow blood
+ice.snowball,"Snow, packed ball",elements,ice,ice,"snowball, snowman, packed snow",Dense white with grainy surface,10,,dust snow blood
+ice.frozen_waterfall,Frozen waterfall,elements,ice,ice,"frozen falls, ice column",Blue-white ribbed columns,10,,dust snow blood
+fire.flame.wood,"Flame, wood fire",elements,fire,fire,"fire, campfire, flame, bonfire","Orange-yellow tongues, blue base",1,,
+fire.flame.candle,"Flame, candle",elements,fire,fire,"candle flame, small flame",Small calm teardrop flame,10,,
+fire.flame.gas,"Flame, gas burner",elements,fire,fire,"gas flame, blue flame, burner",Steady blue cone,10,,
+fire.flame.torch,"Flame, oil torch",elements,fire,fire,"torch, oil fire, sooty flame",Big smoky orange flame,10,,
+fire.embers,Embers,elements,fire,fire,"embers, coals, glowing coals",Black lumps with shifting orange cracks,1,,
+fire.lava,"Lava, molten",elements,fire,fire,"lava, magma, molten rock",Bright orange flow with black crust,10,,
+fire.molten_metal,Molten metal,elements,fire,fire,"molten, foundry, pouring metal",White-yellow glowing liquid,10,,
+fire.sparks,Sparks,elements,fire,fire,"sparks, welding, grinder sparks",Bright streaking points,10,,
+fire.smoke,Smoke,elements,fire,fire,"smoke, chimney smoke, campfire smoke","Soft grey drifting cloud, lit from below",1,,
+fire.steam,Steam,elements,fire,fire,"steam, mist, vapour",White wisps fading quickly,10,,
+fire.explosion,Explosion fireball,elements,fire,fire,"explosion, blast, fireball","Rolling orange core, dark smoke edges",10,,
+glow.lamp.warm,"Lamp glow, warm",elements,glow,glow,"lamp, lamplight, oil lamp, glow",Warm orange light from inside the shade,1,yes:nature,dust
+glow.bulb.white,"Light bulb, white",elements,glow,glow,"light bulb, electric light, filament",Bright white-yellow filament glow,10,,dust
+glow.neon.red,"Neon tube, red",elements,glow,glow,"neon, neon sign, red light",Saturated red tube with a soft halo,10,,dust
+glow.neon.blue,"Neon tube, blue",elements,glow,glow,"neon blue, sign, glow tube",Icy blue tube with halo,10,,dust
+glow.screen,Screen glow,elements,glow,glow,"screen, monitor, display",Even cool light from a flat panel,10,,dust
+glow.firefly,Firefly glow,elements,glow,glow,"firefly, glow bug, night insect",Tiny pulsing yellow-green points,10,,dust
+glow.moonlit_water,Glowing plankton,elements,glow,glow,"bioluminescent, plankton, glowing waves",Blue sparks in breaking waves,10,,dust
+car.paint.solid_red,"Car paint, solid red",vehicles,paint,paint,"car paint, red car, gloss paint",Deep glossy red under clear coat,11,,wet mud dust snow wear oxide
+car.paint.metallic_silver,"Car paint, metallic silver",vehicles,paint,paint,"metallic paint, silver car, flake",Fine metal flakes sparkle under clear coat,11,,wet mud dust snow wear oxide
+car.paint.metallic_blue,"Car paint, metallic blue",vehicles,paint,paint,"metallic blue, flake paint",Deep blue with sparkling flakes,11,,wet mud dust snow wear oxide
+car.paint.pearl_white,"Car paint, pearl white",vehicles,paint,paint,"pearl, pearlescent, white car",White with a soft colour shift,11,,wet mud dust snow wear oxide
+car.paint.colour_shift,"Car paint, colour-shift",vehicles,paint,paint,"flip paint, chameleon paint, iridescent",Shifts purple to green with angle,11,,wet mud dust snow wear oxide
+car.paint.matte_black,"Car paint, matte black",vehicles,paint,paint,"matte, satin black, stealth","Flat black, no clear coat",11,,wet mud dust snow wear oxide
+car.paint.primer,Primer,vehicles,paint,paint,"primer, grey primer, unfinished","Flat grey, slightly rough",11,,wet mud dust snow wear oxide
+car.paint.racing_stripe,Racing livery,vehicles,paint,paint,"livery, decals, racing stripes",Gloss paint with sharp painted stripes,11,,wet mud dust snow wear oxide
+car.paint.carriage,Carriage lacquer,vehicles,paint,paint,"carriage, coach paint, buggy",Black lacquer with fine painted pinstripes,11,,wet mud dust snow wear oxide
+car.paint.train,Locomotive enamel,vehicles,paint,paint,"locomotive, train paint, engine",Heavy gloss enamel with gold lining,11,,wet mud dust snow wear oxide
+car.chrome.bumper,Chrome bumper,vehicles,metal_trim,metal,"chrome, bumper, trim",Mirror chrome with long sweeping highlights,11,,wet mud dust snow wear oxide
+car.alloy.wheel,Alloy wheel,vehicles,metal_trim,metal,"alloy, rim, wheel",Bright machined aluminium with brake dust,11,,wet mud dust snow wear oxide
+car.steel.wheel,"Steel wheel, painted",vehicles,metal_trim,paint,"steel rim, black wheel",Black-painted pressed steel,11,,wet mud dust snow wear oxide
+car.exhaust,Exhaust pipe,vehicles,metal_trim,metal,"exhaust, tailpipe, heat",Steel with blue and gold heat bands,11,,wet mud dust snow wear oxide
+car.engine.block,Engine block,vehicles,metal_trim,metal,"engine, motor, cast aluminium",Grimy grey cast metal,11,,wet mud dust snow wear oxide
+car.iron.wheel_rim,Iron wagon tyre,vehicles,metal_trim,metal,"wagon wheel, iron rim","Dark iron band, worn bright",11,,wet mud dust snow wear oxide
+car.boiler,Boiler iron,vehicles,metal_trim,metal,"boiler, steam engine, locomotive",Black iron with brass bands,11,,wet mud dust snow wear oxide
+car.rail,Steel rail,vehicles,metal_trim,metal,"rail, train track, railway","Rusty sides, polished running top",11,,wet mud dust snow wear oxide
+car.tyre.tread,Tyre tread,vehicles,rubber_glass,plastic,"tyre, tire, tread, rubber",Matte black rubber with deep tread,11,,wet mud dust snow wear
+car.tyre.sidewall,Tyre sidewall,vehicles,rubber_glass,plastic,"sidewall, tyre lettering",Smooth black rubber with raised lettering,11,,wet mud dust snow wear
+car.dashboard,Dashboard plastic,vehicles,rubber_glass,plastic,"dashboard, dash, interior plastic",Grained soft-touch dark plastic,11,,wet mud dust snow wear
+car.seat.vinyl,Seat vinyl,vehicles,rubber_glass,plastic,"car seat, vinyl seat, diner seat",Glossy vinyl with stitched seams,11,,wet mud dust snow wear
+car.carbon,Carbon fibre panel,vehicles,rubber_glass,paint,"carbon fibre, racing, composite",Woven black check under clear resin,11,,wet mud dust snow wear
+car.windscreen,Windscreen glass,vehicles,rubber_glass,glass,"windscreen, windshield, car glass",Clear glass with a green edge tint,11,,wet mud dust snow wear
+car.headlight,Headlight lens,vehicles,rubber_glass,glass,"headlight, lens, lamp","Clear ribbed lens, bright when lit",11,,wet mud dust snow wear
+car.tail_light,Tail-light lens,vehicles,rubber_glass,glass,"tail light, brake light, red lens",Deep red ribbed lens,11,,wet mud dust snow wear
+car.wood.wagon,"Wagon wood, painted",vehicles,rubber_glass,wood,"wagon, cart, buggy wood","Red or green painted boards, worn",11,,wet mud dust snow wear
+car.canvas.cover,Wagon canvas cover,vehicles,rubber_glass,cloth,"covered wagon, canvas top",Stretched off-white canvas over hoops,11,,wet mud dust snow wear
+car.leather.seat,Saddle-leather seat,vehicles,rubber_glass,leather,"buggy seat, leather seat",Tufted brown leather,11,,wet mud dust snow wear
+car.sail,Sailcloth,vehicles,rubber_glass,cloth,"sail, boat sail, sailcloth",Crisp off-white panels with seams,11,,wet mud dust snow wear
+gem.ruby,Ruby,fantasy_scifi,crystals,gem,"ruby, red gem, jewel",Deep red faceted stone with bright sparkle,11,,dust snow wear growth
+gem.sapphire,Sapphire,fantasy_scifi,crystals,gem,"sapphire, blue gem",Rich blue facets,11,,dust snow wear growth
+gem.emerald,Emerald,fantasy_scifi,crystals,gem,"emerald, green gem",Grassy green with soft inclusions,11,,dust snow wear growth
+gem.diamond,Diamond,fantasy_scifi,crystals,gem,"diamond, brilliant, clear gem",Clear with rainbow fire,11,,dust snow wear growth
+gem.amethyst,Amethyst cluster,fantasy_scifi,crystals,gem,"amethyst, purple crystal, geode",Purple pointed crystals in a geode,11,,dust snow wear growth
+gem.quartz_clear,Quartz crystal,fantasy_scifi,crystals,gem,"quartz, rock crystal, clear crystal",Clear six-sided points,11,,dust snow wear growth
+gem.amber,Amber,fantasy_scifi,crystals,gem,"amber, fossil resin",Honey-coloured with tiny bubbles,11,,dust snow wear growth
+gem.jade,Jade,fantasy_scifi,crystals,gem,"jade, green stone, carving","Milky green, waxy polish",11,,dust snow wear growth
+gem.opal,Opal,fantasy_scifi,crystals,gem,"opal, fire opal, play of colour",Milky with flashing colour patches,11,,dust snow wear growth
+gem.turquoise,Turquoise,fantasy_scifi,crystals,stone,"turquoise, blue stone, inlay",Sky blue with dark veins,11,,dust snow wear growth
+gem.pearl,Pearl,fantasy_scifi,crystals,keratin,"pearl, necklace, oyster pearl",Soft white orient sheen,11,,dust snow wear growth
+gem.magic_crystal,Glowing crystal,fantasy_scifi,crystals,gem,"magic crystal, mana crystal, power crystal",Crystal lit from inside with pulsing light,11,,dust snow wear growth
+magic.rune,Rune glow,fantasy_scifi,magic,glow,"rune, glyph, magic writing",Carved lines glowing soft blue,11,,dust
+magic.portal,Portal swirl,fantasy_scifi,magic,glow,"portal, vortex, gateway",Swirling purple light disc,11,,dust
+magic.ethereal,Ghostly glow,fantasy_scifi,magic,glow,"ghost, spirit, ethereal, spectral",Pale see-through glow with soft edges,11,,dust
+magic.forcefield,Force field,fantasy_scifi,magic,glow,"shield, force field, barrier",Hexagon pattern flashing where hit,11,,dust
+magic.cursed,Dark cursed aura,fantasy_scifi,magic,fire,"curse, shadow, dark magic",Black smoke with violet edges,11,,dust
+magic.holy,Holy light,fantasy_scifi,magic,glow,"holy, divine, radiant",Warm white-gold radiance,11,,dust
+magic.potion,Potion liquid,fantasy_scifi,magic,water,"potion, elixir, magic liquid",Glowing coloured liquid in glass,11,,dust
+magic.slime,Slime,fantasy_scifi,magic,thin,"slime, ooze, goo",Glossy translucent green jelly,11,,dust
+sf.hull.panel,Spaceship hull panel,fantasy_scifi,scifi,paint,"hull, spaceship, panels, sci-fi",Pale grey panels with fine seams and decals,11,,dust wear oxide blood
+sf.alien_skin,Alien skin,fantasy_scifi,scifi,hide,"alien, creature skin, extraterrestrial",Glossy blue-grey with pulsing patterns,11,,dust wear oxide blood
+sf.chitin,Alien chitin,fantasy_scifi,scifi,keratin,"chitin, carapace, bug alien",Dark iridescent armour plates,11,,dust wear oxide blood
+sf.holo,Hologram,fantasy_scifi,scifi,glow,"hologram, holo, projection",Flickering blue see-through lines,11,,dust wear oxide blood
+sf.energy_core,Energy core,fantasy_scifi,scifi,glow,"reactor, energy core, power cell",Bright cyan glow behind glass,11,,dust wear oxide blood
+sf.circuit,Circuit board,fantasy_scifi,scifi,plastic,"circuit, PCB, electronics",Green board with copper traces,11,,dust wear oxide blood
+sf.solar,Solar panel,fantasy_scifi,scifi,glass,"solar panel, photovoltaic",Dark blue cells in a silver grid,11,,dust wear oxide blood
+sf.liquid_metal,Liquid metal,fantasy_scifi,scifi,metal,"liquid metal, mercury, shape-shifter",Flowing mirror chrome,11,,dust wear oxide blood
+sf.biomech,Bio-machine flesh,fantasy_scifi,scifi,organic,"biomechanical, cyber flesh, organic machine",Wet grey flesh fused with metal ribs,11,,dust wear oxide blood
+sf.rust_bucket,Junk scrap metal,fantasy_scifi,scifi,paint,"scrap, junk, post-apocalypse, salvage",Mismatched painted and bare plates,11,,dust wear oxide blood

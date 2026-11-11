@@ -1,0 +1,272 @@
+{
+ "about": "Realism pass references, written by tools/procedural/gen_library.py from library.json (each asset's realism entry). Dev data for the material viewer only.",
+ "assets": {
+  "geometry-cube-cuboid": {
+   "reference": "proc-refs/geometry-cube-cuboid.jpg",
+   "score": 4.5,
+   "status": "in review",
+   "note": "Cast concrete block (finish slider: 6 everyday finishes) in a near-neutral grey: firm-edged stains, cooler when darker and warmer when paler, over paler and darker 2-7 cm smudges and a sand speckle, paler firm-edged casting patches and faint vertical drag marks of varied strength on the cast sides, faces darkening towards the foot, sparse crisp pinholes and 4-8 mm blowholes that stay light in shade; a trowelled top of soft, overlapping scraped patches that fade out before they meet (one continuous slab, no seams); the top arrises worn in stretches with three to six chunky 20-40 mm spalls each, the uprights nicked in three or four sections weighted towards the top with a walk of tiny nicks between, a loss at every top corner, softened foot corners, a broken corner, a carved hairline crack and a broad, softly bounded formwork lift band; every seed inside the 40k triangle budget. Asset Studio column 6 round 6, independent scored review 4.5 (column 6 round 2: 4.0; column 6 round 1: 3.5; round 4: 3.0; round 2: 2.5; round 1: 2.0; the library cube before them: 1.5).",
+   "camera": {
+    "cam_yaw_deg": -25,
+    "cam_pitch_deg": 17,
+    "cam_dist_scale": 0.86,
+    "cam_aim_y": -0.15,
+    "sun_yaw_deg": 33,
+    "sun_pitch_deg": 17
+   },
+   "studio": {
+    "backdrop_grey": 170.8,
+    "floor_grey": 145.4,
+    "warmth": 9.7
+   }
+  },
+  "geometry-bevelled-box": {
+   "reference": "proc-refs/geometry-bevelled-box.jpg",
+   "score": null,
+   "status": "in review",
+   "note": "Solid oak block: flat-sawn figure along x with end grain on the two end faces, no grain grooves, rounded and lightly dented edges; any finish by the slider.",
+   "studio": {
+    "backdrop_grey": 161.8,
+    "floor_grey": 147.7,
+    "warmth": 24.1
+   }
+  },
+  "geometry-uv-sphere": {
+   "reference": "proc-refs/geometry-uv-sphere.jpg",
+   "score": null,
+   "status": "in review",
+   "note": "Honed grey granite sphere wrapped pole to pole (no glints), 64 segments by default; any finish.",
+   "studio": {
+    "backdrop_grey": 159.4,
+    "floor_grey": 119.8,
+    "warmth": 18.2
+   }
+  },
+  "geometry-icosphere": {
+   "reference": "proc-refs/geometry-icosphere.jpg",
+   "score": 4.0,
+   "status": "in review",
+   "note": "Faceted polished-concrete sculpture: corners hand-finished slightly off true, cloudy mottling and dust; any finish.",
+   "studio": {
+    "backdrop_grey": 144.8,
+    "floor_grey": 125.3,
+    "warmth": 11.9
+   }
+  },
+  "geometry-cylinder": {
+   "reference": "proc-refs/geometry-cylinder.jpg",
+   "score": null,
+   "status": "in review",
+   "note": "Dressed buff sandstone column drum (new seventh finish), wrapped round its axis so the bedding runs level, rims softened, surface a little off true.",
+   "studio": {
+    "backdrop_grey": 152.7,
+    "floor_grey": 150.4,
+    "warmth": 34.3
+   }
+  },
+  "geometry-cone": {
+   "reference": "proc-refs/geometry-cone.jpg",
+   "score": null,
+   "status": "in review",
+   "note": "Cast-concrete garden cone: base rim rounded and tip blunted as from a mould, trowel mottling and dust, slightly off true.",
+   "studio": {
+    "backdrop_grey": 167.4,
+    "floor_grey": 161.0,
+    "warmth": 22.6
+   }
+  },
+  "terrain-flat-terrain": {
+   "reference": "proc-refs/terrain-flat-terrain.jpg",
+   "score": null,
+   "status": "in review",
+   "note": "Level field of fine turf over gently uneven, lumpy ground: soil between the blades, dry-grass patches and worn bare soil patches (new \"bare\" slider).",
+   "studio": {
+    "backdrop_grey": 171.5,
+    "floor_grey": 157.8,
+    "warmth": 11.9
+   }
+  },
+  "terrain-rolling-hills": {
+   "reference": "proc-refs/terrain-rolling-hills.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "Rolling hills a player walks in (Asset Studio column 28 round 1, independent scored review 3.0; the library hills before it: unscored, a 24 m plot): seen from a standing player's eye, the hills (34 m, 200 m apart) run on past their 400 m square to the horizon as one seamless grid (`horizon`), worn stony soil scars on the steeper banks with limestone clusters in them (`scars`), the hills' own meadow grass round the player (`hills-grass`), a mid-morning side sun and a light haze. Both new params are 0 by default: the plot itself is unchanged."
+  },
+  "trees-oak-trees": {
+   "reference": "proc-refs/trees-oak-trees.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "A broad open-grown oak: a massive trunk with jagged fissured bark on round buttress roots that sink into the ground, forking into four leaning leaders of much the same girth and two big low limbs, the crown a broad layered dome of small sprays of lobed oak leaves with crisp edges, darker inside, with the wood and the sky between them. Asset Studio column 8 round 8, independent scored review 3.5 (rounds 2-7: 3.0, round 3 folded; round 1: 2.5; the library oak before them: unscored, a tube with lumpy green balls).",
+   "camera": {
+    "cam_yaw_deg": 0,
+    "cam_pitch_deg": 6,
+    "cam_dist_scale": 0.73,
+    "cam_aim_y": -0.2,
+    "sun_yaw_deg": 165,
+    "sun_pitch_deg": 58
+   },
+   "studio": {
+    "backdrop_grey": 153.5,
+    "floor_grey": 149.0,
+    "warmth": 2.3
+   }
+  },
+  "rocks-pebbles": {
+   "reference": "proc-refs/rocks-pebbles.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "Ten water-worn stones of mixed rock (a big grey granite-gneiss cobble, brown, red and ochre sandstone, foliated dark slate with veins, greywacke with a quartz band, pale and pink granites in interlocking crystals, small dark pebbles), each in the stone recipe's world-space water-worn or crystalline paint, with real dents, chips, crisp fracture faces and a stepped ledge in the mesh. Asset Studio round 2 (soft studio light in the dev scene, multiscale grain and weathered patches, a long cobble sloping up to the right, a rounder slate, the greywacke's quartz band across its face), independent scored review 3.5 (round 1: 3.0; the library pebbles before it: unscored, flat speckled icospheres).",
+   "camera": {
+    "cam_yaw_deg": 0,
+    "cam_pitch_deg": 14,
+    "cam_dist_scale": 0.57,
+    "cam_aim_y": -0.09
+   },
+   "studio": {
+    "backdrop_grey": 134.5,
+    "floor_grey": 142.5,
+    "warmth": 1.0
+   }
+  },
+  "sky-volumetric-looking-clouds": {
+   "reference": "proc-refs/sky-volumetric-looking-clouds.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "A lone fair-weather cumulus as a real volume (ray-marched by the library's own game passes, so any game that lists it gets the same cloud): separate heaps stepping down from a tall tower to one side, each built from a few big rounded heads with their own folds and billows that overhang and shade each other, thinner lumpy vapour with gaps under them and at the shoulders, long thin curls out of both ends, self-shadowed from the sun with multiple scattering and sky light shaded under overhangs. Asset Studio column 11 round 5, independent scored review 3.5 (round 1: 3.0; the library cloud before it: unscored, an opaque mesh of lumpy balls)."
+  },
+  "water-shorelines": {
+   "reference": "proc-refs/water-shorelines.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A cut block of coast: a sandy cove whose bed shelves gently and deepens across the bay (the sand shows through clear shallows, turquoise further out, dark teal at the far side), a damp band with scalloped swash lobes and a dark wet band cut along smooth lines, warm gritty dry sand with no ripples, dunes of wind-bent marram grass with bare gaps and low mats, a jointed granite headland and corner (boxy blocks on shared joint grids, fracture faces, carved cracks, ochre lichen, a dark wet foot), pebbles and shells in drifts along the strandline, weathered strata on the cut sides. Its water is the nature pass's (the library hands it over), with the coast upgrade: lace foam, swash fronts, caustics, fine ripples, murky deep water. Asset Studio column 10 round 2, independent scored review 3.0 (round 1: 2.5; the library shoreline before them: unscored, a flat sand sheet with a plain see-through slab for water).",
+   "studio": {
+    "backdrop_grey": 153.8,
+    "floor_grey": 154.3,
+    "warmth": 5.8
+   }
+  },
+  "terrain-canyons": {
+   "reference": "proc-refs/terrain-canyons.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A cut block of red-rock canyon country: a sandy, scrubby plateau of slickrock cut by a winding main canyon and six blind side canyons, their walls falling in stepped strata (talus with thin ledges, a sheer cliff band, a pale cap bed and a bench per layer), crenulated into spurs, alcoves and gullies and fluted by real runnels; a dry gravel wash on the floors, fallen blocks, desert scrub, the block's own edges eroded in the same steps down to a thin dark rock base. Asset Studio column 12 round 1, independent scored review 3.0 (the library canyons before it: unscored, the plain terrain generator's canyon variant).",
+   "studio": {
+    "backdrop_grey": 169.0,
+    "floor_grey": 159.0,
+    "warmth": 0.7
+   }
+  },
+  "buildings-office-buildings": {
+   "reference": "proc-refs/buildings-office-buildings.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A photoreal mid-rise office block: a glass tower (a curtain wall on a dark mullion grid between stone corner piers, a stone frieze under a thin overhanging roof plate, a double-height lobby under a panelled canopy) between two lower stone-clad wings (pale limestone pilasters and spandrels in clad panels with real joints, aluminium windows of three panes and a transom); a furnished, lit interior behind every pane (slabs, carpet, light panels, desks, screens, chairs, plants, a service core) seen through see-through glass; roof railings, plant units and a louvred screen; stone planters of shrubs on a paved plinth. Asset Studio column 13 round 1, independent scored review 3.0 (the library office before it: unscored, the plain buildings generator's box block).",
+   "studio": {
+    "backdrop_grey": 161.6,
+    "floor_grey": 172.6,
+    "warmth": 0.1
+   }
+  },
+  "sky-dynamic-sky-dome": {
+   "reference": "proc-refs/sky-dynamic-sky-dome.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "The dome's photoreal recipe (crate::skydome): a clear mid-morning sky seen from the ground, pale hazy blue-white at the horizon deepening to a deep blue overhead, the sun's glow on one side, and fair-weather cumulus as a real cloud volume (the dome's sky-horizon part): heaps with flat grey bases and billowing sunlit crowns, lit through themselves, the main heap in the middle sky, the far ones melting into the horizon haze, faint cirrus behind. The clear sky fitted to the reference's measured colours through the dome's own model and the photoreal look's tone curve. Asset Studio column 21 round 2, independent scored review 3.5 (round 1: 3.0; the library dome before it: unscored, the plain Preetham dome with its default clouds)."
+  },
+  "terrain-mountains": {
+   "reference": "proc-refs/terrain-mountains.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A photoreal mountain massif at game scale (4.4 km square, the summit 1.2 km up): a ridged massif with a rounded, snow-capped summit dome over forested foothills; droplet erosion carves gullies and lays debris fans as real geometry; snow, bare rock, scree, alpine grass, conifer forest (real low-poly spruces) and moss meadows follow height, slope and erosion, their edges broken by fine ragged noise. Round a player's point (focus_x, focus_z, focus_radius) the forest is full, tree by tree, with boulders and shrubs; with the opt-in mountain-grass feature, meadow_grass hands real evani-grass blades for the meadows round the player. Round 2 (Asset Studio column 19, independent scored review 2.5; round 1 2.0, the library mountains before it unscored): a broad snow dome on a branching network of aretes, cirques under the summit, tilted strata weathered into cliff bands, a winding valley with a braided gravel bed, snow deeper in hollows and off the ribs; round a player hummocks, a worn path, gravel, strewn stones and half-sunk boulders, slender spruces with drooping branch sprays, patchy meadow grass. Round 3 (independent scored review 3.0): a broad, gently domed crown, thick arms with spurs, lopsided cirques, jointed faces, snow in whole fields with a finely refined edge, rock running down the ridge crests; with `horizon` the land runs on round the square into hazy ranges; round a player fractured lichened boulders, leafy shrubs, flowers and saw-toothed spruce sprays."
+  },
+  "water-rivers": {
+   "reference": "proc-refs/water-rivers.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "A block of photoreal river valley (600 m, scales with size): a river meandering down a broad valley floor of fields, meadows and hedgerows; each bend has a steep cut bank of bare loam and boulders on its outside, where the channel runs deepest, and a broad point bar of mixed sand and gravel with low ridges and grass islands on its inside, sloping up out of shallow water; shallow riffles with stones breaking the surface; oaks (the oak trees' own generator) line the banks and field edges, a big oak at every bend; the valley sides rise into layered wooded hills. Everything solid is real geometry in catalogue materials (ground, stone, foliage, bark); the water is the nature pass's (the library hands it over), and with grass built the banks get evani-grass long grass. Asset Studio column 20 round 3, independent scored review 3.0 (rounds 1 and 2: 2.5; the library rivers before them: unscored, the nature pass's river water wrapped as it is). Round 10 (independent scored review 3.5; rounds 4 to 9: 3.0): full leafy oak crowns from the air (far leaf cards stay filled), riparian stands and hill woods of card crowns in layered blue haze, hedgerows along the field borders, a cut bank of irregular scours and slumps, fractured set-in boulders, a pebble-scale point bar, clear stony shallows where the river runs shallow, a matte damp band at the waterline, fuller bank grass; the sky the sky dome's photoreal recipe. Round 12 (independent scored review 3.5; round 11: 3.5): the banks as their own strips of ground along the river (no row of pointed humps), bare loam in scours of uneven length with grassed slumps, toe stones and bank-top scrub; whitecaps only over level shallow riffles (water.whitecap_depth), in runs some 10 m long with calm water between; far leaf cards as solid lobed leaf masses (extras bit 4: no dotted grid from the air), a deeper leaf green; broader field zones, packed gravel on the bars, a thinner aerial haze."
+  },
+  "humans-full-npc-body-variations": {
+   "reference": "proc-refs/humans-full-npc-body-variations.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "A line-up of six barefoot adults of different builds in heather-grey tank tops and shorts, each turned three quarters to the right with the head turned a little further: a petite woman, a tall muscular man, a tall slim woman, a heavy bearded man, a curvy woman and a tall lean man in a tee. Each is one sculpted body (a distance field of anatomical forms blended smoothly, meshed near its surface: hands with fingers, feet with toes, a modelled face); garments are the body grown outward and cut at hems, necklines and armholes (fitted racer tanks, loose tanks and a tee hanging from the chest or belly, bike and boxer shorts); hair and beards grow from the head above a hairline. Every body's widths are matched to the reference's own silhouettes at 28 heights (slim necks, sloping shoulders, real knees and calves, normal feet), faces have narrow jaws, fine noses and full lips, the cotton is a soft heather knit, each skin tone is calibrated to the reference, and the row stands in a graded studio sweep. Asset Studio column 22 round 5, independent scored review 3.5 (rounds 3 and 4: 3.0; round 1: 2.5; the library line-up before them: unscored, capsule bodies in coloured clothes).",
+   "studio": {
+    "backdrop_grey": 132.5,
+    "floor_grey": 154.5
+   }
+  },
+  "rocks-medium-rocks": {
+   "reference": "proc-refs/rocks-medium-rocks.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "Five broken rocks of different stone (a grey granite in interlocking crystals, a milky vein quartz stained orange along its cracks, a dark basalt block, a red sandstone wedge with stepped bedding, a green schist slab with foliation streaks), each a welded mesh of crisp fracture planes with stepped layers, shell-like breaks and chips carved in, in the stone recipe's crystalline, bedded or water-worn paint. Asset Studio column 23 round 1, independent scored review 3.0 (the library medium rock before it: unscored, one noise-pushed icosphere).",
+   "studio": {
+    "backdrop_grey": 138.9,
+    "floor_grey": 162.9,
+    "warmth": 4.4
+   }
+  },
+  "rocks-jagged-rock-formations": {
+   "reference": "proc-refs/rocks-jagged-rock-formations.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "An outcrop of foliated grey schist about 3.5 m tall: six spires, each with a shorter, thicker shoulder slab overlapping its side so it steps down in ledges, joined at the foot by one broad core mass and blocks in the slots between them, all leaning and turning together (one foliation); four slabs fallen tilted at the front and an apron of faceted rubble and gravel. Each blade is a welded mesh of crisp fracture planes with a chisel or bedding top, its sheets stepped back 30 cm apart and broken by staggered cross joints, its upper edges chipped, sunk into the ground; painted in the stone recipe's grained variant 11 at outcrop scale (close pale laminae along the blades, fine dark and pale grains, a cloud stretched along the foliation) in grey, rusty and pale stone. Asset Studio column 24 round 2, independent scored review 3.0 (round 1: 2.5; the library formation before it: unscored, tall noise-pushed icospheres).",
+   "studio": {
+    "backdrop_grey": 112.0,
+    "floor_grey": 154.6,
+    "warmth": 0.3
+   }
+  },
+  "rocks-rounded-river-rocks": {
+   "reference": "proc-refs/rocks-rounded-river-rocks.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "Five water-polished river stones of different rock in a studio group: a big dark grey greywacke egg tilted up to the left with a broad cream quartz vein, a pale speckled granite egg leaning up to the right, a tan sandstone with fine lamination rings, a small dark gneiss with diagonal white veins and a small pale speckled stone. Each is a welded mesh: a plump superellipsoid with broad worn facets melted in, an egg taper, an underside pressed flat with a smooth roll-off and smooth dents worn into its upper faces; painted in the stone recipe's water-worn variant 11, the veins and streaks aimed along each stone's form. Asset Studio column 25 round 3, independent scored review 3.5 (round 1: 3.0; the library river rocks before it: unscored, squashed noise icospheres).",
+   "studio": {
+    "backdrop_grey": 146.9,
+    "floor_grey": 162.5,
+    "warmth": 1.6
+   }
+  },
+  "rocks-rock-piles": {
+   "reference": "proc-refs/rocks-rock-piles.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A heap of freshly broken rock in a studio: a big leaning grey schist block at the back, a grey-green schist slab, a rusty iron-stained block, a pale quartzite with a quartz band, a tan block and blue-grey blocks leaning on it and on each other, stones and gravel spilled round the foot. Each rock is a welded mesh of crisp fracture planes with flat broken sides, stepped schist sheets, chips and a few millimetres of ridged micro relief as real geometry, dropped one by one onto the ground and the rocks already down so each rests on what holds it; six stones in the stone recipe's variant 11, rust in soft patches across the grey rocks. Asset Studio column 26 round 1, independent scored review 3.0 (the library rock pile before it: unscored, noise icospheres lifted into a cone).",
+   "studio": {
+    "backdrop_grey": 142.6,
+    "floor_grey": 154.6,
+    "warmth": 6.8
+   }
+  },
+  "rocks-scree-slopes": {
+   "reference": "proc-refs/rocks-scree-slopes.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A talus slope at its angle of repose under a continuous broken wall of foliated schist (beds of uneven thickness stepped back, joints cutting blocks with deep fissures, an uneven crest with buttresses and bays tapering away at the slope's ends), seen by a player standing on it; its foot may bend round a cirque's bowl (curve) and runs out into a hummocky debris apron (apron); the blocks, the talus heaped at the wall's foot and the rock ribs are broken slabs (polyhedra of fracture planes with stepped sheets and chipped corners, rust or quartz in patches); slabs, chunks and sharp chips lie clast on clast round the player, thinning smoothly outwards, far stones as four-faced stones; every stone on the drawn ground, each stone class its own share of the triangle budget; grey, dark veined, rust-patched and pale stone in the stone recipe's variant 11, a grit bed near the player and the ground recipe's scree gravel further out. Asset Studio column 27 round 3, independent scored review 3.0 (round 2: 2.5; round 1: 2.0; the library scree before it: unscored)."
+  },
+  "terrain-caves": {
+   "reference": "proc-refs/terrain-caves.jpg",
+   "score": 3.0,
+   "status": "in review",
+   "note": "A limestone cave passage a player walks into, seen from a standing player's eye just inside its mouth (Asset Studio column 29 round 1, independent scored review 3.0; the library cave before it: unscored, a lumpy half-pipe vault): the passage narrows and turns away so its far end lies past the daylight; walls of bedded limestone as real geometry (metre-scale masses, terraced ledges, dark bed partings, joint cracks), a dusty earth floor banked with grit at the walls' feet, fallen blocks, cobbles and chips (the jagged rock formation's broken stones), faint algae near the mouth, in the stone recipe's variant 11 and grit; lit only by the daylight at the mouth, the library's entrance_lights (eight point lights a game draws, fading out some 3.5 mouth sizes in)."
+  },
+  "sky-sun-and-moon-discs": {
+   "reference": "proc-refs/sky-sun-and-moon-discs.jpg",
+   "score": 4.5,
+   "status": "in review",
+   "note": "The sun and the moon drawn into the sky dome at their true apparent size (0.53 and 0.52 degrees), seen from a standing player's eye over dark fields at golden hour (Asset Studio column 73's new run, round 1, independent scored review 94 of 100 in categories, 4.5 in stars; its first run's round 1: 90.5 of 100, 4.5; column 38 round 6: 4.0; round 2: 3.5; round 1: 3.0; the library discs before it: unscored, two upright mesh discs): the dome's sky-discs part, a limb-darkened sun lit through the dome's own air with the haze's aureole (a flattened oval of the low sun's own deep orange with a faint broad lobe), and a moon lit by the sun whose phase follows from where the two stand (a thin crescent beside a low sun; Lommel-Seeliger face, faint maria, earthshine; drawn by its lit strip's exact share of each pixel so a thin crescent stays a smooth continuous arc; the lit side's tilt and the crescent's thickness can be art-directed; a low sun's middle burns out to a clean white disc smaller than the sun, its dim rim running into the orange glare); the low sun's warmth on the sky, an orange band along the skyline deepest at the sun and a share of it all round, a little uneven from bearing to bearing; a soft dusky haze band over the lowest degree or two of sky, mauve-grey away from the sun and rose under it; a fine grain in place of the gradients' bands; the recipe's golden-hour clear sky fitted to the reference's colours under the recipe's own grade (saturation 0.955 on the photoreal look)."
+  },
+  "buildings-townhouses": {
+   "reference": "proc-refs/buildings-townhouses.jpg",
+   "score": 3.5,
+   "status": "in review",
+   "note": "A photoreal Georgian and Victorian terrace of five townhouses under one long slate roof (Asset Studio column 37 round 2, independent scored review 3.5; round 1: 3.0; the library townhouses before it: unscored, brick boxes with front gables): red brick with pale lime joints, cream ashlar, yellow stock brick, white stucco and rose brick fronts on a grey stone plinth, openings cut through the walls; rubbed-brick segmental and flat gauged arches with each voussoir its own stone, moulded architraves and cornices on the ashlar and stucco fronts; six-over-six box sashes with dark rooms and curtains behind see-through glass; six-panel doors under fanlights in round arches; stone steps with chipped nosings and black iron railings; window boxes, lanterns, box balls in planters; slates laid one by one in bonded courses, lead flashings over the party walls, brick stacks with clay pots, ridge tiles, gutter, fascia and downpipes.",
+   "studio": {
+    "backdrop_grey": 159.0,
+    "floor_grey": 157.3,
+    "warmth": 1.0
+   }
+  }
+ }
+}

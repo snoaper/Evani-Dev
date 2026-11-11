@@ -118,7 +118,7 @@ macro_rules! evf_err {
         if cfg!(target_arch = "wasm32") { concat!("font table evf", $n) } else { concat!("font table: ", $text) }
     };
 }
-pub(crate) use evf_err;
+#[cfg(target_arch = "wasm32")] pub(crate) use evf_err; // gpu/msdf.rs uses it; native builds use it in this file only
 
 /// Little-endian reader over a byte slice.
 struct Rd<'a> {

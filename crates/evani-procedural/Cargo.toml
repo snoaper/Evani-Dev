@@ -1,0 +1,31 @@
+[package]
+name = "evani-procedural"
+description = "Evani.Dev procedural library base: the asset trait (id, category, params, seed, CPU or GPU path), the category registry, live params under procedural.<category>.<asset>.*, seeded noise and mesh helpers, a name-based placeholder, and the module that draws placed assets and hosts wrapped engine modules"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# The shared base of the procedural library (docs/PROCEDURAL.md). It holds
+# no assets: those are in evani-procedural-lib, one Cargo feature each. A
+# game reaches this crate only through evani-procedural-lib, an optional
+# dependency behind its `procedural` feature, so a game that lists no
+# procedural asset downloads none of it. CPU assets are meshes in the
+# engine's mesh library, so render's `meshes` (custom meshes) comes on.
+[features]
+default = []
+# Realism surfaces (src/surface.rs): parts in a catalogue material are drawn
+# through the textured-model path from an in-memory model (no download), so
+# the recipe stage paints them. On only with an asset that uses one.
+surface = ["evani-render/models", "evani-render/model-replace"]
+# Behaviour fields (src/behaviour.rs): an asset's wind or water flow for
+# Evani.commons' test scenes. Only the commons render app turns it on.
+behaviour = []
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward", "meshes"] }
+
+[lints]
+workspace = true

@@ -130,7 +130,7 @@ impl Timer {
     }
 
     /// Timestamp writes for a compute pass of graph pass `pass`.
-    #[cfg(any(feature = "particles", feature = "clustered"))]
+    #[cfg(any(feature = "particles", feature = "trails", feature = "clustered", feature = "game-passes", feature = "world-draws"))]
     pub fn compute_pass(&mut self, pass: &'static str) -> Option<wgpu::ComputePassTimestampWrites<'_>> {
         let w = self.pass(pass)?;
         Some(wgpu::ComputePassTimestampWrites {

@@ -37,6 +37,8 @@ pub mod gltf;
 pub mod params;
 pub mod surface;
 pub mod water;
+#[cfg(feature = "spectral-sea")]
+pub mod sea;
 
 #[cfg(test)]
 mod tests;
@@ -58,6 +60,8 @@ pub use effect::{Mode, NatureEffect};
 pub use gltf::GltfNature;
 pub use params::NatureParams;
 pub use surface::{Kind, NatureSurfaces, Surface, surfaces_from_json};
+#[cfg(feature = "spectral-sea")]
+pub use sea::{Sea, SeaEffect, SeaParams, SeaSurfaces};
 
 /// Most surfaces each tier draws.
 pub fn tier_cap(id: &str) -> usize {
@@ -83,6 +87,14 @@ pub struct NatureModule {
     sent: Option<String>,
     seen_rev: Option<u64>,
     pass_on: Option<bool>,
+    /// The spectral sea (part `spectral-sea`): its resource, params and
+    /// whether its pass is on.
+    #[cfg(feature = "spectral-sea")]
+    sea: sea::SeaSurfaces,
+    #[cfg(feature = "spectral-sea")]
+    sea_params: Option<sea::SeaParams>,
+    #[cfg(feature = "spectral-sea")]
+    sea_on: Option<bool>,
 }
 
 impl NatureModule {
@@ -93,6 +105,13 @@ impl NatureModule {
     /// The shared surface list (also a world resource after `build`).
     pub fn surfaces(&self) -> NatureSurfaces {
         self.surfaces.clone()
+    }
+
+    /// The shared sea (part `spectral-sea`; also a world resource after
+    /// `build`).
+    #[cfg(feature = "spectral-sea")]
+    pub fn sea(&self) -> sea::SeaSurfaces {
+        self.sea.clone()
     }
 
     fn sync_slot(&mut self, world: &World) {
@@ -256,6 +275,8 @@ impl EngineModule for NatureModule {
         }
         self.pass_on = Some(false);
         ctx.resource(self.surfaces.clone());
+        #[cfg(feature = "spectral-sea")]
+        self.build_sea(ctx)?;
         Ok(())
     }
 
@@ -273,7 +294,9 @@ impl EngineModule for NatureModule {
                     let c = tier_cap(&id);
                     (id, c)
                 });
-            let mode = Mode::for_tier(&tier, reg.bool(p.refraction));
+            let refraction = reg.bool(p.refraction);
+            let level = reg.f32(p.quality).round() as i32;
+            let mode = if level >= 0 { Mode::for_quality(level, refraction) } else { Mode::for_tier(&tier, refraction) };
             if let Some((d, c, i)) = self.light {
                 let dir = vec3_of(&reg, d).unwrap_or([0.4, 1.0, 0.3]);
                 let col = vec3_of(&reg, c).unwrap_or([1.0; 3]);
@@ -289,12 +312,20 @@ impl EngineModule for NatureModule {
             (reg.bool(p.enabled), mode, cap)
         };
         if let Some(rw) = world.try_res::<RenderWorld>() {
-            st.camera.set(rw.camera);
+            // A capture from its own pose (a debug view, a camera path) swaps
+            // the camera only when the frame is drawn: plan from that pose.
+            #[cfg(feature = "capture")]
+            let pose = world.try_res::<evani_core::capture::CaptureQueue>().and_then(|q| q.view_pose()).unwrap_or(rw.camera);
+            #[cfg(not(feature = "capture"))]
+            let pose = rw.camera;
+            st.camera.set(pose);
         }
+        #[cfg(feature = "capture")]
+        st.jitter.set(world.try_res::<evani_core::capture::CaptureQueue>().and_then(|q| q.jitter_px).unwrap_or([0.0; 2]));
         if let Some(t) = world.try_res::<Time>() {
             st.time.set(t.render_seconds() as f32);
         }
-        self.surfaces.plan(cap, mode == Mode::Flat);
+        self.surfaces.plan(cap);
         let draw = on && self.surfaces.drawn() > 0;
         st.mode.set(if draw { mode } else { Mode::Off });
         if self.pass_on != Some(draw) {
@@ -302,6 +333,8 @@ impl EngineModule for NatureModule {
             self.pass_on = Some(draw);
         }
         self.sync_slot(world);
+        #[cfg(feature = "spectral-sea")]
+        self.frame_sea(world);
     }
 
     fn status(&self, _world: &World, out: &mut String) {
@@ -312,5 +345,76 @@ impl EngineModule for NatureModule {
             Mode::Refract => "refract",
         };
         let _ = write!(out, "{m} · {} surfaces", self.surfaces.drawn());
+    }
+}
+
+#[cfg(feature = "spectral-sea")]
+impl NatureModule {
+    /// The sea's params, its pass (`nature.sea`, before the nature pass,
+    /// off until a sea is set) and its resource.
+    fn build_sea(&mut self, ctx: &mut PluginContext) -> Result<(), PluginError> {
+        let p = sea::SeaParams::register(&mut ctx.world.res_mut::<ParamRegistry>())
+            .map_err(|e| PluginError(format!("material.nature: {e}")))?;
+        let effect: Rc<dyn PostEffect> = Rc::new(sea::SeaEffect {
+            sea: self.sea.clone(),
+            params: p.clone(),
+        });
+        match ctx.world.try_res_mut::<PostEffects>() {
+            Some(mut pe) => pe.effects.push(effect),
+            None => return Err(PluginError("material.nature: no post-effect list (add the render module first)".into())),
+        }
+        {
+            let Some(mut g) = ctx.world.try_res_mut::<RenderGraph>() else {
+                return Err(PluginError("material.nature: no render graph (add the render module first)".into()));
+            };
+            let err = |e: evani_render::graph::GraphError| PluginError(format!("material.nature: {e}"));
+            g.add_target(TargetDesc::new(sea::SCENE, TargetKind::HdrColor).transient()).map_err(err)?;
+            // The field sea's wave textures (a small fixed atlas) and its
+            // mesh's own depth.
+            let [fw, fh] = sea::field::FIELD_SIZE;
+            g.add_target(TargetDesc::new(sea::field::FIELD, TargetKind::HdrColor).fixed(fw, fh)).map_err(err)?;
+            g.add_target(TargetDesc::new(sea::field::ZBUF, TargetKind::Depth).transient()).map_err(err)?;
+            g.add_pass(
+                PassDesc::new(sea::PASS, "material.nature")
+                    .reads(&["hdr", "depth"])
+                    .writes(&["hdr", sea::SCENE, sea::field::FIELD, sea::field::ZBUF])
+                    .order(3),
+            )
+            .map_err(err)?;
+            g.set_enabled(sea::PASS, false);
+        }
+        self.sea_on = Some(false);
+        self.sea_params = Some(p);
+        ctx.resource(self.sea.clone());
+        Ok(())
+    }
+
+    /// This frame's camera, time, light and level for the sea; its pass on
+    /// only while a sea is set and the module is enabled.
+    fn frame_sea(&mut self, world: &mut World) {
+        let Some(p) = self.sea_params.clone() else { return };
+        let st = &self.sea.0;
+        let ns = &self.surfaces.0;
+        let (enabled, level) = {
+            let reg = world.res::<ParamRegistry>();
+            let tier = world.try_res::<Tiers>().map_or_else(|| "medium".to_string(), |t| t.active().id.clone());
+            (p.enabled(&reg), sea::level(p.quality(&reg), &tier))
+        };
+        // The light and sky the nature frame step worked out this frame.
+        st.sun.set(ns.sun.get());
+        st.sun_col.set(ns.sun_col.get());
+        st.sky_tint.set(ns.sky_tint.get());
+        st.camera.set(ns.camera.get());
+        #[cfg(feature = "capture")]
+        st.jitter.set(ns.jitter.get());
+        if let Some(t) = world.try_res::<Time>() {
+            st.time.set(t.render_seconds());
+        }
+        let draw = enabled && st.sea.get().is_some();
+        st.level.set(if draw { level as i32 } else { -1 });
+        if self.sea_on != Some(draw) {
+            world.res_mut::<RenderGraph>().set_enabled(sea::PASS, draw);
+            self.sea_on = Some(draw);
+        }
     }
 }

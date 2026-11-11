@@ -38,43 +38,73 @@
 //! A native dev tool: nothing here reaches a game's download.
 
 pub mod app_dir;
+pub mod appkind;
 pub mod block;
 pub mod check;
 pub mod cli;
 pub mod clipblock;
+pub mod construct;
 pub mod content;
 pub mod doctor;
+pub mod engine_version;
 pub mod evals;
 pub mod extools;
 pub mod fonttools;
+pub mod game_passes;
 pub mod genre;
+pub mod groundtex;
 pub mod manifest;
+pub mod materials;
 pub mod mcpbin;
 pub mod modelcheck;
 pub mod playground;
 pub mod quick;
+pub mod reference_cameras;
 pub mod render;
 pub mod render_paths;
 pub mod reports;
 pub mod scaffold;
+pub mod shaders;
 pub mod size_targets;
 pub mod stream;
 pub mod targets;
 pub mod tier_fetch;
+pub mod watch;
 
 use std::path::{Path, PathBuf};
+
+/// Set by Evani.App when the engine is a read-only pack: every file a tool
+/// writes for the engine itself (live sessions, model-convert staging, sweep
+/// pictures, the look guard's audit log, the check hook's counters) goes
+/// under this folder instead of `<engine>/.evani/` (docs/ENGINE_PACK.md 4.2).
+pub const STATE_DIR_VAR: &str = "EVANI_STATE_DIR";
+
+/// Where the engine at `root` keeps its own run-time files: `EVANI_STATE_DIR`
+/// when set, else `<root>/.evani`.
+pub fn state_dir(root: &Path) -> PathBuf {
+    state_dir_from(root, std::env::var_os(STATE_DIR_VAR).as_deref())
+}
+
+pub fn state_dir_from(root: &Path, state: Option<&std::ffi::OsStr>) -> PathBuf {
+    match state.filter(|v| !v.is_empty()) {
+        Some(s) => PathBuf::from(s),
+        None => root.join(".evani"),
+    }
+}
 
 /// The engine version every generated block is stamped with.
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The engine root: `start` or the nearest folder above it whose Cargo.toml
-/// has a `[workspace]` and that has an `apps/` folder.
+/// has a `[workspace]` and that has an `apps/` folder and the engine's core
+/// crate (a game kept outside the engine has the first two, never the third).
 pub fn find_root(start: &Path) -> Option<PathBuf> {
     start.ancestors().find(|d| is_root(d)).map(Path::to_path_buf)
 }
 
 fn is_root(d: &Path) -> bool {
     d.join("apps").is_dir()
+        && d.join("crates").join("evani-core").join("Cargo.toml").is_file()
         && std::fs::read_to_string(d.join("Cargo.toml")).is_ok_and(|t| t.lines().any(|l| l.trim() == "[workspace]"))
 }
 
@@ -132,7 +162,8 @@ pub(crate) mod testutil {
             "catalog/genres.json",
             r#"{"genres":[{"id":"kart-racer","physics":"simple","compatible_looks":["toon"]}]}"#,
         );
-        w("crates/evani-fx/Cargo.toml", "[features]\ndefault = []\nbloom = []\noutline = []\n");
+        w("crates/evani-core/Cargo.toml", "[package]\nname = \"evani-core\"\n");
+        w("crates/evani-fx/Cargo.toml","[features]\ndefault = []\nbloom = []\noutline = []\n");
         w(
             "apps/demo/evani.toml",
             "name = \"demo\"\nkit = \"demo\"\nlook = \"basic\"\neffects = [\"bloom\"]\n\n[modules]\nphysics = \"simple\"\nlive = true\n",

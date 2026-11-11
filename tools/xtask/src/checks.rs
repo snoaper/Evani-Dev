@@ -147,8 +147,32 @@ pub struct ArchProbe {
 
 /// A kit must keep its gameplay in the ECS (entities > 0 in every view of the
 /// running game) and register its tunables (at least one `kit.<id>.*` param).
-pub fn architecture(kit: &str, p: &ArchProbe) -> Verdict {
+///
+/// `tool` is `None` for a game. For an app that says `kind = "tool"` it holds
+/// the tool rules it breaks (`evani_guide::appkind::problems`): when it keeps
+/// them all, the entity count does not apply (a tool has no game objects) and
+/// only the params are checked; when it breaks any, the claim is refused and
+/// the entity count is checked as for a game.
+pub fn architecture(kit: &str, p: &ArchProbe, tool: Option<&[String]>) -> Verdict {
     let mut bad: Vec<String> = Vec::new();
+    let is_tool = match tool {
+        Some(broken) if !broken.is_empty() => {
+            bad.push(format!("says `kind = \"tool\"` but is not one: {}", join_list(broken)));
+            false
+        }
+        Some(_) => true,
+        None => false,
+    };
+    if is_tool {
+        if p.kit_params.is_empty() {
+            return Verdict::fail(format!("no param named kit.{kit}.* is registered ({} params in the whole game).", p.total_params));
+        }
+        return Verdict::pass(format!(
+            "Tool app (`kind = \"tool\"`, no kit gameplay; DECISIONS.md \"Tool apps\"): the entity count does not apply; {} kit.{kit}.* params registered ({} in the whole game).",
+            p.kit_params.len(),
+            p.total_params
+        ));
+    }
     if p.entities.is_empty() {
         bad.push("the live session reported no entity count".into());
     }
@@ -195,6 +219,9 @@ pub struct CaptureProbe {
     /// The debug overlay or debug panel was visible.
     pub overlay_visible: bool,
     pub hud: Vec<HudProbe>,
+    /// Open lists shown under two tap rows high at the phone or portrait
+    /// size (`phone: #mv-drawer .scroll 62px`; capture.mjs `CRAMPED_PROBE`).
+    pub cramped: Vec<String>,
 }
 
 impl CaptureProbe {
@@ -223,6 +250,12 @@ pub fn capture_hud(declared: &[String], caps: &[CaptureProbe]) -> Verdict {
         if !hidden.is_empty() {
             bad.push(format!("no HUD element ({}) is visible and filled in {}", declared.join(", "), hidden.join(", ")));
         }
+    }
+    // Critic rounds 2 and 6 of material-view: Browse on a sideways phone
+    // opened a box cut off at its search field, with no row on screen.
+    let cramped: Vec<String> = caps.iter().filter(|c| !c.cramped.is_empty()).map(|c| format!("{} ({})", c.name, c.cramped.join(", "))).collect();
+    if !cramped.is_empty() {
+        bad.push(format!("an open list shows less than two rows or fewer than three of its rows, or a button runs off the screen, at the phone size in {}", cramped.join("; ")));
     }
     if bad.is_empty() {
         Verdict::pass(format!(
@@ -665,6 +698,22 @@ pub fn probe_from(v: &Value, kit: &str) -> Probe {
                                 .collect()
                         })
                         .unwrap_or_default(),
+                    cramped: ["phone", "portrait"]
+                        .iter()
+                        .flat_map(|size| {
+                            c.pointer(&format!("/{size}/cramped"))
+                                .and_then(Value::as_array)
+                                .into_iter()
+                                .flatten()
+                                .filter_map(Value::as_str)
+                                .map(move |x| format!("{size}: {x}"))
+                        })
+                        // capture.mjs --page-sizes: each extra size's list.
+                        .chain(c.get("sizes").and_then(Value::as_array).into_iter().flatten().flat_map(|z| {
+                            let size = s(z, "size");
+                            z.get("cramped").and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).map(move |x| format!("{size}: {x}"))
+                        }))
+                        .collect(),
                 })
                 .collect()
         })
@@ -756,17 +805,34 @@ mod tests {
 
     #[test]
     fn architecture_needs_entities_and_registered_params() {
-        let ok = architecture("kart-racer", &arch(&[("boot", Some(120)), ("drift", Some(900))], &["kit.kart-racer.max_speed"]));
+        let ok = architecture("kart-racer", &arch(&[("boot", Some(120)), ("drift", Some(900))], &["kit.kart-racer.max_speed"]), None);
         assert!(ok.pass, "{}", ok.evidence);
         assert!(ok.evidence.contains("120 to 900 entities in 2 views"), "{}", ok.evidence);
-        let zero = architecture("k", &arch(&[("boot", Some(5)), ("path t=0", Some(0))], &["kit.k.a"]));
+        let zero = architecture("k", &arch(&[("boot", Some(5)), ("path t=0", Some(0))], &["kit.k.a"]), None);
         assert!(!zero.pass);
         assert!(zero.evidence.contains("0 entities while running (path t=0)"), "{}", zero.evidence);
-        let none = architecture("k", &arch(&[("boot", Some(5))], &[]));
+        let none = architecture("k", &arch(&[("boot", Some(5))], &[]), None);
         assert!(!none.pass);
         assert!(none.evidence.contains("kit.k.*"), "{}", none.evidence);
-        assert!(!architecture("k", &arch(&[], &["kit.k.a"])).pass);
-        assert!(!architecture("k", &arch(&[("boot", None)], &["kit.k.a"])).pass);
+        assert!(!architecture("k", &arch(&[], &["kit.k.a"]), None).pass);
+        assert!(!architecture("k", &arch(&[("boot", None)], &["kit.k.a"]), None).pass);
+    }
+
+    /// A tool app skips only the entity count; its params are still checked,
+    /// and a claim that breaks the tool rule is refused with the game checks.
+    #[test]
+    fn a_tool_skips_only_the_entity_count() {
+        let zero = arch(&[("boot", Some(0)), ("t0", Some(0))], &["kit.v.a"]);
+        let ok = architecture("v", &zero, Some(&[]));
+        assert!(ok.pass && ok.evidence.contains("Tool app"), "{}", ok.evidence);
+        let no_params = architecture("v", &arch(&[("boot", Some(0))], &[]), Some(&[]));
+        assert!(!no_params.pass && no_params.evidence.contains("kit.v.*"), "{}", no_params.evidence);
+        let broken = vec!["kit `v` is a genre in catalog/genres.json".to_string()];
+        let claim = architecture("v", &zero, Some(&broken));
+        assert!(!claim.pass && claim.evidence.contains("is not one") && claim.evidence.contains("0 entities"), "{}", claim.evidence);
+        // A game claiming the kind with real entities still fails on the claim.
+        let game = architecture("v", &arch(&[("boot", Some(50))], &["kit.v.a"]), Some(&broken));
+        assert!(!game.pass, "{}", game.evidence);
     }
 
     fn cap_probe(name: &str, overlay: bool, hud: bool) -> CaptureProbe {
@@ -774,7 +840,25 @@ mod tests {
             name: name.into(),
             overlay_visible: overlay,
             hud: vec![HudProbe { selector: "#hud0".into(), matched: 1, visible: hud, text_len: if hud { 12 } else { 0 } }],
+            cramped: Vec::new(),
         }
+    }
+
+    /// Guard (critic rounds 2 and 6 of material-view): a list cut to under
+    /// two rows at the phone size fails the capture check, and the probe's
+    /// phone and portrait lists are both read.
+    #[test]
+    fn a_cramped_list_at_phone_size_fails_the_capture_check() {
+        let sel = vec!["#hud0".to_string()];
+        let mut c = cap_probe("proof_stew", false, true);
+        c.cramped = vec!["phone: #mv-drawer .scroll 62px".into()];
+        let v = capture_hud(&sel, &[cap_probe("styles", false, true), c]);
+        assert!(!v.pass && v.evidence.contains("proof_stew (phone: #mv-drawer .scroll 62px)"), "{}", v.evidence);
+        let p = json!({ "probe": { "captures": [{ "name": "proof_stew", "overlay": { "visible": false }, "hud": [],
+            "phone": { "cramped": ["div.scroll 62px"] }, "portrait": { "cramped": [] },
+            "sizes": [{ "size": "700x900", "cramped": ["div.list 80px"] }, { "size": "2560x1440", "cramped": [] }] }] } });
+        let caps = probe_from(&p, "v").captures;
+        assert_eq!(caps[0].cramped, vec!["phone: div.scroll 62px".to_string(), "700x900: div.list 80px".to_string()]);
     }
 
     #[test]

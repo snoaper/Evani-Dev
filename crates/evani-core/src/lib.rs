@@ -40,7 +40,7 @@ pub mod input; pub mod look_fx;
 pub mod num;
 pub mod overlay;
 pub mod params;
-pub mod particles;
+pub mod particles; #[cfg(feature = "trails")] pub mod trails;
 pub mod play;
 pub mod plugin; #[cfg(feature = "pointer-lock")] pub mod pointer_lock;
 pub mod quality;
@@ -48,7 +48,7 @@ pub mod rng;
 pub mod save;
 pub mod scene;
 pub mod slots;
-pub mod tiers;
+pub mod tiers; #[cfg(not(target_arch = "wasm32"))] pub mod tier_switch; pub mod tier_settle;
 pub mod time;
 #[cfg(feature = "touch")]
 pub mod touch;

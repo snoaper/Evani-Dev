@@ -31,7 +31,7 @@ use evani_net::wire::{Reader, WireError, Writer};
 use crate::Tune;
 use crate::ai::{self, AiState};
 use crate::items::{Blast, Bomb, Goo, Item, ItemBox, OddsTable, Seeker, Slot};
-use crate::kart::{Controls, Kart, Launch};
+use crate::kart::{Controls, Kart, Launch, wrap_angle};
 use crate::race::{self, Counts, Ctx, Fns, InFlight, Online, Phase, Race, RaceEvent};
 use crate::slipstream::Slip;
 use crate::track::Track;
@@ -113,6 +113,14 @@ fn rubber(gap: f32, dist: f32, strength: f32) -> f32 {
     (gap / dist).clamp(-1.0, 1.0) * strength
 }
 
+/// A player's prediction guesses another human's steering from the AI's
+/// line once this many ticks past their last confirmed input (0: on every
+/// guessed tick). Held, a key press was guessed to last the whole guess
+/// (up to half a second), metres off when they let go; people mostly
+/// follow the road, so the line's steering is the better guess even for a
+/// driver who wanders across it (`jump_probe` measures it against one).
+pub const GUESS_HUMANS_AFTER: Option<u64> = Some(0);
+
 /// The race rules for one online session.
 pub struct NetRace {
     world: World,
@@ -123,6 +131,12 @@ pub struct NetRace {
     /// Events of recent ticks (drawing and sound only; not in the state).
     recent: VecDeque<(u64, RaceEvent)>,
     tick: u64,
+    /// A player's prediction guesses the AI racers' inputs with their own
+    /// driving ([`LockstepGame::guess`]); off, it holds their last ones.
+    guess_bots: bool,
+    /// ... and a human's steering with the AI's line once this many ticks
+    /// past their last confirmed input (None: hold it).
+    guess_humans_after: Option<u64>,
 }
 
 impl NetRace {
@@ -156,6 +170,8 @@ impl NetRace {
             curve: steer_curve(),
             recent: VecDeque::new(),
             tick: 0,
+            guess_bots: true,
+            guess_humans_after: GUESS_HUMANS_AFTER,
         };
         g.new_race();
         Ok(g)
@@ -164,6 +180,18 @@ impl NetRace {
     /// The race resource (read only).
     pub fn race(&self) -> core::cell::Ref<'_, Race> {
         self.world.res::<Race>()
+    }
+
+    /// Guess the AI racers' inputs with their own driving when predicting
+    /// (the default) or hold their last ones (as before; for comparisons).
+    pub fn set_guess_bots(&mut self, on: bool) {
+        self.guess_bots = on;
+    }
+
+    /// Guess a human's steering with the AI's line once `after` ticks past
+    /// their last confirmed input, or hold it (None; as before).
+    pub fn set_guess_humans(&mut self, after: Option<u64>) {
+        self.guess_humans_after = after;
     }
 
     pub fn world(&self) -> &World {
@@ -265,6 +293,55 @@ impl LockstepGame for NetRace {
         }
     }
 
+    /// The other seats' inputs arrive late, and held for the whole guess (a
+    /// third to half a second online) a turn begun or ended in it put the
+    /// kart metres off when the real inputs came. The AI drives by these
+    /// rules from the race state alone (the referee's brains add only item
+    /// timing and their unsticking memory), so each AI seat is guessed with
+    /// the same driving, without items; another human keeps their throttle,
+    /// drift and brake but is guessed to steer along the AI's line
+    /// ([`GUESS_HUMANS_AFTER`]). A seat that was braking or reversing keeps
+    /// its held input.
+    fn guess(&self, f: &mut Frame<KartInput>, own: Option<usize>, ahead: u64) {
+        let humans_too = self.guess_humans_after.is_some_and(|a| ahead > a);
+        if !self.guess_bots && !humans_too {
+            return;
+        }
+        let r = self.world.res::<Race>();
+        if r.phase != Phase::Racing {
+            return;
+        }
+        let karts = race::kart_list(&self.world, &r.grid);
+        let humans = f.humans;
+        for (seat, input) in f.inputs.iter_mut().enumerate() {
+            let human = seat < 32 && humans & (1 << seat) != 0;
+            if Some(seat) == own || (human && !humans_too) || (!human && !self.guess_bots) || input.buttons & KartInput::BRAKE != 0 {
+                continue;
+            }
+            let (Some(k), Some(spec)) = (karts.get(seat), karts.get(seat).and_then(|k| r.roster.get(k.spec))) else {
+                continue;
+            };
+            if k.finished.is_some() {
+                continue;
+            }
+            let around = ai::surroundings(&karts, seat, &r.track);
+            let mut st = AiState::default();
+            let c = ai::drive(k, spec, &mut st, around, &r.track, &self.tune, 0.5, DT);
+            let g = KartInput::from_controls(&c);
+            if human {
+                // A human's own throttle, drift and brake stay; only where
+                // they point is guessed.
+                input.steer = g.steer;
+                input.buttons = (input.buttons & !KartInput::DRIFT) | (g.buttons & KartInput::DRIFT);
+            } else {
+                *input = KartInput {
+                    buttons: g.buttons & !KartInput::ITEM,
+                    ..g
+                };
+            }
+        }
+    }
+
     fn step(&mut self, f: &Frame<KartInput>) {
         let before = self.world.res::<Race>().online.as_ref().map_or(0, |o| o.humans);
         {
@@ -352,6 +429,144 @@ impl LockstepGame for NetRace {
                     w.u8(0);
                     w.f32(0.0);
                 }
+            }
+        }
+    }
+}
+
+/// A drawn kart further than this from where its corrected pose puts it
+/// (a respawn, a new grid, a long stall) cuts straight there (metres).
+pub const SMOOTH_CUT_M: f32 = 8.0;
+/// ... or turned further than this (radians).
+pub const SMOOTH_CUT_YAW: f32 = 1.2;
+/// How fast a drawn kart settles onto its corrected pose (rad/s, critically
+/// damped: about a quarter of a second). A correction of `x` metres moves
+/// the kart at most `x * rate / e` m/s beyond its own motion, so up to
+/// about 1.2 m it stays under 10 cm a frame.
+pub const SMOOTH_RATE: f32 = 13.0;
+/// The fastest a drawn kart slides onto its corrected pose beyond its own
+/// motion (m/s; 0.3 m a tick at 60 Hz): a big correction (an item hit the
+/// guess could not know of) slides over a few more frames instead of
+/// jumping half a metre in one.
+pub const SMOOTH_MAX_MPS: f32 = 18.0;
+
+/// One drawn kart's ease state.
+#[derive(Debug, Clone, Copy, Default)]
+struct Ease {
+    /// Where it was drawn at the end of the last tick.
+    pos: [f32; 3],
+    yaw: f32,
+    /// Drawn minus raw, and how fast that offset changes.
+    off: [f32; 3],
+    vel: [f32; 3],
+    yoff: f32,
+    yvel: f32,
+}
+
+/// The exact critically damped step of an offset `x` moving at `v` towards
+/// zero over `dt` (stable at any `dt`).
+fn settle(x: f32, v: f32, w: f32, dt: f32) -> (f32, f32) {
+    let e = (-w * dt).exp();
+    let c = v + w * x;
+    ((x + c * dt) * e, (v - w * c * dt) * e)
+}
+
+/// Drawing only (online): eases the karts the player sees over the
+/// corrections the netcode makes. Every tick a player's game draws its
+/// latest guess of the race; when the referee confirms a frame the guess is
+/// re-run, and any kart whose driver did something else than guessed (the
+/// other humans and the AI racers, whose inputs arrive late, and now and
+/// then the player's own after a bump) stands somewhere else from one tick
+/// to the next. So does every kart when the client runs two ticks in one or
+/// holds one to keep pace. Drawn straight, each is a jump. This keeps each
+/// drawn kart where its last drawn pose and its own motion take it and lets
+/// the difference settle in about a quarter of a second, so a correction
+/// is a short slide; a move over [`SMOOTH_CUT_M`] still cuts. It changes
+/// only the copy that is drawn: the race state, the rules and what goes on
+/// the wire are untouched, and offline (where the drawn kart only ever
+/// moves by its own motion) every offset stays zero.
+#[derive(Debug, Clone, Default)]
+pub struct NetSmooth {
+    karts: Vec<Option<Ease>>,
+    race_no: Option<u64>,
+}
+
+impl NetSmooth {
+    /// Forget every kart (the next tick draws them as they are).
+    pub fn reset(&mut self) {
+        self.karts.clear();
+        self.race_no = None;
+    }
+
+    /// Ease `karts` (one tick's drawn copies, grid order) over `dt` seconds:
+    /// on return each one's `prev_pos`/`prev_yaw` is where it was drawn last
+    /// tick and `pos`/`yaw` where to draw it now.
+    pub fn apply(&mut self, karts: &mut [Kart], dt: f32) {
+        self.karts.resize(karts.len(), None);
+        for (k, slot) in karts.iter_mut().zip(self.karts.iter_mut()) {
+            let Some(mut e) = slot.take() else {
+                *slot = Some(Ease {
+                    pos: k.pos,
+                    yaw: k.yaw,
+                    ..Ease::default()
+                });
+                continue;
+            };
+            // How far this tick's starting pose is from what was drawn: the
+            // correction (0 offline), plus what the offset still held.
+            let gap: [f32; 3] = core::array::from_fn(|i| e.pos[i] - k.prev_pos[i]);
+            let ygap = wrap_angle(e.yaw - k.prev_yaw);
+            if gap.iter().map(|g| g * g).sum::<f32>().sqrt() > SMOOTH_CUT_M || ygap.abs() > SMOOTH_CUT_YAW {
+                *slot = Some(Ease {
+                    pos: k.pos,
+                    yaw: k.yaw,
+                    ..Ease::default()
+                });
+                continue;
+            }
+            for ((o, v), g) in e.off.iter_mut().zip(e.vel.iter_mut()).zip(gap) {
+                (*o, *v) = settle(g, *v, SMOOTH_RATE, dt);
+            }
+            let moved: [f32; 3] = core::array::from_fn(|i| e.off[i] - gap[i]);
+            let len = moved.iter().map(|m| m * m).sum::<f32>().sqrt();
+            let most = SMOOTH_MAX_MPS * dt;
+            if len > most {
+                let s = most / len;
+                for i in 0..3 {
+                    e.off[i] = gap[i] + moved[i] * s;
+                    e.vel[i] = moved[i] * s / dt;
+                }
+            }
+            (e.yoff, e.yvel) = settle(ygap, e.yvel, SMOOTH_RATE, dt);
+            k.prev_pos = e.pos;
+            k.prev_yaw = e.yaw;
+            k.pos = core::array::from_fn(|i| k.pos[i] + e.off[i]);
+            k.yaw = wrap_angle(k.yaw + e.yoff);
+            e.pos = k.pos;
+            e.yaw = k.yaw;
+            *slot = Some(e);
+        }
+    }
+
+    /// [`NetSmooth::apply`] to the karts of a world [`NetRace::show`] has
+    /// just filled (a new race starts them afresh).
+    pub fn apply_world(&mut self, world: &mut World, dt: f32) {
+        let (grid, race_no) = {
+            let r = world.res::<Race>();
+            (r.grid.clone(), r.race_no)
+        };
+        if self.race_no != Some(race_no) {
+            self.reset();
+            self.race_no = Some(race_no);
+        }
+        let mut karts = race::kart_list(world, &grid);
+        self.apply(&mut karts, dt);
+        for (&e, k) in grid.iter().zip(&karts) {
+            if let Some(mut m) = world.get_mut::<Kart>(e) {
+                m.prev_pos = k.prev_pos;
+                m.pos = k.pos;
+                m.prev_yaw = k.prev_yaw;
+                m.yaw = k.yaw;
             }
         }
     }
@@ -978,6 +1193,54 @@ mod tests {
             })
             .collect();
         Frame { tick: t, humans, inputs }
+    }
+
+    /// A kart moving 0.5 m a tick along x, starting at `x0`.
+    fn moving(x0: f32) -> Kart {
+        let g = NetRace::new(1, &[]).unwrap();
+        let mut k = race::kart_list(g.world(), &g.race().grid).swap_remove(0);
+        k.prev_pos = [x0 - 0.5, 0.0, 0.0];
+        k.pos = [x0, 0.0, 0.0];
+        k
+    }
+
+    #[test]
+    fn the_smoother_leaves_plain_motion_alone() {
+        let mut s = NetSmooth::default();
+        for t in 0..120 {
+            let mut k = [moving(t as f32 * 0.5)];
+            let raw = k[0].clone();
+            s.apply(&mut k, DT);
+            assert!((k[0].pos[0] - raw.pos[0]).abs() < 1e-5 && (k[0].prev_pos[0] - raw.prev_pos[0]).abs() < 1e-5, "tick {t}");
+        }
+    }
+
+    #[test]
+    fn the_smoother_turns_a_correction_into_a_short_slide_and_cuts_a_teleport() {
+        let mut s = NetSmooth::default();
+        let mut drawn = Vec::new();
+        for t in 0..60 {
+            // At tick 10 the corrected race puts the kart 1.5 m to the side.
+            let mut k = [moving(t as f32 * 0.5)];
+            if t >= 10 {
+                k[0].pos[2] += 1.5;
+                k[0].prev_pos[2] += 1.5;
+            }
+            s.apply(&mut k, DT);
+            drawn.push(k[0].clone());
+        }
+        // Each frame moves at most 0.3 m beyond its own motion, and the kart
+        // is on its corrected line within half a second.
+        for w in drawn.windows(2) {
+            let side = (w[1].pos[2] - w[0].pos[2]).abs();
+            assert!(side <= SMOOTH_MAX_MPS * DT + 1e-4, "{side}");
+            assert!((w[1].prev_pos[2] - w[0].pos[2]).abs() < 1e-5, "continuous");
+        }
+        assert!((drawn[40].pos[2] - 1.5).abs() < 0.05, "{}", drawn[40].pos[2]);
+        // A respawn far away is drawn there at once.
+        let mut k = [moving(200.0)];
+        s.apply(&mut k, DT);
+        assert!((k[0].pos[0] - 200.0).abs() < 1e-5);
     }
 
     #[test]

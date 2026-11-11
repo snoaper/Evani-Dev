@@ -1,0 +1,47 @@
+# The grass proof (evani-grass): a small game kept outside the engine's
+# workspace, the way the ground-textures proof is, so it also proves
+# `[modules] grass = true` for `--app-dir` games. The engine crates are path
+# dependencies of this checkout.
+#
+#   cargo xtask build --app-dir examples/grass-field/apps/grass-field
+#   node tools/grass/grass-shots.mjs --dist examples/grass-field/apps/grass-field/dist
+
+[workspace]
+resolver = "3"
+members = ["apps/grass-field", "kits/evani-kit-grass-field"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+publish = false
+
+# The engine's exact pins, so Cargo unifies them.
+[workspace.dependencies]
+wasm-bindgen = "=0.2.129"
+web-sys = "=0.3.106"
+evani-core = { path = "../../crates/evani-core" }
+evani-render = { path = "../../crates/evani-render" }
+evani-fx = { path = "../../crates/evani-fx", default-features = false }
+evani-grass = { path = "../../crates/evani-grass" }
+evani-material-proc = { path = "../../crates/evani-material-proc" }
+evani-look-photoreal = { path = "../../looks/evani-look-photoreal" }
+evani-kit-grass-field = { path = "kits/evani-kit-grass-field" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev.package."*"]
+opt-level = 1

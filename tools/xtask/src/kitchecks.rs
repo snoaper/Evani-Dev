@@ -673,6 +673,54 @@ pub fn free_roam(problems: Option<&[String]>) -> Verdict {
     }
 }
 
+/// The tier switches the review captures (`--tier-switch` of capture.mjs,
+/// before any other capture, so no tier's shaders are cached yet).
+pub const TIER_SWITCHES: [&str; 5] = ["lite", "ultra", "lite", "low", "high"];
+/// The longest frame gap a tier switch may leave (ms). The fixed viewer's
+/// switches measure 20 to 40 ms on a lightly loaded PC; a switch that
+/// rebuilds a big shader stops the page for seconds.
+pub const TIER_SWITCH_MAX_MS: u32 = 250;
+
+/// Item 30: switching tiers never stops the frames for longer than the limit
+/// (the capture summary's `tier_switch`: per switch the longest gap between
+/// presented frames, until frames run steadily again).
+pub fn tier_switch(v: Option<&Value>) -> Verdict {
+    let Some(ts) = v else {
+        return Verdict::not_run("The tier switch check did not run (the capture has no `tier_switch` result).");
+    };
+    let max = ts.get("max_ms").and_then(Value::as_u64).unwrap_or(u64::from(TIER_SWITCH_MAX_MS));
+    let steps = ts.get("steps").and_then(Value::as_array).cloned().unwrap_or_default();
+    let error = ts.get("error").and_then(Value::as_str).unwrap_or("");
+    if steps.is_empty() {
+        return Verdict::not_run(format!("No tier switch was measured{}.", if error.is_empty() { String::new() } else { format!(" ({error})") }));
+    }
+    let n = |s: &Value, k: &str| s.get(k).and_then(Value::as_u64);
+    let name = |s: &Value, k: &str| s.get(k).and_then(Value::as_str).unwrap_or("?").to_string();
+    let mut parts = Vec::new();
+    let mut bad = Vec::new();
+    for s in &steps {
+        let what = format!("{} to {}", name(s, "from"), name(s, "to"));
+        let gap = n(s, "max_gap_ms");
+        let built = n(s, "pipelines").unwrap_or(0);
+        let note = if built > 0 { format!(", {built} pipelines built") } else { String::new() };
+        match (gap, n(s, "steady_after_ms")) {
+            (Some(g), Some(_)) if g <= max => parts.push(format!("{what} {g} ms{note}")),
+            (Some(g), Some(_)) => bad.push(format!("{what} stopped the frames for {:.1} s{note}", g as f64 / 1000.0)),
+            (_, None) => bad.push(format!("{what} never drew steadily again{note}")),
+            (None, _) => bad.push(format!("{what} was not measured")),
+        }
+    }
+    let longest = steps.iter().filter_map(|s| n(s, "max_gap_ms")).max().unwrap_or(0);
+    if bad.is_empty() {
+        Verdict::pass(format!("Tier switches keep drawing: longest frame gap {longest} ms (limit {max} ms): {}.", parts.join(", ")))
+    } else {
+        Verdict::fail(format!(
+            "Tier switch: {} (limit {max} ms). A tier change must not rebuild a shader: put per-tier values in a uniform or data (evani_core::tier_switch).",
+            some_of(&bad, 5)
+        ))
+    }
+}
+
 /// The playtest bot reaches a win and a lose and nothing hangs: at least one
 /// passing `playtest_win*` and `playtest_lose*` test, no failing playtest.
 pub fn playtest(tests: Option<&[(String, bool)]>, why_none: &str) -> Verdict {
@@ -1030,5 +1078,25 @@ mod tests {
         assert!(free_roam(Some(&[])).pass);
         let v = free_roam(Some(&["declares free roam, but has no free-roam test".to_string()]));
         assert!(!v.pass && v.kind == Kind::Measured && v.evidence.contains("no free-roam test"), "{}", v.evidence);
+    }
+
+    /// The viewer's measured switches before the fix (2026-10-25) fail; the
+    /// fixed ones pass; nothing measured is not a pass.
+    #[test]
+    fn a_tier_switch_that_stops_the_frames_fails() {
+        let step = |from: &str, to: &str, gap: u64, steady: Option<u64>, pipelines: u64| serde_json::json!({ "from": from, "to": to, "max_gap_ms": gap, "steady_after_ms": steady, "pipelines": pipelines });
+        let before = serde_json::json!({ "max_ms": 250, "steps": [step("medium", "lite", 52413, Some(52573), 2), step("lite", "ultra", 605, Some(618), 2), step("ultra", "lite", 28, Some(84), 2)] });
+        let v = tier_switch(Some(&before));
+        assert!(!v.pass && v.kind == Kind::Measured, "{}", v.evidence);
+        assert!(v.evidence.contains("medium to lite stopped the frames for 52.4 s, 2 pipelines built"), "{}", v.evidence);
+        assert!(v.evidence.contains("lite to ultra stopped the frames for 0.6 s"), "{}", v.evidence);
+        let after = serde_json::json!({ "max_ms": 250, "steps": [step("medium", "lite", 31, Some(70), 0), step("lite", "ultra", 40, Some(90), 0)] });
+        let v = tier_switch(Some(&after));
+        assert!(v.pass, "{}", v.evidence);
+        assert!(v.evidence.contains("longest frame gap 40 ms (limit 250 ms)"), "{}", v.evidence);
+        let hung = serde_json::json!({ "steps": [step("lite", "low", 120000, None, 2)] });
+        assert!(tier_switch(Some(&hung)).evidence.contains("never drew steadily again"));
+        assert_eq!(tier_switch(None).kind, Kind::NotRun);
+        assert_eq!(tier_switch(Some(&serde_json::json!({ "steps": [], "error": "start-up: no steady frames" }))).kind, Kind::NotRun);
     }
 }

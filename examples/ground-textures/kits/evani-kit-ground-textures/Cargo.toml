@@ -1,0 +1,19 @@
+[package]
+name = "evani-kit-ground-textures"
+description = "Evani.Dev ground textures proof kit (TopGun W3): kit_surface with kit textures, world-XZ on flat ground, biplanar on walls, hex-tiling near, fade to the layer mean far"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+evani-core.workspace = true
+# 3D (`forward`), the kit's own surface code (`kit-surface`) and the
+# texture arrays it samples (`kit-textures`).
+evani-render = { workspace = true, features = ["forward", "kit-surface", "kit-textures"] }
+# The look's material colours, so the kit can undo their tint.
+evani-look-photoreal.workspace = true
+
+[lints]
+workspace = true

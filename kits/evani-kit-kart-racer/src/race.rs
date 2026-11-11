@@ -2019,6 +2019,33 @@ mod tests {
         assert!(matches!(w.get::<Kart>(e).unwrap().slot, Slot::Holding(_)));
     }
 
+    /// The box drawing hides a box with a kart inside its pick-up reach
+    /// (`draw::box_clearance`); that reach is this one: a kart just inside it
+    /// takes the box, one just outside does not.
+    #[test]
+    fn box_pick_up_reach_matches_the_drawing() {
+        let t = Tune::default();
+        for (gap, taken) in [(-0.05, true), (0.05, false)] {
+            let mut w = world(&t);
+            request(&w, Request::Start { players: 1 });
+            run(&mut w, &t, 1, [Controls::default(); 2]);
+            w.res_mut::<Race>().phase = Phase::Racing;
+            let (e, b0) = {
+                let r = w.res::<Race>();
+                (r.grid[r.player_kart(0).unwrap()], r.boxes[0])
+            };
+            let bx = *w.get::<ItemBox>(b0).unwrap();
+            let x = t.kart_radius + 0.9 + gap;
+            w.get_mut::<Kart>(e).unwrap().pos = [bx.pos[0] + x, bx.pos[1] - 1.0, bx.pos[2]];
+            let shown = crate::draw::box_clearance(&bx, &[w.get::<Kart>(e).unwrap().clone()], &t);
+            assert_eq!(shown == 0.0, taken, "gap {gap}");
+            let mut s = Sim::load(&w);
+            s.collect_boxes(&t, DT);
+            s.store();
+            assert_eq!(w.get::<ItemBox>(b0).unwrap().hidden > 0.0, taken, "gap {gap}");
+        }
+    }
+
     #[test]
     fn pause_freezes_and_requests_switch_phase() {
         let t = Tune::default();

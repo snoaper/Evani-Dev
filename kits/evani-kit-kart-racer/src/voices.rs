@@ -37,7 +37,9 @@ pub fn engine_rate(speed_frac: f32) -> f32 {
 pub fn engine_gain(speed_frac: f32, players: usize) -> f32 {
     let f = if speed_frac.is_finite() { speed_frac.abs().min(1.3) } else { 0.0 };
     let share = if players > 1 { 0.7 } else { 1.0 };
-    (0.14 + 0.26 * f.min(1.0) + 0.05 * (f - 1.0).max(0.0)) * share
+    // Half as loud as before the music came in, so it sits under the
+    // race theme and is still heard.
+    (0.14 + 0.26 * f.min(1.0) + 0.05 * (f - 1.0).max(0.0)) * share * UNDER_MUSIC
 }
 
 /// What a kart's wheels roll on.
@@ -87,7 +89,11 @@ pub fn surface_gains(surface: Surface, speed_frac: f32, grounded: bool) -> [f32;
 /// How far a rival's engine carries (m) and how loud it is at the player's
 /// elbow.
 pub const RIVAL_RANGE: f32 = 30.0;
-const RIVAL_GAIN: f32 = 0.16;
+const RIVAL_GAIN: f32 = 0.16 * UNDER_MUSIC;
+
+/// The engines' share of their old loudness, now the music plays under the
+/// race (`music.rs`).
+pub const UNDER_MUSIC: f32 = 0.5;
 
 /// One local player's voices.
 #[derive(Debug, Clone, Copy)]

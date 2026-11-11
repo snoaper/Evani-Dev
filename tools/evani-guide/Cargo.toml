@@ -23,6 +23,22 @@ sha2 = { version = "=0.10.9", default-features = false }
 # nodes, texture sets). A path crate whose only dependency is serde_json, so
 # the Stop hook still builds in seconds; no new external crate.
 evani-gltf.workspace = true
+# `check` reads the material catalogue and a model's 32-byte blocks (`[materials]`,
+# P10b): `catalog` is serde_json only, no engine. `split` and `style` add the
+# recipe stage's text tools (plain text, no dependency), so `check` sizes each
+# material shader as the game builds it (docs/materials/SHADER_BUDGET.md).
+evani-material-recipes = { workspace = true, features = ["catalog", "split", "style"] }
+# `check` reads the Asset & Style Studio's catalogues (catalog/assets, the
+# materials' `belongs_on`, the styles' `studio` blocks) and runs its asset x
+# style coverage check: serde and serde_json only, no engine.
+evani-studio.workspace = true
+# ...and loads every ready studio asset's source on every tier (the source
+# reader and code shapes; own code, evani-gltf and serde only).
+evani-style-geo.workspace = true
+# Stale construct models (`construct.rs`): the recipe content hash, from
+# the construct back end itself so the two can't disagree. A path crate whose
+# only dependency is serde_json (docs/MODELGEN_PLAN.md 3.8); nothing new.
+evani-construct.workspace = true
 
 [lints]
 workspace = true

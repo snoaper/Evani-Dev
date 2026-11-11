@@ -407,6 +407,23 @@ impl LookData {
         self.materials.iter().find(|m| m.name == name)
     }
 
+    /// Effects one look asked for and a later layered look switched off
+    /// (its last wish is off): with layered looks the later veto wins
+    /// silently. A game's test can assert this is empty, or that each name
+    /// in it is meant (material-view lost bloom this way). Pure and unused
+    /// at runtime, so it costs a download nothing.
+    pub fn vetoed_effects(&self) -> Vec<&str> {
+        let mut out: Vec<&str> = Vec::new();
+        for (name, _) in &self.post_effects {
+            let last_off = self.post_effects.iter().rev().find(|(n, _)| n == name).is_some_and(|(_, on)| !on);
+            let asked = self.post_effects.iter().any(|(n, on)| n == name && *on);
+            if last_off && asked && !out.contains(&name.as_str()) {
+                out.push(name);
+            }
+        }
+        out
+    }
+
     /// Run a generator by name with a seeded RNG (deterministic).
     pub fn generate(&self, req: &GenRequest) -> Option<GeneratedAsset> {
         let (_, f) = self.generators.iter().find(|(n, _)| *n == req.name)?;
@@ -563,5 +580,23 @@ pub trait EngineModule: 'static {
     /// started and listed in is unchanged.
     fn draws(&self) -> bool {
         false
+    }
+}
+
+#[cfg(test)]
+mod look_data_tests {
+    use super::LookData;
+
+    fn look(wishes: &[(&str, bool)]) -> LookData {
+        LookData { post_effects: wishes.iter().map(|(n, on)| ((*n).to_string(), *on)).collect(), ..LookData::default() }
+    }
+
+    /// A later look's off wins over an earlier on (reported); a plain off,
+    /// or an on put back last, is not a veto.
+    #[test]
+    fn vetoed_effects_names_later_offs_over_earlier_ons() {
+        assert_eq!(look(&[("bloom", true), ("bloom", false), ("fog", false)]).vetoed_effects(), ["bloom"]);
+        assert!(look(&[("bloom", true), ("bloom", false), ("bloom", true)]).vetoed_effects().is_empty());
+        assert!(look(&[("outline", false)]).vetoed_effects().is_empty());
     }
 }

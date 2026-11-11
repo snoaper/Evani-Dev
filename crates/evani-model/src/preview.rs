@@ -57,14 +57,16 @@ impl Camera {
             }
         }
     }
-    /// Front (camera on +z), side (on +x, nose left), top (on +y, nose up)
-    /// and three-quarter (front-left, above) orthographic views.
+    /// Front (camera on +z), side (on +x, nose left), top (on +y, nose up),
+    /// three-quarter (front-left, above) and three-quarter back (the
+    /// opposite corner, above) orthographic views.
     pub fn named(name: &str, centre: V3, size: f64) -> Camera {
         let far = size * 4.0;
         let (fwd, up): (V3, V3) = match name {
             "front" => ([0.0, 0.0, -1.0], [0.0, 1.0, 0.0]),
             "side" => ([-1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
             "top" => ([0.0, -1.0, 0.0], [0.0, 0.0, 1.0]),
+            "three_quarter_back" => (norm_or([1.0, -0.65, 1.0], [0.0, 0.0, 1.0]), [0.0, 1.0, 0.0]),
             _ => (norm_or([-1.0, -0.65, -1.0], [0.0, 0.0, -1.0]), [0.0, 1.0, 0.0]),
         };
         Camera { eye: sub(centre, mul(fwd, far)), fwd, up, proj: Proj::Ortho { size }, centre }

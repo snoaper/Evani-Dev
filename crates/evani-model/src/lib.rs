@@ -18,8 +18,7 @@ pub mod build;
 pub mod collide;
 pub mod compare;
 pub mod compile;
-pub mod dmath;
-pub mod expr;
+pub mod construct_out;
 pub mod generator;
 pub mod gltf;
 pub mod intent;
@@ -31,8 +30,11 @@ pub mod pose;
 pub mod preview;
 pub mod rig;
 pub mod sdf;
-pub mod rng;
 pub mod sha256;
 pub mod solve;
 pub mod surface;
-pub mod vec;
+
+// The deterministic maths base lives in the construct back end (evani-construct,
+// docs/MODELGEN_PLAN.md 3.1) and is re-exported here unchanged, so every
+// `crate::vec`, `crate::dmath`, `crate::rng` and `crate::expr` path still works.
+pub use evani_construct::{dmath, expr, rng, vec};

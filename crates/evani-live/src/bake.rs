@@ -93,6 +93,8 @@ fn owner_target(owner: &str) -> Option<&'static str> {
     match owner.split('.').next() {
         Some("look") => Some("look"),
         Some("kit") => Some("kit"),
+        // An effect's curves (`fx.trails.width_curve`) bake like its params.
+        Some("fx") => Some("look"),
         _ => None,
     }
 }

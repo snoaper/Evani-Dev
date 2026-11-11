@@ -117,6 +117,27 @@ impl Camera {
             aspect,
         }
     }
+
+    /// A close-up of `b` from `dir` (unit, from the target towards the eye):
+    /// the box's bounding sphere fills `fill` of the view's height (0..1),
+    /// however small the box is, while the eye stays clear of the near
+    /// plane. The framing it replaces stood back as for at least a 1 m ball,
+    /// plus 1 m, so a spot of a few centimetres came out about 85 pixels
+    /// wide in a 1280-pixel shot, too small to check its tag reason (critic
+    /// round 3 of material-view).
+    pub fn close_up(b: &Aabb, dir: V3, fov_y_deg: f64, aspect: f64, fill: f64) -> Camera {
+        let c = b.center();
+        let r = (len(b.extent()) * 0.5).max(0.01);
+        let t = (fov_y_deg.to_radians() * 0.5).tan();
+        let d = (r / (t * fill.clamp(0.1, 1.0))).max(r + 1.2 * NEAR);
+        Camera {
+            eye: add(c, mul(norm(dir), d)),
+            target: c,
+            up: [0.0, 1.0, 0.0],
+            fov_y_deg,
+            aspect,
+        }
+    }
 }
 
 /// An RGBA8 image.
@@ -149,10 +170,28 @@ impl Image {
     /// A copy of `rect` (x, y, w, h; clamped) grown by `pad` pixels, with
     /// the original rect outlined in `color` (2 px).
     pub fn crop_outlined(&self, rect: [u32; 4], pad: u32, color: [u8; 3]) -> Image {
-        let x0 = rect[0].saturating_sub(pad);
-        let y0 = rect[1].saturating_sub(pad);
-        let x1 = (rect[0] + rect[2] + pad).min(self.w);
-        let y1 = (rect[1] + rect[3] + pad).min(self.h);
+        self.crop_outlined_min(rect, pad, [0, 0], color)
+    }
+
+    /// As [`Image::crop_outlined`], but the crop is at least `min` (w, h)
+    /// pixels where the image is that big, widened evenly round the rect
+    /// (and shifted inwards at the image's edge), so a small rect keeps the
+    /// surroundings that say what it is.
+    pub fn crop_outlined_min(&self, rect: [u32; 4], pad: u32, min: [u32; 2], color: [u8; 3]) -> Image {
+        let span = |lo: u32, len: u32, size: u32, want: u32| -> (u32, u32) {
+            let a = lo.saturating_sub(pad);
+            let b = (lo + len + pad).min(size);
+            let want = want.min(size);
+            if b - a >= want {
+                return (a, b);
+            }
+            let extra = want - (b - a);
+            let a2 = a.saturating_sub(extra / 2);
+            let b2 = (a2 + want).min(size);
+            (b2 - want, b2)
+        };
+        let (x0, x1) = span(rect[0], rect[2], self.w, min[0]);
+        let (y0, y1) = span(rect[1], rect[3], self.h, min[1]);
         let mut out = Image::new(x1 - x0, y1 - y0);
         for y in y0..y1 {
             for x in x0..x1 {
@@ -922,5 +961,40 @@ mod tests {
         assert_eq!((c.w, c.h), (9, 9));
         assert_eq!(c.px(2, 2), [255, 0, 0, 255]);
         assert_eq!(c.px(4, 4), [9, 9, 9, 255]);
+    }
+
+    #[test]
+    fn a_small_rect_crops_to_the_minimum_size() {
+        let img = Image::new(100, 60);
+        // In the middle: widened evenly to 40 x 30.
+        let c = img.crop_outlined_min([48, 28, 4, 4], 2, [40, 30], [255, 0, 0]);
+        assert_eq!((c.w, c.h), (40, 30));
+        // The outline sits where the rect is: (48 - 30, 28 - 15).
+        assert_eq!(c.px(18, 13), [255, 0, 0, 255]);
+        // At the corner: shifted inwards, still the minimum.
+        let c = img.crop_outlined_min([0, 0, 4, 4], 2, [40, 30], [255, 0, 0]);
+        assert_eq!((c.w, c.h), (40, 30));
+        // Never bigger than the image.
+        let c = img.crop_outlined_min([10, 10, 4, 4], 2, [400, 300], [255, 0, 0]);
+        assert_eq!((c.w, c.h), (100, 60));
+    }
+
+    /// Guard (critic round 3 of material-view: crops about 85 px wide): a
+    /// spot of a few centimetres seen by `Camera::close_up` covers at least
+    /// a third of a 1280 x 720 shot's height, and it stays in front of the
+    /// near plane.
+    #[test]
+    fn a_close_up_frames_a_small_spot_large() {
+        let b = Aabb { min: [0.40, 1.50, -0.02], max: [0.43, 1.53, 0.01] };
+        let cam = Camera::close_up(&b, [1.0, 0.8, 1.0], 50.0, 16.0 / 9.0, 0.6);
+        let r = cam.project_box(1280, 720, &b).expect("in view");
+        assert!(r[3] >= 240, "the spot is {r:?} in a 1280 x 720 shot");
+        let d = len(sub(cam.eye, b.center()));
+        assert!(d > NEAR + len(b.extent()) * 0.5, "eye {d} m away");
+        // A big box still fits the view.
+        let big = Aabb { min: [-2.0, 0.0, -2.0], max: [2.0, 3.0, 2.0] };
+        let cam = Camera::close_up(&big, [1.0, 0.8, 1.0], 50.0, 16.0 / 9.0, 0.6);
+        let r = cam.project_box(1280, 720, &big).expect("in view");
+        assert!(r[1] > 0 && r[1] + r[3] < 719, "{r:?}");
     }
 }

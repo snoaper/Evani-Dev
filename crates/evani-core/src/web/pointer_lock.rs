@@ -37,6 +37,7 @@ const WATCHDOG_EVERY_MS: i32 = 500;
 #[derive(Debug, Clone, Copy)]
 enum Ev {
     Locked,
+    RawDenied,
     Lost(LockLoss),
 }
 
@@ -49,6 +50,11 @@ struct Shared {
     /// Why we asked the browser to exit, for the `pointerlockchange` that follows.
     cause: Cell<Option<LockLoss>>,
     events: RefCell<Vec<Ev>>,
+    /// The kit wants an unadjusted (raw) mouse (mirrors the resource).
+    raw: Cell<bool>,
+    /// A raw request is out and unanswered: if the browser refuses it, ask
+    /// for a plain lock instead of reporting a refusal.
+    raw_pending: Cell<bool>,
     /// `performance.now()` of the last frame.
     last_frame: Cell<f64>,
 }
@@ -90,7 +96,7 @@ fn exit(shared: &Shared, cause: LockLoss) {
 }
 
 /// Take the lock if the kit wants it and this is called from a user gesture.
-fn try_request(shared: &Shared) {
+fn try_request(shared: &Rc<Shared>) {
     if !shared.wanted.get() || shared.locked.get() {
         return;
     }
@@ -101,6 +107,50 @@ fn try_request(shared: &Shared) {
         .flatten()
         .or_else(|| doc.body().map(web_sys::Element::from));
     if let Some(el) = target {
+        if shared.raw.get() {
+            request_raw(shared, &el);
+        } else {
+            el.request_pointer_lock();
+        }
+    }
+}
+
+/// `requestPointerLock({ unadjustedMovement: true })`. A browser without
+/// support ignores the option or rejects the promise; either way the lock
+/// falls back to a plain one (see [`take_plain`]). Called in a user gesture.
+fn request_raw(shared: &Rc<Shared>, el: &web_sys::Element) {
+    use wasm_bindgen::JsValue;
+    let opts = js_sys::Object::new();
+    let set = js_sys::Reflect::set(&opts, &JsValue::from_str("unadjustedMovement"), &JsValue::TRUE);
+    let f = js_sys::Reflect::get(el, &JsValue::from_str("requestPointerLock"))
+        .ok()
+        .and_then(|f| f.dyn_into::<js_sys::Function>().ok());
+    let (Ok(_), Some(f)) = (set, f) else {
+        el.request_pointer_lock();
+        return;
+    };
+    match f.call1(el, &opts) {
+        // Chrome answers with a promise that rejects when the option is not
+        // supported; a plain lock is taken then.
+        Ok(r) => {
+            if let Ok(p) = r.dyn_into::<js_sys::Promise>() {
+                shared.raw_pending.set(true);
+                let s = shared.clone();
+                let el = el.clone();
+                let on_err = Closure::<dyn FnMut(JsValue)>::new(move |_| take_plain(&s, &el));
+                let _ = p.catch(&on_err);
+                on_err.forget();
+            }
+        }
+        Err(_) => el.request_pointer_lock(),
+    }
+}
+
+/// The raw request failed: say so and take a plain lock (the player's click
+/// is still fresh, so the browser allows it).
+fn take_plain(shared: &Shared, el: &web_sys::Element) {
+    if shared.raw_pending.replace(false) && shared.wanted.get() && !shared.locked.get() {
+        shared.events.borrow_mut().push(Ev::RawDenied);
         el.request_pointer_lock();
     }
 }
@@ -115,6 +165,8 @@ pub(crate) fn install(world: &World, errors: &mut Vec<String>) -> Option<LockDom
         locked: Cell::new(false),
         cause: Cell::new(None),
         events: RefCell::new(Vec::with_capacity(8)),
+        raw: Cell::new(false),
+        raw_pending: Cell::new(false),
         last_frame: Cell::new(super::performance_now()),
     });
     let win: &web_sys::EventTarget = window.as_ref();
@@ -125,6 +177,7 @@ pub(crate) fn install(world: &World, errors: &mut Vec<String>) -> Option<LockDom
         let (s, d) = (shared.clone(), doc.clone());
         let r = listen(dt, "pointerlockchange", true, move |_: web_sys::Event| {
             if d.pointer_lock_element().is_some() {
+                s.raw_pending.set(false);
                 if s.wanted.get() {
                     s.locked.set(true);
                     s.events.borrow_mut().push(Ev::Locked);
@@ -150,6 +203,10 @@ pub(crate) fn install(world: &World, errors: &mut Vec<String>) -> Option<LockDom
     {
         let s = shared.clone();
         let r = listen(dt, "pointerlockerror", true, move |_: web_sys::Event| {
+            // A refused raw request: the promise's rejection takes the plain lock.
+            if s.raw_pending.get() {
+                return;
+            }
             s.wanted.set(false);
             s.locked.set(false);
             s.events.borrow_mut().push(Ev::Lost(LockLoss::Refused));
@@ -237,10 +294,12 @@ impl LockDom {
         for ev in s.events.borrow_mut().drain(..) {
             match ev {
                 Ev::Locked => p.on_locked(),
+                Ev::RawDenied => p.on_raw_denied(),
                 Ev::Lost(cause) => p.on_lost(cause),
             }
         }
         s.wanted.set(p.wanted());
+        s.raw.set(p.raw_mouse());
         if !p.wanted() && s.locked.get() {
             // The kit gave the mouse back.
             exit(s, LockLoss::Released);

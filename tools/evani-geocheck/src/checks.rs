@@ -122,6 +122,19 @@ pub fn overlaps(s: &Scene) -> Vec<Issue> {
 /// Floating objects: rays straight down from the base of each prop and
 /// decal (structures are the ground). Grounded when any ray meets something
 /// within `float_gap`; over nothing when no ray meets anything.
+/// Where a shape reaches lowest (x, z): the first of its lowest corners.
+fn lowest_point(shape: &crate::shape::Shape) -> Option<[f64; 2]> {
+    let mut best: Option<V3> = None;
+    for f in &shape.faces {
+        for p in &f.pts {
+            if best.is_none_or(|b| p[1] < b[1]) {
+                best = Some(*p);
+            }
+        }
+    }
+    best.map(|p| [p[0], p[2]])
+}
+
 pub fn floating(s: &Scene) -> Vec<Issue> {
     let c = &s.cfg;
     const LIFT: f64 = 0.02;
@@ -144,6 +157,12 @@ pub fn floating(s: &Scene) -> Vec<Issue> {
             samples.push([ctr[0], ctr[2]]);
             for (dx, dz) in [(-0.3, -0.3), (0.3, -0.3), (-0.3, 0.3), (0.3, 0.3)] {
                 samples.push([ctr[0] + dx * e[0], ctr[2] + dz * e[2]]);
+            }
+            // Where the part actually reaches lowest: a tilted part (a leaf
+            // on its twig's tip, a cone on its point) rests there, often well
+            // off its box's centre and between the samples above.
+            if let Some(p) = lowest_point(&s.items[it].shape) {
+                samples.push(p);
             }
         }
         let own = |id: usize| s.items[id].object == oi;
@@ -269,6 +288,46 @@ pub fn meshes(shapes: &Shapes, used: &[(MeshId, V3)], intended_open: &dyn Fn(Mes
             is.measure = p.split(' ').next().and_then(|n| n.parse().ok()).unwrap_or(1.0);
             is.unit = "triangles/edges".into();
             is.detail = format!("{} of {} triangles: {p}", mesh_name(*id), r.triangles);
+            is.fix = "Fix the mesh generator, importer or converter: drop zero-area and duplicate triangles, weld and close the surface, wind every triangle outward (counter-clockwise from outside).".into();
+            out.push(is);
+        }
+    }
+    out
+}
+
+/// [`meshes`] for a scene's drawn instances, each problem placed where it
+/// is: the box round its first spot ([`MeshReport::problem_spots`]), carried
+/// through the first instance of that mesh (scale, turn, position), so the
+/// report's highlight frames the spot close up instead of the whole model
+/// (critic round 2 of material-view: five crops of one distant frame).
+pub fn meshes_placed(shapes: &Shapes, list: &[MeshInstance], intended_open: &dyn Fn(MeshId) -> bool) -> Vec<Issue> {
+    let mut out = Vec::new();
+    let mut seen: Vec<MeshId> = Vec::new();
+    for inst in list {
+        if seen.contains(&inst.mesh) {
+            continue;
+        }
+        seen.push(inst.mesh);
+        let Some(m) = shapes.mesh(inst.mesh) else { continue };
+        let r = meshcheck::validate(&m, intended_open(inst.mesh));
+        let q = quat(inst.rotation);
+        let s = v3(inst.scale);
+        let to_world = |p: V3| add(rotate(q, [p[0] * s[0], p[1] * s[1], p[2] * s[2]]), v3(inst.position));
+        for (p, spot) in r.problems().into_iter().zip(r.problem_spots()) {
+            let (at, aabb) = match spot {
+                Some((lo, hi)) => {
+                    let corners: Vec<V3> = (0..8).map(|k| to_world([if k & 1 == 0 { lo[0] } else { hi[0] }, if k & 2 == 0 { lo[1] } else { hi[1] }, if k & 4 == 0 { lo[2] } else { hi[2] }])).collect();
+                    let b = Aabb::from_points(&corners);
+                    (mul(add(b.min, b.max), 0.5), Some(b))
+                }
+                None => (v3(inst.position), None),
+            };
+            let mut is = Issue::new(Check::Mesh, p.split_once(' ').map_or(p.as_str(), |x| x.1), at);
+            is.aabb = aabb;
+            is.objects = vec![format!("{} mesh", mesh_name(inst.mesh))];
+            is.measure = p.split(' ').next().and_then(|n| n.parse().ok()).unwrap_or(1.0);
+            is.unit = "triangles/edges".into();
+            is.detail = format!("{} of {} triangles: {p}", mesh_name(inst.mesh), r.triangles);
             is.fix = "Fix the mesh generator, importer or converter: drop zero-area and duplicate triangles, weld and close the surface, wind every triangle outward (counter-clockwise from outside).".into();
             out.push(is);
         }
@@ -1018,6 +1077,20 @@ mod tests {
         let lone = inst(MeshId::PLANE, [100.0, 0.0, 0.0], [2.0, 1.0, 2.0]);
         let f = floating(&scene_of(&[road, lone], &mut sh, 1));
         assert!(f.iter().any(|i| i.kind == "decal off surface"), "{f:?}");
+    }
+
+    #[test]
+    fn a_tilted_part_is_tested_where_it_reaches_lowest() {
+        // A cube turned 30 degrees about z: its lowest edge lies off its
+        // box's centre, between the box samples.
+        let mut c = inst(MeshId::CUBE, [1.0, 1.0, 0.0], [0.4, 0.4, 0.4]);
+        c.rotation = evani_render::math::quat_axis_angle([0.0, 0.0, 1.0], 30f32.to_radians());
+        let s = scene(&[c]);
+        let p = lowest_point(&s.items[0].shape).unwrap();
+        let low = -0.2 * 30f64.to_radians().sin() - 0.2 * 30f64.to_radians().cos();
+        let x = 1.0 + -0.2 * 30f64.to_radians().cos() - (-0.2) * 30f64.to_radians().sin();
+        assert!((p[0] - x).abs() < 1e-3, "{p:?}");
+        assert!((s.items[0].shape.aabb.min[1] - (1.0 + low)).abs() < 1e-3);
     }
 
     #[test]

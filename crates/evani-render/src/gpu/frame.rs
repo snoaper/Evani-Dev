@@ -203,6 +203,9 @@ pub struct Gpu {
     /// `MeshLibrary` revision the mesh buffers were built from.
     #[cfg(feature = "meshes")]
     mesh_rev: u64,
+    /// Where every mesh lives in `mesh_vb` / `mesh_ib`.
+    #[cfg(feature = "meshes")]
+    mesh_store: mesh::MeshStore,
     #[cfg(feature = "forward")]
     instances: Stream<InstanceRaw>,
     sprites: Stream<SpriteRaw>, #[cfg(feature = "msdf")] msdf: super::msdf::GpuMsdf, #[cfg(all(feature = "lights2d", not(feature = "msdf")))] lights2d: super::lights2d::GpuLights2d, #[cfg(feature = "pseudo3d")] road: super::pseudo3d::GpuRoad,
@@ -223,7 +226,7 @@ pub struct Gpu {
     #[cfg(feature = "forward")]
     counts: [u32; MESH_SLOTS],
     pub last_size: [u32; 2],
-    ring_warned: bool, #[cfg(feature = "models")] models: super::models::ModelGpu, #[cfg(feature = "point-lights")] lights: super::lights::LightGpu, #[cfg(feature = "kit-material")] kit: pipelines::kit_material::KitGpu, #[cfg(feature = "view-model")] vm: view_model::VmGpu, #[cfg(feature = "ambient")] ambient: super::ambient::AmbientGpu,
+    ring_warned: bool, #[cfg(feature = "models")] models: super::models::ModelGpu, #[cfg(feature = "point-lights")] lights: super::lights::LightGpu, #[cfg(feature = "kit-material")] kit: pipelines::kit_material::KitGpu, #[cfg(feature = "view-model")] vm: view_model::VmGpu, #[cfg(feature = "ambient")] ambient: super::ambient::AmbientGpu, #[cfg(feature = "game-passes")] game: game_pass::GameGpu, #[cfg(feature = "swatches")] swatch: swatch::SwatchGpu,
     /// Live capture readbacks (feature `capture`, live builds only).
     #[cfg(feature = "capture")]
     pub readbacks: super::capture::Readbacks,
@@ -239,7 +242,7 @@ pub struct Gpu {
     /// The shared particle system's buffers and pipelines (feature
     /// `particles`).
     #[cfg(feature = "particles")]
-    particles: super::particles::GpuParticles,
+    particles: super::particles::GpuParticles, #[cfg(feature = "trails")] trails: super::trails::GpuTrails,
 }
 
 /// The shadow map's GPU side: depth pipeline, the map (made at the tier's
@@ -416,17 +419,25 @@ impl Gpu {
         let small_bg = ring_bg(SMALL_BINDING);
 
         // Built-in meshes (and custom ones, feature `meshes`), concatenated.
+        // With `meshes` the layout lives in a `MeshStore` that later changes
+        // update range by range; without it the buffers never change.
         #[cfg(feature = "meshes")]
-        let (bufs, mesh_rev) = {
+        let (mesh_store, mesh_vb, mesh_ib, mesh_ranges, mesh_tris, mesh_rev) = {
             let lib = world.try_res::<mesh::MeshLibrary>();
-            (mesh::mesh_buffers(lib.as_deref()), lib.map_or(0, |l| l.revision()))
+            let mut store = mesh::MeshStore::new();
+            let sync = store.sync(lib.as_deref());
+            let vb = mesh_gpu_buffer(&device, "evani.meshes.vb", sync.vb_size, wgpu::BufferUsages::VERTEX);
+            let ib = mesh_gpu_buffer(&device, "evani.meshes.ib", sync.ib_size, wgpu::BufferUsages::INDEX);
+            write_mesh_ranges(&queue, &vb, &ib, &sync);
+            let (ranges, tris) = mesh_tables(&store);
+            (store, vb, ib, ranges, tris, lib.map_or(0, |l| l.revision()))
         };
         #[cfg(all(feature = "forward", not(feature = "meshes")))]
-        let bufs = mesh::mesh_buffers(None);
-        #[cfg(feature = "forward")]
-        let (mesh_vb, mesh_ib) = mesh_gpu_buffers(&device, &queue, &bufs);
-        #[cfg(feature = "forward")]
-        let (mesh_ranges, mesh_tris) = (bufs.ranges, bufs.tris);
+        let (mesh_vb, mesh_ib, mesh_ranges, mesh_tris) = {
+            let bufs = mesh::mesh_buffers(None);
+            let (vb, ib) = mesh_gpu_buffers(&device, &queue, &bufs);
+            (vb, ib, bufs.ranges, bufs.tris)
+        };
 
         // Sprite atlas (cell 0 = the look's checker; a kit's sheet below).
         let nearest = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -460,7 +471,7 @@ impl Gpu {
             _instance: instance,
             #[cfg(feature = "forward")]
             instances: Stream::new(&device, "evani.instances", 64 * 1024),
-            sprites: Stream::new(&device, "evani.sprites", 32 * 1024), #[cfg(all(feature = "lights2d", not(feature = "msdf")))] lights2d: Default::default(), #[cfg(feature = "msdf")] msdf: super::msdf::GpuMsdf::new(&device, &layouts.msdf), #[cfg(feature = "models")] models: super::models::ModelGpu::new(&device, &queue, &layouts), #[cfg(feature = "point-lights")] lights: super::lights::LightGpu::new(&device, &layouts), #[cfg(feature = "kit-material")] kit: pipelines::kit_material::KitGpu::new(&device, &layouts, world), #[cfg(feature = "view-model")] vm: view_model::VmGpu::new(), #[cfg(feature = "ambient")] ambient: super::ambient::AmbientGpu::new(&device), #[cfg(feature = "pseudo3d")] road: Default::default(),
+            sprites: Stream::new(&device, "evani.sprites", 32 * 1024), #[cfg(all(feature = "lights2d", not(feature = "msdf")))] lights2d: Default::default(), #[cfg(feature = "msdf")] msdf: super::msdf::GpuMsdf::new(&device, &layouts.msdf), #[cfg(feature = "models")] models: super::models::ModelGpu::new(&device, &queue, &layouts), #[cfg(feature = "point-lights")] lights: super::lights::LightGpu::new(&device, &layouts), #[cfg(feature = "kit-material")] kit: pipelines::kit_material::KitGpu::new(&device, &layouts, world), #[cfg(feature = "view-model")] vm: view_model::VmGpu::new(), #[cfg(feature = "ambient")] ambient: super::ambient::AmbientGpu::new(&device), #[cfg(feature = "pseudo3d")] road: Default::default(), #[cfg(feature = "game-passes")] game: game_pass::GameGpu::new(&device), #[cfg(feature = "swatches")] swatch: Default::default(),
             device,
             queue,
             surface,
@@ -488,6 +499,8 @@ impl Gpu {
             mesh_tris,
             #[cfg(feature = "meshes")]
             mesh_rev,
+            #[cfg(feature = "meshes")]
+            mesh_store,
             nearest,
             atlas,
             targets: Vec::new(),
@@ -508,7 +521,7 @@ impl Gpu {
             #[cfg(feature = "capture")]
             hold: Default::default(),
             #[cfg(feature = "particles")]
-            particles: Default::default(),
+            particles: Default::default(), #[cfg(feature = "trails")] trails: Default::default(),
             #[cfg(feature = "forward")]
             shadow_params,
             #[cfg(feature = "shadows")]
@@ -603,10 +616,10 @@ impl Gpu {
                 continue;
             }
             let w = ((size[0] as f32 * desc.scale).round() as u32).max(1);
-            let h = ((size[1] as f32 * desc.scale).round() as u32).max(1);
+            let h = ((size[1] as f32 * desc.scale).round() as u32).max(1); #[cfg(feature = "effect-mesh")] let (w, h) = if desc.fixed[0] > 0 && desc.fixed[1] > 0 { (desc.fixed[0], desc.fixed[1]) } else { (w, h) }; // a fixed-size target (effect-mesh)
             let format = pipelines::target_format(desc.kind, self.formats);
             // Every target can be sampled (depth too: effects may read it).
-            let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
+            let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING; #[cfg(feature = "game-passes")] let usage = usage | wgpu::TextureUsages::COPY_SRC; // a game pass that reads its own target copies it first
             // Live capture copies the final colour target into a readback buffer.
             #[cfg(feature = "capture")]
             let usage = if desc.kind == TargetKind::Ldr {
@@ -652,7 +665,7 @@ impl Gpu {
         }
         // Depth-reading effects: one group per colour target plus a
         // uniform-only one, all bound to the scene depth.
-        self.small_depth_bg = None;
+        self.small_depth_bg = None; #[cfg(feature = "game-passes")] self.game.invalidate();
         if let Some(di) = self.targets.iter().position(|t| t.name == "depth") {
             let depth_view = self.targets[di].view.clone();
             let ring = wgpu::BindingResource::Buffer(wgpu::BufferBinding {
@@ -777,13 +790,15 @@ impl Gpu {
     pub fn frame(&mut self, world: &mut World, p: &RenderParams, driver: &mut QualityDriver, css: [f32; 2], dpr: f32) {
         let finished = self.pipes.poll(&self.device, &self.layouts, self.formats, world);
         self.pipes
-            .take_slot_requests(&self.device, &self.layouts, self.formats, world);
+            .take_slot_requests(&self.device, &self.layouts, self.formats, world); self.pipes.pump(&self.device, &self.layouts, self.formats, world);
         // Adaptive quality does not judge frames while shaders compile or
         // pipelines swap in (nor aq.grace_ms after).
         if finished || self.pipes.in_flight() {
             world.res_mut::<QualityState>().disturb();
         }
-        self.timer.collect(&mut world.res_mut::<RenderStats>());
+        #[cfg(feature = "hooks")]
+        super::hooks::note_busy(self.pipes.in_flight() || world.res::<evani_core::slots::SlotRebuilds>().has_pending());
+        self.timer.collect(&mut world.res_mut::<RenderStats>()); #[cfg(feature = "swatches")] self.swatch_poll(world);
         #[cfg(feature = "capture")]
         self.readbacks.poll(world);
         #[cfg(feature = "capture")]
@@ -809,7 +824,7 @@ impl Gpu {
             };
             self.particles
                 .prepare(&self.device, &self.queue, &self.layouts, &mut ps, uv_of);
-        }
+        } #[cfg(feature = "trails")] if let Some(mut ts) = world.try_res_mut::<crate::trails::TrailSystem>() { self.trails.prepare(&self.device, &self.queue, &self.layouts, &mut ts); }
 
         if !self.pipes.engine_ready() {
             world.res_mut::<RenderWorld>().clear();
@@ -849,10 +864,10 @@ impl Gpu {
         {
             let want_msaa = world.res::<Tiers>().active().msaa >= pipelines::MSAA_SAMPLES
                 && self.pipes.engine_ms(pipelines::FORWARD).is_some()
-                && (!depth_read || self.pipes.depth_resolve().is_some());
+                && (!depth_read || self.pipes.depth_resolve().is_some()) && self.pipes.ms_models_ready();
             self.ensure_msaa(want_msaa);
         }
-        self.last_size = self.size;
+        self.last_size = self.size; #[cfg(feature = "capture")] { let (id, _msaa) = { let t = world.res::<Tiers>(); (t.active().id.clone(), t.active().msaa) }; #[cfg(feature = "forward")] let msaa_ok = (_msaa >= pipelines::MSAA_SAMPLES) == self.msaa.is_some(); #[cfg(not(feature = "forward"))] let msaa_ok = true; let busy = self.pipes.in_flight(); #[cfg(feature = "models")] let busy = busy || world.try_res::<crate::model::Models>().is_some_and(|m| self.models.settling(&m) || !m.handles_settled()); settle::note(&id, self.size, msaa_ok, busy); } // tier-settle
 
         // Take the canvas texture: the same code with or without `capture`,
         // so a ship build compiles exactly what it did before the hold.
@@ -959,7 +974,7 @@ impl Gpu {
         // The world group draws in the forward pass (3D path only; without
         // it `RenderModule` reports the dropped draw).
         #[cfg(all(feature = "particles", not(feature = "forward")))]
-        let _ = particles_world;
+        let _ = particles_world; #[cfg(feature = "trails")] let (trails_world, trails_steps, trails_soft): (bool, u32, f32) = match world.try_res::<crate::trails::TrailSystem>() { Some(ts) if self.trails.run => (ts.groups().contains(&crate::trails::KEY_WORLD), ts.steps(), ts.soft()), _ => (false, 1, 0.0) }; #[cfg(all(feature = "trails", any(not(feature = "forward"), feature = "trails-screen")))] let trails_screen: Vec<u32> = match world.try_res::<crate::trails::TrailSystem>() { Some(ts) if self.trails.run => ts.groups().iter().copied().filter(|&k| k != crate::trails::KEY_WORLD).collect(), _ => Vec::new() }; #[cfg(all(feature = "trails", not(feature = "forward")))] let _ = trails_world;
         // One frame uniform per view (split-screen), or one for the camera.
         #[cfg(feature = "forward")]
         self.views.clear();
@@ -973,7 +988,7 @@ impl Gpu {
             let materials: &[evani_core::plugin::MaterialDesc] = if plain { &[] } else { &look.materials };
             let mut rw = world.res_mut::<RenderWorld>();
             rw.viewport_css = css;
-            rw.target_px = self.size;
+            rw.target_px = self.size; #[cfg(feature = "game-passes")] self.game.capture(world, &rw, p, self.size);
             // ---- the 3D path: lighting, shading, view uniforms, instances ----
             #[cfg(feature = "forward")]
             {
@@ -1003,7 +1018,7 @@ impl Gpu {
                         pcf_radius: sp.pcf_radius,
                         normal_offset: sp.normal_offset,
                         bias: sp.bias,
-                        blobs: &[],
+                        #[cfg(not(feature = "contact-shadows"))] blobs: &[], #[cfg(feature = "contact-shadows")] blobs: &rw.blobs, // contact shadows keep the blobs under the shadow map
                         blob_strength: rw.blob_strength,
                         tint,
                         tint_strength,
@@ -1036,7 +1051,7 @@ impl Gpu {
                     if particles_world {
                         let words = crate::particles::draw_words(&vp, rw.camera.eye, crate::particles::KEY_WORLD, css);
                         self.particles.world.push(self.ring.push(&words));
-                    }
+                    } #[cfg(feature = "trails")] if trails_world { let words = crate::trails::draw_words(&vp, rw.camera.eye, crate::trails::KEY_WORLD, css, trails_steps, trails_soft); self.trails.world.push(self.ring.push(&words)); }
                 } else {
                     for v in &rw.views {
                         let px = v.pixels(self.size);
@@ -1049,11 +1064,11 @@ impl Gpu {
                         if particles_world {
                             let words = crate::particles::draw_words(&vp, v.camera.eye, crate::particles::KEY_WORLD, css);
                             self.particles.world.push(self.ring.push(&words));
-                        }
+                        } #[cfg(feature = "trails")] if trails_world { let words = crate::trails::draw_words(&vp, v.camera.eye, crate::trails::KEY_WORLD, css, trails_steps, trails_soft); self.trails.world.push(self.ring.push(&words)); }
                     }
                 }
 
-                shaders::pack_instances_with_decals(&rw.meshes, &rw.decals, &mut self.instances.staging, &mut self.counts); #[cfg(feature = "models")] self.models.prepare(&self.device, &self.queue, world, &rw, driver.started() && !driver.warming_up(), cones_read); #[cfg(feature = "point-lights")] self.lights.prepare(&self.queue, world, &rw, &self.views); #[cfg(feature = "kit-material")] if self.kit.prepare(&self.device, &self.queue, &self.layouts, world) { self.pipes.relaunch_kit(&self.device, &self.layouts, self.formats, world); } #[cfg(feature = "view-model")] self.vm_prepare(&rw, &lighting, materials); #[cfg(feature = "ambient")] self.ambient_prepare(world, &rw, &lighting, materials);
+                shaders::pack_instances_with_decals(&rw.meshes, &rw.decals, &mut self.instances.staging, &mut self.counts); #[cfg(feature = "models")] self.models.prepare(&self.device, &self.queue, world, &rw, driver.started() && !driver.warming_up(), cones_read); #[cfg(feature = "point-lights")] self.lights.prepare(&self.queue, world, &rw, &self.views); #[cfg(feature = "kit-material")] if self.kit.prepare(&self.device, &self.queue, &self.layouts, world) { self.pipes.relaunch_kit(&self.device, &self.layouts, self.formats, world); } #[cfg(feature = "view-model")] self.vm_prepare(&rw, &lighting, materials, depth_read); #[cfg(feature = "ambient")] self.ambient_prepare(world, &rw, &lighting, materials); #[cfg(feature = "kit-textures")] pipelines::kit_textures::set_settled(driver.started() && !driver.warming_up()); #[cfg(feature = "swatches")] self.swatch_take(world, &lighting, materials);
             }
             rw.sort_sprites(); #[cfg(feature = "msdf")] self.msdf.frame(&self.device, &self.queue, &self.layouts.msdf, &mut rw, world);
             #[cfg(all(not(feature = "sprite-art"), not(feature = "msdf")))]
@@ -1072,7 +1087,7 @@ impl Gpu {
                 let split = rw.sprites.partition_point(|s| s.layer <= layer) as u32; #[cfg(feature = "msdf")] let split = split.min(ui_from); // screen particles stay in the scene
                 let words = crate::particles::draw_words(&[0.0; 16], [0.0; 3], key, css);
                 self.particles.screen.push((split, self.ring.push(&words)));
-            }
+            } #[cfg(all(feature = "trails", any(not(feature = "forward"), feature = "trails-screen")))] for &key in &trails_screen { let Some(layer) = crate::trails::layer_of(key) else { continue; }; let split = rw.sprites.partition_point(|s| s.layer <= layer) as u32; #[cfg(feature = "msdf")] let split = split.min(ui_from); let words = crate::trails::draw_words(&[0.0; 16], [0.0; 3], key, css, trails_steps, trails_soft); self.trails.screen.push((split, self.ring.push(&words))); }
             #[cfg(feature = "capture")]
             self.readbacks.note_hud(&rw);
             rw.clear();
@@ -1081,7 +1096,7 @@ impl Gpu {
         self.instances.upload(&self.device, &self.queue);
         self.sprites.upload(&self.device, &self.queue);
         let tone_off = self.ring.push(&[exposure, saturation, 0.0, 0.0]);
-        let present_off = self.ring.push(&[if self.encode_srgb { 1.0 } else { 0.0 }, 0.0, 0.0, 0.0]); #[cfg(feature = "clustered")] { let ts = self.timer.compute_pass("lights.bin"); self.lights.dispatch(&mut enc, ts); }
+        let present_off = self.ring.push(&[if self.encode_srgb { 1.0 } else { 0.0 }, 0.0, 0.0, 0.0]); #[cfg(feature = "clustered")] { let ts = self.timer.compute_pass("lights.bin"); self.lights.dispatch(&mut enc, ts); } #[cfg(feature = "game-passes")] self.game.prepare(&self.device, &self.queue, world, &self.targets, self.size, self.formats); #[cfg(feature = "world-draws")] self.world_prepare(world, &mut enc);
 
         // ---- shadow map: depth from the light, before the graph ----
         #[cfg(feature = "shadows")]
@@ -1141,13 +1156,13 @@ impl Gpu {
                 if pass.name == crate::particles::SIM_PASS && self.particles.run {
                     let ts = self.timer.compute_pass(pass.name);
                     self.particles.dispatch(&mut enc, ts);
-                }
+                } #[cfg(feature = "trails")] if pass.name == crate::trails::SIM_PASS && self.trails.run { let ts = self.timer.compute_pass(pass.name); self.trails.dispatch(&mut enc, ts); } #[cfg(feature = "game-passes")] self.game.run(pass.name, &mut enc, &self.targets, &mut self.timer, &mut draws);
                 continue;
             }
             match (pass.owner, pass.name) {
                 #[cfg(feature = "forward")]
                 ("render", "forward") => {
-                    let msaa = self.msaa.as_ref();
+                    let msaa = self.msaa.as_ref(); #[cfg(all(feature = "material-recipes-refract", not(feature = "relief")))] let glass_now = self.models.glass_now(&self.pipes); #[cfg(all(feature = "material-recipes-refract", not(feature = "relief")))] let depth_read = depth_read || glass_now; #[cfg(all(feature = "material-recipes-refract", not(feature = "relief")))] let depth_store = if glass_now { wgpu::StoreOp::Store } else { depth_store };
                     let pipe = match msaa {
                         Some(_) => self.pipes.engine_ms(pipelines::FORWARD),
                         None => self.pipes.engine(pipelines::FORWARD),
@@ -1214,15 +1229,15 @@ impl Gpu {
                             draws += 1;
                             tris = tris.saturating_add(n.saturating_mul(self.mesh_tris[i]));
                         }
-                    } #[cfg(feature = "models")] { draws += self.models.draw(&mut rp, frame_bg, &self.views, msaa.is_some(), &self.pipes, &mut tris); }
+                    } #[cfg(feature = "models")] { draws += self.models.draw(&mut rp, frame_bg, &self.views, msaa.is_some(), &self.pipes, &mut tris); } #[cfg(feature = "world-draws")] { draws += self.world_draw(world, &mut rp); }
                     // World particles after every opaque mesh, view by view.
                     #[cfg(feature = "particles")]
                     for (&off, &(_, px)) in self.particles.world.iter().zip(&self.views) {
                         rp.set_viewport(px[0], px[1], px[2], px[3], 0.0, 1.0);
                         let atlas_bg = if pixel_art { &self.atlas.bg[1] } else { &self.atlas.bg[0] };
                         draws += self.particles.draw_world(&mut rp, atlas_bg, off, msaa.is_some());
-                    }
-                    drop(rp); #[cfg(feature = "view-model")] { draws += self.vm_draw(&mut enc, hdr, &mut tris); }
+                    } #[cfg(feature = "trails")] for (&off, &(_, px)) in self.trails.world.iter().zip(&self.views) { rp.set_viewport(px[0], px[1], px[2], px[3], 0.0, 1.0); let atlas_bg = if pixel_art { &self.atlas.bg[1] } else { &self.atlas.bg[0] }; draws += self.trails.draw_world(&mut rp, atlas_bg, off, msaa.is_some()); tris = tris.saturating_add(self.trails.tris()); }
+                    #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] { draws += self.models.draw_blend(&mut rp, frame_bg, &self.views, msaa.is_some(), &self.pipes, &mut tris); } drop(rp); #[cfg(feature = "view-model")] { draws += self.vm_draw(&mut enc, hdr, &mut tris); }
                     // Effects read one-sample depth: resolve the 4x depth
                     // (nearest sample) into the depth target, only when one
                     // does. Timed as part of the forward pass.
@@ -1247,7 +1262,7 @@ impl Gpu {
                         rp.set_bind_group(0, &m.depth_bg, &[]);
                         rp.draw(0..3, 0..1);
                         draws += 1;
-                    }
+                    } #[cfg(feature = "view-model")] { draws += self.vm_mark(&mut enc, depth); } #[cfg(all(feature = "material-recipes-refract", not(feature = "relief")))] if glass_now { #[cfg(feature = "point-lights")] let lb = Some(self.lights.blend_bg()); #[cfg(not(feature = "point-lights"))] let lb = None; draws += self.models.glass_pass(&self.device, &mut enc, &hdr.view, hdr.size, &depth.view, frame_bg, &self.views, &self.pipes, lb, &mut self.timer, &mut tris); }
                 }
                 ("render", "sprites") => {
                     #[cfg(feature = "particles")]
@@ -1257,10 +1272,10 @@ impl Gpu {
                     #[cfg(feature = "msdf")] let sprite_count = ui_from; // With the 3D path the forward pass cleared `hdr` and an
                     // empty sprites pass is skipped; without it this pass is
                     // the first writer and always runs, to clear.
-                    #[cfg(feature = "forward")] #[cfg(not(feature = "pseudo3d"))]
+                    #[cfg(feature = "forward")] #[cfg(not(any(feature = "pseudo3d", feature = "trails-screen")))]
                     if sprite_count == 0 && screen_groups.is_empty() {
                         continue;
-                    } #[cfg(all(feature = "forward", feature = "pseudo3d"))] if sprite_count == 0 && screen_groups.is_empty() && !self.road.drawing() { continue; }
+                    } #[cfg(all(feature = "forward", feature = "pseudo3d", not(feature = "trails-screen")))] if sprite_count == 0 && screen_groups.is_empty() && !self.road.drawing() { continue; } #[cfg(all(feature = "forward", feature = "trails-screen", not(feature = "pseudo3d")))] if sprite_count == 0 && screen_groups.is_empty() && self.trails.screen.is_empty() { continue; } #[cfg(all(feature = "forward", feature = "trails-screen", feature = "pseudo3d"))] if sprite_count == 0 && screen_groups.is_empty() && self.trails.screen.is_empty() && !self.road.drawing() { continue; }
                     let (Some(pipe), Some(hdr)) = (self.pipes.engine(pipelines::SPRITE), find_target(&self.targets, "hdr")) else {
                         continue;
                     };
@@ -1273,8 +1288,8 @@ impl Gpu {
                     // The sprites in runs between the screen particle groups
                     // (without groups: one draw of every sprite, as before).
                     let mut drawn = 0u32;
-                    let groups = screen_groups.iter().map(|&(split, off)| (split, Some(off)));
-                    for (split, _group) in groups.chain(core::iter::once((sprite_count, None))) {
+                    let groups = screen_groups.iter().map(|&(split, off)| (split, Some(off))); #[cfg(all(feature = "trails", any(not(feature = "forward"), feature = "trails-screen")))] let mut trail_groups = self.trails.screen.iter().copied().peekable();
+                    for (split, _group) in groups.chain(core::iter::once((sprite_count, None))) { #[cfg(all(feature = "trails", any(not(feature = "forward"), feature = "trails-screen")))] while let Some((ts, off)) = trail_groups.next_if(|&(ts, _)| ts <= split || _group.is_none()) { let ts = ts.min(split); if ts > drawn { rp.set_pipeline(pipe); rp.set_bind_group(0, atlas_bg, &[sprite_off]); #[cfg(feature = "msdf")] rp.set_bind_group(1, &self.msdf.bg, &[]); rp.set_vertex_buffer(0, self.sprites.buf.slice(..)); rp.draw(0..6, drawn..ts); draws += 1; drawn = ts; } draws += self.trails.draw_screen(&mut rp, atlas_bg, off); tris = tris.saturating_add(self.trails.tris()); }
                         if split > drawn {
                             rp.set_pipeline(pipe);
                             rp.set_bind_group(0, atlas_bg, &[sprite_off]); #[cfg(feature = "msdf")] rp.set_bind_group(1, &self.msdf.bg, &[]);
@@ -1312,7 +1327,7 @@ impl Gpu {
                     rp.draw(0..3, 0..1);
                     draws += 1;
                 }
-                _ => {
+                _ => { #[cfg(feature = "game-passes")] if self.game.run(pass.name, &mut enc, &self.targets, &mut self.timer, &mut draws) { continue; }
                     let Some((ei, effect)) = fx.for_pass(pass.name) else {
                         continue;
                     };
@@ -1321,7 +1336,7 @@ impl Gpu {
                             targets: &self.targets,
                             pipes: &self.pipes,
                             small_bg: &self.small_bg,
-                            small_depth_bg: self.small_depth_bg.as_ref(),
+                            small_depth_bg: self.small_depth_bg.as_ref(), #[cfg(feature = "effect-mesh")] device: &self.device, #[cfg(feature = "effect-mesh")] layouts: &self.layouts, #[cfg(feature = "effect-mesh")] sampler: &self.sampler,
                         },
                         enc: &mut enc,
                         ring: &mut self.ring,
@@ -1335,7 +1350,7 @@ impl Gpu {
                 }
             }
         }
-        drop((graph, fx, reg));
+        drop((graph, fx, reg)); #[cfg(feature = "swatches")] { draws += self.swatch_draw(&mut enc, tone_off, &mut tris); }
         #[cfg(feature = "capture")]
         {
             let ldr = find_target(&self.targets, "ldr").map(|t| (&t.tex, t.size));
@@ -1355,7 +1370,7 @@ impl Gpu {
         }
         #[cfg(not(feature = "capture"))]
         self.queue.present(frame);
-        self.timer.after_submit(&self.queue);
+        self.timer.after_submit(&self.queue); #[cfg(feature = "swatches")] self.swatch_after_submit();
 
         let mut st = world.res_mut::<RenderStats>();
         st.draw_calls = draws;
@@ -1369,8 +1384,11 @@ impl Gpu {
         self.readbacks.after_submit(&st);
     }
 
-    /// Re-upload the mesh buffers when the `MeshLibrary` changed (a game
-    /// builds its spline roads once, so this runs on the first frames only).
+    /// Bring the mesh buffers in line with the `MeshLibrary` when it changed:
+    /// only the added, replaced or removed meshes are written, and a buffer
+    /// that ran out of room doubles with one GPU copy (a game that builds
+    /// its roads once pays this on the first frames; a game that streams
+    /// chunks pays each chunk's own bytes). No work when nothing changed.
     #[cfg(feature = "meshes")]
     fn sync_meshes(&mut self, world: &World) {
         let Some(lib) = world.try_res::<mesh::MeshLibrary>() else {
@@ -1379,18 +1397,65 @@ impl Gpu {
         if lib.revision() == self.mesh_rev {
             return;
         }
-        let bufs = mesh::mesh_buffers(Some(&lib));
-        let (vb, ib) = mesh_gpu_buffers(&self.device, &self.queue, &bufs);
-        self.mesh_vb = vb;
-        self.mesh_ib = ib;
-        self.mesh_ranges = bufs.ranges;
-        self.mesh_tris = bufs.tris;
+        let sync = self.mesh_store.sync(Some(&lib));
         self.mesh_rev = lib.revision();
+        // A buffer that grew: a bigger one, the old contents copied across on
+        // the GPU, submitted before any write so a write into a moved mesh's
+        // range lands after the copy.
+        let grow = |device: &wgpu::Device, enc: &mut wgpu::CommandEncoder, old: &wgpu::Buffer, label, size, usage, copy: u64| {
+            let new = mesh_gpu_buffer(device, label, size, usage);
+            if copy > 0 {
+                enc.copy_buffer_to_buffer(old, 0, &new, 0, Some(copy));
+            }
+            new
+        };
+        let (vb_new, ib_new) = (self.mesh_vb.size() != sync.vb_size, self.mesh_ib.size() != sync.ib_size);
+        if vb_new || ib_new {
+            let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("evani.meshes.grow") });
+            if vb_new {
+                self.mesh_vb = grow(&self.device, &mut enc, &self.mesh_vb, "evani.meshes.vb", sync.vb_size, wgpu::BufferUsages::VERTEX, sync.vb_copy);
+            }
+            if ib_new {
+                self.mesh_ib = grow(&self.device, &mut enc, &self.mesh_ib, "evani.meshes.ib", sync.ib_size, wgpu::BufferUsages::INDEX, sync.ib_copy);
+            }
+            self.queue.submit([enc.finish()]);
+        }
+        write_mesh_ranges(&self.queue, &self.mesh_vb, &self.mesh_ib, &sync);
+        (self.mesh_ranges, self.mesh_tris) = mesh_tables(&self.mesh_store);
     }
 }
 
-/// Vertex and index buffers holding `b`.
-#[cfg(feature = "forward")]
+/// A shared mesh buffer of `size` bytes (rounded up to 4, at least 4) that
+/// can be written to and copied from when it has to grow.
+#[cfg(feature = "meshes")]
+fn mesh_gpu_buffer(device: &wgpu::Device, label: &str, size: u64, usage: wgpu::BufferUsages) -> wgpu::Buffer {
+    device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some(label),
+        size: size.max(4).next_multiple_of(4),
+        usage: usage | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    })
+}
+
+/// The `write_buffer` calls of a mesh sync.
+#[cfg(feature = "meshes")]
+fn write_mesh_ranges(queue: &wgpu::Queue, vb: &wgpu::Buffer, ib: &wgpu::Buffer, sync: &mesh::MeshSync) {
+    for w in &sync.writes {
+        queue.write_buffer(if w.buf == mesh::MeshBuf::Vertex { vb } else { ib }, w.offset, &w.bytes);
+    }
+}
+
+/// The store's draw ranges and triangle counts for every mesh slot.
+#[cfg(feature = "meshes")]
+fn mesh_tables(store: &mesh::MeshStore) -> ([(u32, u32, i32); MESH_SLOTS], [u32; MESH_SLOTS]) {
+    let (mut ranges, mut tris) = ([(0, 0, 0); MESH_SLOTS], [0; MESH_SLOTS]);
+    ranges.copy_from_slice(&store.ranges()[..MESH_SLOTS]);
+    tris.copy_from_slice(&store.tris()[..MESH_SLOTS]);
+    (ranges, tris)
+}
+
+/// Vertex and index buffers holding `b` (built-ins only: they never change).
+#[cfg(all(feature = "forward", not(feature = "meshes")))]
 fn mesh_gpu_buffers(device: &wgpu::Device, queue: &wgpu::Queue, b: &mesh::MeshBuffers) -> (wgpu::Buffer, wgpu::Buffer) {
     let buffer = |label, bytes: &[u8], usage| {
         let buf = device.create_buffer(&wgpu::BufferDescriptor {
@@ -1733,7 +1798,7 @@ struct GpuRefs<'a> {
     targets: &'a [Target],
     pipes: &'a Pipelines,
     small_bg: &'a wgpu::BindGroup,
-    small_depth_bg: Option<&'a wgpu::BindGroup>,
+    small_depth_bg: Option<&'a wgpu::BindGroup>, #[cfg(feature = "effect-mesh")] device: &'a wgpu::Device, #[cfg(feature = "effect-mesh")] layouts: &'a Layouts, #[cfg(feature = "effect-mesh")] sampler: &'a wgpu::Sampler, // mesh draws (effect-mesh) build their bind group per draw
 }
 
 /// The GPU [`PostRecorder`]: one render pass per effect draw.
@@ -1787,7 +1852,7 @@ impl PostRecorder for Recorder<'_> {
         rp.set_bind_group(0, bg, &[off]);
         rp.draw(0..3, 0..1);
         *self.draws += 1;
-    }
+    } #[cfg(feature = "effect-mesh")] fn draw_mesh(&mut self, shader: usize, src: &str, field: &str, dst: &str, zbuf: &str, clear_depth: bool, vertices: u32, uniforms: &[f32]) { record_mesh(self, shader, src, field, dst, zbuf, clear_depth, vertices, uniforms) }
 }
 
 fn find_target<'a>(targets: &'a [Target], name: &str) -> Option<&'a Target> {
@@ -1832,3 +1897,71 @@ mod ambient;
 // The shader pre-warm hold (feature `prewarm`, ChimpDuty intake).
 #[cfg(feature = "prewarm")]
 mod prewarm;
+// Game passes (feature `game-passes`, CORE_REQUESTS `game-gpu-passes`).
+#[cfg(feature = "game-passes")]
+mod game_pass;
+// The studio's swatch balls (feature `swatches`), at the end so no line
+// above moves.
+#[cfg(feature = "swatches")]
+mod swatch;
+// tier-settle on the page (capture builds), at the end so no line above moves.
+#[cfg(feature = "capture")]
+mod settle;
+// Module-drawn world geometry (feature `world-draws`, evani-grass), at the
+// end so no line above moves.
+#[cfg(feature = "world-draws")]
+mod world_draw;
+
+/// A mesh effect's draw (feature `effect-mesh`): its bind group (the source,
+/// sampler, ring uniforms, scene depth and the `field` target), its own depth
+/// target cleared or kept, `vertices` vertices from the vertex index.
+#[cfg(feature = "effect-mesh")]
+#[allow(clippy::too_many_arguments)]
+fn record_mesh(rec: &mut Recorder<'_>, shader: usize, src: &str, field: &str, dst: &str, zbuf: &str, clear_depth: bool, vertices: u32, uniforms: &[f32]) {
+    let Some(pipe) = rec.gpu.pipes.effect(rec.effect, shader) else {
+        return;
+    };
+    let t = |n: &str| rec.gpu.targets.iter().find(|t| t.name == n);
+    let (Some(dst), Some(zb), Some(src), Some(field), Some(depth)) = (t(dst), t(zbuf), t(src), t(field), t("depth")) else {
+        return;
+    };
+    let bg = rec.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("evani.effect_mesh"),
+        layout: &rec.gpu.layouts.adf,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&src.view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(rec.gpu.sampler) },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &rec.ring.buf, offset: 0, size: wgpu::BufferSize::new(SMALL_BINDING) }),
+            },
+            wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&depth.view) },
+            wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&field.view) },
+        ],
+    });
+    let off = rec.ring.push(uniforms);
+    let ts = rec.timer.pass(rec.pass);
+    let mut rp = rec.enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some(rec.pass),
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &dst.view,
+            depth_slice: None,
+            resolve_target: None,
+            ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+        })],
+        // Its own depth: cleared to the far value (reversed depth: 0), or
+        // as the last mesh draw left it.
+        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+            view: &zb.view,
+            depth_ops: Some(wgpu::Operations { load: if clear_depth { wgpu::LoadOp::Clear(0.0) } else { wgpu::LoadOp::Load }, store: wgpu::StoreOp::Store }),
+            stencil_ops: None,
+        }),
+        timestamp_writes: ts,
+        occlusion_query_set: None,
+        multiview_mask: None,
+    });
+    rp.set_pipeline(pipe);
+    rp.set_bind_group(0, &bg, &[off]);
+    rp.draw(0..vertices, 0..1);
+    *rec.draws += 1;
+}

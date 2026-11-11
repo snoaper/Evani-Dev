@@ -1,0 +1,26 @@
+{
+  "_about": "Ground textures proof: three original procedural layers (our own recipes in tools/evani-convert/src/groundtex.rs), made with `cargo xtask convert-textures --app-dir apps/ground-textures`. Each set streams: 64 px first (the boot size), then the tier size. Set 0 is the ground (the field), set 1 the hero layers (rock wall, airbase paving).",
+  "formats": ["astc", "bc7", "rgba"],
+  "budget_mb": { "lite": 4, "low": 4, "medium": 6, "high": 12, "ultra": 25, "vr": 12 },
+  "boot_budget_mb": 1,
+  "fade_s": 0.6,
+  "sets": [
+    {
+      "set": 0,
+      "boot": 64,
+      "size": { "lite": 0, "low": 256, "medium": 256, "high": 512, "ultra": 1024, "vr": 512 },
+      "layers": [
+        { "name": "field", "path": "ground/field", "licence": "MIT (Evani.Dev, generated)", "source": { "procedural": "field", "seed": 3 } }
+      ]
+    },
+    {
+      "set": 1,
+      "boot": 64,
+      "size": { "lite": 0, "low": 256, "medium": 512, "high": 1024, "ultra": 1024, "vr": 1024 },
+      "layers": [
+        { "name": "rock", "path": "hero/rock", "licence": "MIT (Evani.Dev, generated)", "source": { "procedural": "rock", "seed": 7 } },
+        { "name": "paving", "path": "hero/paving", "licence": "MIT (Evani.Dev, generated)", "source": { "procedural": "paving", "seed": 11 } }
+      ]
+    }
+  ]
+}

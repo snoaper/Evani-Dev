@@ -12,13 +12,15 @@ use evani_core::focus::{FocusAsset, FocusAssets, FocusFrame, FocusState};
 use evani_render::RenderWorld;
 
 use crate::Tune;
-use crate::draw::{BoxSeat, ItemBoxLook, Mat, draw_bomb, draw_goo, draw_item_box, draw_kart, draw_seeker, lerp3};
+use crate::draw::{BoxSeat, ItemBoxLook, KartArt, Mat, draw_bomb, draw_goo, draw_item_box, draw_kart, draw_seeker, lerp3};
 use crate::race::RaceView;
 
 /// The kit's name as `add_kit` records it ([`crate::KartRacerPlugin`]).
 pub const OWNER: &str = "kart-racer";
 /// The file that draws every asset here (what Evani.App sends with feedback).
 const DRAW: &str = "kits/evani-kit-kart-racer/src/draw.rs";
+/// The file that draws the karts and their racers.
+const CANDY: &str = "kits/evani-kit-kart-racer/src/candy.rs";
 
 /// The kit's focusable assets.
 pub fn register(assets: &mut FocusAssets) {
@@ -28,7 +30,7 @@ pub fn register(assets: &mut FocusAssets) {
             .params(["kit.kart_racer.item_box_", "kit.kart_racer.item_respawn_s"])
             .path(DRAW).radius(1.4),
     );
-    assets.add(FocusAsset::new("kart", "Kart with driver").kind("vehicle").params(["kit.kart_racer.drift_slip_deg"]).path(DRAW).radius(1.9));
+    assets.add(FocusAsset::new("kart", "Kart with driver").kind("vehicle").params(["kit.kart_racer.drift_slip_deg"]).path(CANDY).radius(1.9));
     assets.add(FocusAsset::new("goo", "Goo Blob").kind("item").params(["kit.kart_racer.goo_"]).path(DRAW).radius(1.1));
     assets.add(FocusAsset::new("bomb", "Boing Bomb").kind("item").params(["kit.kart_racer.bomb_"]).path(DRAW).radius(0.8));
     assets.add(FocusAsset::new("seeker", "Seeker Star").kind("item").params(["kit.kart_racer.seeker_"]).path(DRAW).radius(0.9));
@@ -72,7 +74,19 @@ fn behind_yaw(race: &RaceView, s: f32, lateral: f32) -> f32 {
 /// Draw the focused asset alone and say where it is. `None` when the race
 /// has no such asset (the normal view then draws).
 #[allow(clippy::too_many_arguments)]
-pub fn draw(f: &Focused, race: &RaceView, t: &Tune, look: &ItemBoxLook, seats: &[Option<BoxSeat>], mats: &[Mat; 16], alpha: f32, time: f32, shadows: bool, rw: &mut RenderWorld) -> Option<FocusFrame> {
+pub fn draw(
+    f: &Focused,
+    race: &RaceView,
+    t: &Tune,
+    look: &ItemBoxLook,
+    seats: &[Option<BoxSeat>],
+    mats: &[Mat; 16],
+    kart_meshes: &crate::candy::KartMeshes,
+    alpha: f32,
+    time: f32,
+    shadows: bool,
+    rw: &mut RenderWorld,
+) -> Option<FocusFrame> {
     // Items sit on the road by the focused (or the middle) item box.
     let road = |race: &RaceView| -> Option<([f32; 3], f32)> {
         let i = box_index(race, None)?;
@@ -105,7 +119,7 @@ pub fn draw(f: &Focused, race: &RaceView, t: &Tune, look: &ItemBoxLook, seats: &
             let pos = lerp3(k.prev_pos, k.pos, alpha);
             let yaw = k.prev_yaw + crate::kart::wrap_angle(k.yaw - k.prev_yaw) * alpha;
             let vyaw = yaw + k.slip + k.spin_angle;
-            draw_kart(k, (spec.color, spec.suit), pos, vyaw, t.max_speed, mats, rw);
+            draw_kart(k, (spec.color, spec.suit), pos, vyaw, t.max_speed, mats, KartArt { meshes: kart_meshes, full: true, time }, rw);
             Some(FocusFrame {
                 center: [pos[0], pos[1] + 0.9, pos[2]],
                 radius: 1.9,

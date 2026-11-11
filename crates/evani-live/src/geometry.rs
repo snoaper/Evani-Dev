@@ -238,7 +238,14 @@ impl GeometryView {
     /// start at index `n_meshes`. `viewer` is the game's camera this frame:
     /// z-fighting is judged by the depth maths as that camera sees it.
     fn analyse(&mut self, meshes: &[MeshInstance], n_meshes: usize, materials: &[String], viewer: &Viewer) {
-        let list: Vec<(usize, MeshInstance)> = meshes.iter().copied().enumerate().collect();
+        // The look's `sky` material is the backdrop (a procedural dome drawn
+        // round the camera), not world geometry: left out, as the geocheck
+        // report leaves it out (critic round 6 of material-view: the dome,
+        // still drawn on the frame the view switched on, "overlapped" every
+        // prop inside it, so the debug view painted them red while the
+        // report counted no overlap).
+        let sky = backdrop_material(materials);
+        let list: Vec<(usize, MeshInstance)> = meshes.iter().copied().enumerate().filter(|(_, m)| Some(m.material) != sky).collect();
         let label = |m: &MeshInstance| scene::default_label(m, materials);
         let s = Scene::build_with(&list, &mut self.shapes, &label, self.cfg.clone(), &|i| i >= n_meshes);
         let custom: Vec<MeshId> = checks::used_meshes(meshes)
@@ -280,6 +287,15 @@ impl GeometryView {
         self.issues = issues;
     }
 }
+
+/// The material slot of the look's backdrop (`sky`), which no geometry
+/// check judges.
+pub fn backdrop_material(materials: &[String]) -> Option<u32> {
+    materials.iter().position(|m| m == BACKDROP_MATERIAL).map(|i| i as u32)
+}
+
+/// The look material the geometry checks leave out: the procedural sky dome.
+pub const BACKDROP_MATERIAL: &str = "sky";
 
 fn hex(c: [f32; 3]) -> String {
     let b = |x: f32| (x.clamp(0.0, 1.0) * 255.0).round() as u8;

@@ -1,0 +1,10 @@
+# The procedural library proof (evani-procedural-lib). Dev only: not a game
+# for the library. The gating proof builds it three ways: no `procedural`
+# line, one asset, one category (docs/PROCEDURAL.md "Proof of gating").
+name = "proc-field"
+kit = "proc-field"   # crate kits/evani-kit-proc-field
+look = "basic"
+
+[modules]
+physics = "none"
+procedural = ["terrain-rolling-hills"]

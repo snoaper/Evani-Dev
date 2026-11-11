@@ -16,7 +16,20 @@
 //!    frame of every joint below an animated one is compared with the
 //!    resampled source at the shell points. The smallest clip within the
 //!    error bound wins, over rotations in 32 bits (10-10-10-2) and in
-//!    48 bits (smallest-three 3 x 15) and tau = bound / 2^k.
+//!    48 bits (smallest-three 3 x 15) and tau = bound / 2^k, a track's own
+//!    error measured at its joint's shell (a width that misses the bound
+//!    even with every key kept is skipped; a clip no width holds is searched
+//!    in full and reported over it).
+//! 5. Then (plan item R1, after ozz-animation's hierarchical tolerance, as
+//!    an idea only) a few bisection steps towards the next looser tau, and
+//!    the same search with a rotation or scale track's error measured at the
+//!    farthest shell point its whole chain reaches over the clip (a hip
+//!    moves the hoof), every try verified as in step 4, stopping once the
+//!    clip has had half as many tries again as the S3-7 search makes for it
+//!    (a width the probe skips counts its 13).
+//!
+//! The per-clip numbers behind these choices: DECISIONS.md "Clip baker:
+//! hierarchy-aware tolerance (R1)" and `examples/clip_trial.rs`.
 //!
 //! Plain Rust written for Evani.Dev; deterministic (no clocks, no hash maps).
 
@@ -29,8 +42,52 @@ use evani_guide::clipblock::{self, ClipIn, ROTATION, SCALE, TRANSLATION, TrackIn
 pub const MIN_SHELL_M: f64 = 0.03;
 /// tau = bound / 2^k for k below this, then tau = 0.
 const STEPS: i32 = 12;
+/// The width probe runs after tau = bound / 2^k misses for k = 0 to this.
+const PROBE_AFTER: i32 = 1;
 /// Below this an error is rounding, not a change.
 const EPS: f64 = 1e-7;
+
+/// How a clip is reduced. Every choice stays inside the same verify loop,
+/// so the error bound holds whichever is picked. The S3-7 search always
+/// runs first (both rotation widths, tau = bound / 2^k, each track's error
+/// at its own joint's shell); `refine` and `chain` then search further, and
+/// the extra tries stop once the clip has had half as many again as the
+/// S3-7 search made, so a clip never costs more than 1.5 times the bakes it
+/// cost before (on the fixtures a 2x stop gives the same bytes).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BakeOptions {
+    /// Also measure a rotation or scale track's own error at the farthest
+    /// shell point it moves over the clip (its joint's own and every joint's
+    /// below it, in every frame's pose), and search again with that measure.
+    /// A hip then keeps more keys; the error that saves lets the search
+    /// settle on a looser tolerance for every track (ozz-animation's
+    /// hierarchical tolerance, as an idea). A joint with nothing below it is
+    /// measured as before.
+    pub chain: bool,
+    /// After the first tau = bound / 2^k that holds, this many bisection
+    /// steps towards the one before it that failed (0: none); the smallest
+    /// clip that still holds is kept.
+    pub refine: u32,
+    /// When tau = bound and bound / 2 both miss at a rotation width, try
+    /// every key kept before going on, and skip the width if even that
+    /// misses. When no width holds, the S3-7 search
+    /// runs instead, so the clip and its "over the bound" report are the
+    /// S3-7 baker's. A clip where only a looser tolerance holds at a width
+    /// (quantised keys happening to cancel) loses that width here: a speed
+    /// trade, seen on no fixture.
+    pub probe: bool,
+}
+
+impl Default for BakeOptions {
+    fn default() -> Self {
+        BakeOptions { chain: true, refine: 6, probe: true }
+    }
+}
+
+impl BakeOptions {
+    /// The baker as it was before plan item R1 (S3-7).
+    pub const LEGACY: BakeOptions = BakeOptions { chain: false, refine: 0, probe: false };
+}
 
 type M4 = [f64; 16];
 type V4 = [f64; 4];
@@ -122,6 +179,8 @@ struct Rig {
     shell_l: Vec<f64>,
     /// The parent's world scale at rest (1 for a root).
     parent_scale: Vec<f64>,
+    /// Each node and every node below it (the node first).
+    subtree: Vec<Vec<usize>>,
 }
 
 impl Rig {
@@ -136,7 +195,7 @@ impl Rig {
         }
         let rest: Vec<[V4; 3]> = g.nodes.iter().map(|x| [[f64::from(x.translation[0]), f64::from(x.translation[1]), f64::from(x.translation[2]), 0.0], v4(x.rotation), [f64::from(x.scale[0]), f64::from(x.scale[1]), f64::from(x.scale[2]), 0.0]]).collect();
         let matrix: Vec<Option<M4>> = g.nodes.iter().map(|x| x.matrix.map(f64s)).collect();
-        let mut rig = Rig { names: g.nodes.iter().map(|x| x.name.clone()).collect(), parent, order, rest, matrix, shell_w: vec![MIN_SHELL_M; n], shell_l: vec![MIN_SHELL_M; n], parent_scale: vec![1.0; n] };
+        let mut rig = Rig { names: g.nodes.iter().map(|x| x.name.clone()).collect(), parent, order, rest, matrix, shell_w: vec![MIN_SHELL_M; n], shell_l: vec![MIN_SHELL_M; n], parent_scale: vec![1.0; n], subtree: vec![Vec::new(); n] };
         let world = rig.world(&|_, _| None);
         for i in 0..n {
             let ws = max_scale(&world[i]).max(1e-9);
@@ -160,7 +219,43 @@ impl Rig {
             rig.shell_w[i] = d;
             rig.shell_l[i] = d / ws;
         }
+        // Children come after parents in `order`, so walking it backwards
+        // finishes every subtree before its root.
+        for k in (0..rig.order.len()).rev() {
+            let i = rig.order[k];
+            let mut below = vec![i];
+            for &c in &g.nodes[i].children {
+                below.extend_from_slice(&rig.subtree[c]);
+            }
+            rig.subtree[i] = below;
+        }
         rig
+    }
+
+    /// The chain lever of each node in `nodes` (metres, world): the farthest
+    /// shell point of the node and every node below it, over the poses
+    /// `worlds` (one world-matrix list per frame), never under its own shell.
+    /// A pose that stretches a chain (an animated translation or scale below
+    /// the joint) counts at its longest.
+    #[cfg(test)]
+    fn reach(&self, nodes: &[usize], worlds: &[Vec<M4>]) -> Vec<f64> {
+        let mut out = self.shell_w.clone();
+        for w in worlds {
+            self.reach_into(&mut out, nodes, w);
+        }
+        out
+    }
+
+    /// [`Rig::reach`] one pose at a time: raise `out` (started from
+    /// `shell_w`) to what the pose `w` reaches.
+    fn reach_into(&self, out: &mut [f64], nodes: &[usize], w: &[M4]) {
+        for &i in nodes {
+            let me = point(&w[i], [0.0; 3]);
+            for &d in &self.subtree[i] {
+                let r = dist(me, point(&w[d], [0.0; 3])) + self.shell_l[d] * max_scale(&w[d]);
+                out[i] = out[i].max(r);
+            }
+        }
     }
 
     fn rest_value(&self, n: usize, ch: u8) -> V4 {
@@ -186,19 +281,20 @@ impl Rig {
         w
     }
 
-    /// One track's own error between two values, in metres at the shell.
-    fn err(&self, n: usize, ch: u8, a: &V4, b: &V4) -> f64 {
+    /// One track's own error between two values, in metres at the distance
+    /// `lever` from its joint (translations: the same at any distance).
+    fn err(&self, n: usize, ch: u8, a: &V4, b: &V4, lever: f64) -> f64 {
         match ch {
             TRANSLATION => dist([a[0], a[1], a[2]], [b[0], b[1], b[2]]) * self.parent_scale[n],
             ROTATION => {
                 let la = (a.iter().map(|x| x * x).sum::<f64>()).sqrt().max(1e-12);
                 let lb = (b.iter().map(|x| x * x).sum::<f64>()).sqrt().max(1e-12);
                 let dot = ((0..4).map(|k| a[k] * b[k]).sum::<f64>() / (la * lb)).abs().min(1.0);
-                2.0 * (1.0 - dot * dot).max(0.0).sqrt() * self.shell_w[n]
+                2.0 * (1.0 - dot * dot).max(0.0).sqrt() * lever
             }
             _ => {
                 let r = self.rest_value(n, SCALE);
-                (0..3).map(|k| (a[k] - b[k]).abs() / r[k].abs().max(1e-6)).fold(0.0, f64::max) * self.shell_w[n]
+                (0..3).map(|k| (a[k] - b[k]).abs() / r[k].abs().max(1e-6)).fold(0.0, f64::max) * lever
             }
         }
     }
@@ -240,6 +336,9 @@ pub struct Baked {
     pub bound_m: f64,
     pub clips: Vec<ClipReport>,
     pub notes: Vec<String>,
+    /// Per clip, how many candidate clips were written, read back and
+    /// measured: the baker's cost, the same on every machine.
+    pub tries: Vec<u32>,
 }
 
 /// Index of the last key at or before `t` (0 when `t` is before the first).
@@ -362,15 +461,16 @@ fn blend(ch: u8, a: &V4, b: &V4, u: f64) -> V4 {
 }
 
 /// One channel at tolerance `tau` (metres at the shell).
-fn reduce(rig: &Rig, c: &Chan, tau: f64, rot_bytes: u8) -> Result<Reduced, String> {
+fn reduce(rig: &Rig, c: &Chan, tau: f64, rot_bytes: u8, levers: &[f64]) -> Result<Reduced, String> {
+    let lever = levers[c.node];
     let tau = tau.max(EPS);
     let rest = rig.rest_value(c.node, c.channel);
-    if c.v.iter().all(|v| rig.err(c.node, c.channel, v, &rest) <= tau) {
+    if c.v.iter().all(|v| rig.err(c.node, c.channel, v, &rest, lever) <= tau) {
         return Ok(Reduced::Rest);
     }
     let first = c.v[0];
     let f32v = |v: &V4| [v[0] as f32, v[1] as f32, v[2] as f32, v[3] as f32];
-    if c.v.iter().all(|v| rig.err(c.node, c.channel, v, &first) <= tau) {
+    if c.v.iter().all(|v| rig.err(c.node, c.channel, v, &first, lever) <= tau) {
         return Ok(Reduced::Track(TrackIn { node: c.tier, channel: c.channel, keys: vec![0], values: vec![f32v(&first)], range: None }));
     }
     let range = if c.channel == ROTATION {
@@ -381,10 +481,21 @@ fn reduce(rig: &Rig, c: &Chan, tau: f64, rot_bytes: u8) -> Result<Reduced, Strin
     };
     let q: Vec<V4> = c.v.iter().map(|v| quantised(c.channel, v, rot_bytes, range)).collect::<Result<_, _>>()?;
     let last = c.v.len() - 1;
-    let fits = |a: usize, b: usize| (a + 1..b).all(|f| rig.err(c.node, c.channel, &blend(c.channel, &q[a], &q[b], (f - a) as f64 / (b - a) as f64), &c.v[f]) <= tau);
-    // Greedy forward pass: from each key, the farthest next key that still
-    // fits, found by doubling the reach and then bisecting, so a long smooth
-    // segment costs about L log L frame checks rather than L squared.
+    let fits = |a: usize, b: usize| (a + 1..b).all(|f| rig.err(c.node, c.channel, &blend(c.channel, &q[a], &q[b], (f - a) as f64 / (b - a) as f64), &c.v[f], lever) <= tau);
+    let keys = greedy_keys(last, fits);
+    Ok(Reduced::Track(TrackIn {
+        node: c.tier,
+        channel: c.channel,
+        keys: keys.iter().map(|&k| k as u16).collect(),
+        values: keys.iter().map(|&k| f32v(&c.v[k])).collect(),
+        range,
+    }))
+}
+
+/// Greedy forward pass: from each key, the farthest next key that still
+/// fits, found by doubling the reach and then bisecting, so a long smooth
+/// segment costs about L log L frame checks rather than L squared.
+fn greedy_keys(last: usize, fits: impl Fn(usize, usize) -> bool) -> Vec<usize> {
     let mut keys = vec![0usize];
     let mut a = 0;
     while a < last {
@@ -412,13 +523,7 @@ fn reduce(rig: &Rig, c: &Chan, tau: f64, rot_bytes: u8) -> Result<Reduced, Strin
         keys.push(good);
         a = good;
     }
-    Ok(Reduced::Track(TrackIn {
-        node: c.tier,
-        channel: c.channel,
-        keys: keys.iter().map(|&k| k as u16).collect(),
-        values: keys.iter().map(|&k| f32v(&c.v[k])).collect(),
-        range,
-    }))
+    keys
 }
 
 /// The worst shell-point distance (metres) between the decoded clip and the
@@ -458,6 +563,11 @@ fn shell_points(rig: &Rig, n: usize) -> [[f64; 3]; 6] {
 /// into the tier file's node index; `bound_m` is the worst shell error
 /// allowed (metres).
 pub fn bake(g: &Gltf, bound_m: f64, map: &dyn Fn(usize) -> Option<usize>) -> Result<Baked, String> {
+    bake_with(g, bound_m, map, BakeOptions::default())
+}
+
+/// [`bake`] with the key reduction chosen by `opt`.
+pub fn bake_with(g: &Gltf, bound_m: f64, map: &dyn Fn(usize) -> Option<usize>, opt: BakeOptions) -> Result<Baked, String> {
     if !(bound_m.is_finite() && bound_m > 0.0) {
         return Err(format!("clip error bound {bound_m} m: a distance above 0"));
     }
@@ -465,6 +575,7 @@ pub fn bake(g: &Gltf, bound_m: f64, map: &dyn Fn(usize) -> Option<usize>) -> Res
     let mut notes = Vec::new();
     let mut reports = Vec::new();
     let mut blobs = Vec::new();
+    let mut tries = Vec::new();
     let mut names: Vec<String> = Vec::new();
     for (ai, a) in g.animations.iter().enumerate() {
         let mut name = if a.name.is_empty() { format!("clip_{ai}") } else { a.name.clone() };
@@ -532,16 +643,17 @@ pub fn bake(g: &Gltf, bound_m: f64, map: &dyn Fn(usize) -> Option<usize>) -> Res
         if let Some(w) = chans.windows(2).find(|w| (w[0].tier, w[0].channel) == (w[1].tier, w[1].channel)) {
             return Err(format!("clip `{name}`: nodes `{}` and `{}` are the same node in the tier file", rig.names[w[0].node], rig.names[w[1].node]));
         }
-        let (blob, rep, why) = bake_clip(&rig, &name, frames, &chans, bound_m)?;
+        let (blob, rep, why, n) = bake_clip(&rig, &name, frames, &chans, bound_m, opt)?;
+        tries.push(n);
         notes.extend(why);
         blobs.push(blob);
         reports.push(rep);
     }
-    Ok(Baked { block: clipblock::write_block(&blobs)?, bound_m, clips: reports, notes })
+    Ok(Baked { block: clipblock::write_block(&blobs)?, bound_m, clips: reports, notes, tries })
 }
 
 /// The smallest clip within the bound (or, when none is, the most accurate).
-fn bake_clip(rig: &Rig, name: &str, frames: u16, chans: &[Chan], bound: f64) -> Result<(Vec<u8>, ClipReport, Vec<String>), String> {
+fn bake_clip(rig: &Rig, name: &str, frames: u16, chans: &[Chan], bound: f64, opt: BakeOptions) -> Result<(Vec<u8>, ClipReport, Vec<String>, u32), String> {
     // Every node at or below an animated one, and its reference shell points.
     let animated: Vec<usize> = chans.iter().map(|c| c.node).collect();
     let affected: Vec<usize> = rig.order.iter().copied().filter(|&n| {
@@ -555,62 +667,183 @@ fn bake_clip(rig: &Rig, name: &str, frames: u16, chans: &[Chan], bound: f64) -> 
         false
     }).collect();
     let by: BTreeMap<(usize, u8), &Chan> = chans.iter().map(|c| ((c.node, c.channel), c)).collect();
+    let mut tracked: Vec<usize> = chans.iter().map(|c| c.node).collect();
+    tracked.dedup();
+    // The chain measure's lever per node, raised frame by frame (only when
+    // the chain search can run).
+    let mut chain_levers = if opt.chain { rig.shell_w.clone() } else { Vec::new() };
     let mut reference = Vec::with_capacity(usize::from(frames));
     for f in 0..usize::from(frames) {
         let world = rig.world(&|n, ch| by.get(&(n, ch)).map(|c| c.v[f]));
         reference.push(affected.iter().flat_map(|&n| shell_points(rig, n).map(|p| point(&world[n], p))).collect::<Vec<_>>());
+        if opt.chain {
+            rig.reach_into(&mut chain_levers, &tracked, &world);
+        }
     }
+    let tries = std::cell::Cell::new(0u32);
+    let try_tau = |tau: f64, rot_bytes: u8, chain: bool| -> Result<(Vec<u8>, ClipReport), String> {
+        tries.set(tries.get() + 1);
+        let levers = if chain { &chain_levers } else { &rig.shell_w };
+        let mut tracks = Vec::new();
+        let mut rest = 0;
+        for c in chans {
+            match reduce(rig, c, tau, rot_bytes, levers)? {
+                Reduced::Rest => rest += 1,
+                Reduced::Track(t) => tracks.push(t),
+            }
+        }
+        let constant = tracks.iter().filter(|t| t.keys.len() == 1).count();
+        let keys = tracks.iter().map(|t| t.keys.len()).sum();
+        let n_tracks = tracks.len();
+        let bytes = clipblock::write_clip(&ClipIn { frames, rot_bytes, tracks })?;
+        let (err, at) = measure(rig, chans, &affected, &reference, &bytes)?;
+        let rep = ClipReport {
+            name: name.to_owned(),
+            frames,
+            tracks: n_tracks,
+            constant,
+            rest,
+            keys,
+            rot_bits: u32::from(rot_bytes) * 8,
+            bytes: bytes.len(),
+            worst_shell_error_m: err,
+            worst_node: rig.names[at].clone(),
+            within: err <= bound,
+        };
+        Ok((bytes, rep))
+    };
     let mut best: Option<(Vec<u8>, ClipReport)> = None;
-    for rot_bytes in [4u8, 6] {
+    let widths = [4u8, 6];
+    // 1. The S3-7 search, in its order: per width, tau = bound / 2^k until
+    // one holds. `legacy` counts the tries it makes; a probed-out width
+    // counts the 13 the S3-7 search makes there (all of them miss unless a
+    // looser tau holds where every key kept missed: the probe's one trade).
+    let mut legacy = 0u32;
+    let mut held_at: [Option<i32>; 2] = [None, None];
+    // Per probed width: the bakes before the probe and the every-key bake
+    // (the S3-7 search's first ones and its k = STEPS), for its restart.
+    let mut early: [Vec<(Vec<u8>, ClipReport)>; 2] = [Vec::new(), Vec::new()];
+    let mut probed: [Option<(Vec<u8>, ClipReport)>; 2] = [None, None];
+    for (w, &rot_bytes) in widths.iter().enumerate() {
         for k in 0..=STEPS {
-            let tau = if k == STEPS { 0.0 } else { bound / f64::from(1u32 << k) };
-            let mut tracks = Vec::new();
-            let mut rest = 0;
-            for c in chans {
-                match reduce(rig, c, tau, rot_bytes)? {
-                    Reduced::Rest => rest += 1,
-                    Reduced::Track(t) => tracks.push(t),
+            legacy += 1;
+            let (bytes, rep) = match (k == STEPS, &probed[w]) {
+                (true, Some(p)) => p.clone(),
+                _ => try_tau(if k == STEPS { 0.0 } else { bound / f64::from(1u32 << k) }, rot_bytes, false)?,
+            };
+            let within = rep.within;
+            if k <= PROBE_AFTER && !within && opt.probe {
+                early[w].push((bytes.clone(), rep.clone()));
+            }
+            offer(&mut best, bytes, rep);
+            if within {
+                held_at[w] = Some(k);
+                break;
+            }
+            if k == PROBE_AFTER && opt.probe {
+                // Every key kept: the most accurate this width can be. It is
+                // ranked only where the S3-7 search bakes it (k = STEPS), so
+                // ties fall as they did there.
+                let (bytes, rep) = try_tau(0.0, rot_bytes, false)?;
+                let ok = rep.within;
+                probed[w] = Some((bytes, rep));
+                if !ok {
+                    legacy += (STEPS - PROBE_AFTER).unsigned_abs();
+                    break;
                 }
             }
-            let constant = tracks.iter().filter(|t| t.keys.len() == 1).count();
-            let keys = tracks.iter().map(|t| t.keys.len()).sum();
-            let n_tracks = tracks.len();
-            let bytes = clipblock::write_clip(&ClipIn { frames, rot_bytes, tracks })?;
-            let (err, at) = measure(rig, chans, &affected, &reference, &bytes)?;
-            let within = err <= bound;
-            let rep = ClipReport {
-                name: name.to_owned(),
-                frames,
-                tracks: n_tracks,
-                constant,
-                rest,
-                keys,
-                rot_bits: u32::from(rot_bytes) * 8,
-                bytes: bytes.len(),
-                worst_shell_error_m: err,
-                worst_node: rig.names[at].clone(),
-                within,
-            };
-            let better = match &best {
-                None => true,
-                Some((b, r)) => match (within, r.within) {
-                    (true, false) => true,
-                    (true, true) => bytes.len() < b.len(),
-                    (false, false) => err < r.worst_shell_error_m,
-                    (false, true) => false,
-                },
-            };
-            if better {
-                best = Some((bytes, rep));
+        }
+    }
+    if opt.probe && held_at.iter().all(Option::is_none) {
+        // No width holds the bound even with every key kept: the clip is
+        // reported over it. Finish the S3-7 search afresh, its first bakes
+        // and its k = STEPS bake taken from above, so the most accurate clip
+        // it would have kept, ties included, is kept and reported here too,
+        // after the same 26 tries.
+        best = None;
+        for (w, &rot_bytes) in widths.iter().enumerate() {
+            for (bytes, rep) in std::mem::take(&mut early[w]) {
+                offer(&mut best, bytes, rep);
             }
+            for k in PROBE_AFTER + 1..STEPS {
+                let (bytes, rep) = try_tau(bound / f64::from(1u32 << k), rot_bytes, false)?;
+                offer(&mut best, bytes, rep);
+            }
+            if let Some((bytes, rep)) = probed[w].take() {
+                offer(&mut best, bytes, rep);
+            }
+        }
+    }
+    // 2. Further search, at most half as many tries again as the S3-7
+    // search makes (`legacy`).
+    let cap = legacy * 3 / 2;
+    let room = || tries.get() < cap;
+    // Bisect between tau = bound / 2^k (held) and twice that (missed).
+    let refine = |k: i32, chain: bool, rot_bytes: u8, best: &mut Option<(Vec<u8>, ClipReport)>| -> Result<(), String> {
+        if k == 0 {
+            return Ok(());
+        }
+        let mut good = if k == STEPS { 0.0 } else { bound / f64::from(1u32 << k) };
+        let mut bad = bound / f64::from(1u32 << (k - 1));
+        for _ in 0..opt.refine {
+            if !room() {
+                break;
+            }
+            let mid = 0.5 * (good + bad);
+            let (bytes, rep) = try_tau(mid, rot_bytes, chain)?;
+            if rep.within {
+                good = mid;
+                offer(best, bytes, rep);
+            } else {
+                bad = mid;
+            }
+        }
+        Ok(())
+    };
+    for (w, &rot_bytes) in widths.iter().enumerate() {
+        // A width that held at tau = bound has nothing looser to find, and
+        // the chain measure only tightens a track's tolerance.
+        let Some(held) = held_at[w].filter(|&k| k > 0) else { continue };
+        refine(held, false, rot_bytes, &mut best)?;
+        if !opt.chain {
+            continue;
+        }
+        // The chain lever is never under the joint's own shell, so from the
+        // tau that held without it on, its clips are no smaller: search the
+        // looser ones only.
+        for k in 0..held {
+            if !room() {
+                break;
+            }
+            let (bytes, rep) = try_tau(bound / f64::from(1u32 << k), rot_bytes, true)?;
+            let within = rep.within;
+            offer(&mut best, bytes, rep);
             if within {
+                refine(k, true, rot_bytes, &mut best)?;
                 break;
             }
         }
     }
     let (bytes, rep) = best.ok_or_else(|| format!("clip `{name}`: nothing baked"))?;
     let notes = if rep.within { Vec::new() } else { over_causes(rig, name, chans, bound, &rep) };
-    Ok((bytes, rep, notes))
+    Ok((bytes, rep, notes, tries.get()))
+}
+
+/// Keep `bytes` if it beats `best`: within the bound beats over it, then
+/// fewer bytes within it, or a smaller error over it; a tie keeps the first.
+fn offer(best: &mut Option<(Vec<u8>, ClipReport)>, bytes: Vec<u8>, rep: ClipReport) {
+    let better = match best {
+        None => true,
+        Some((b, r)) => match (rep.within, r.within) {
+            (true, false) => true,
+            (true, true) => bytes.len() < b.len(),
+            (false, false) => rep.worst_shell_error_m < r.worst_shell_error_m,
+            (false, true) => false,
+        },
+    };
+    if better {
+        *best = Some((bytes, rep));
+    }
 }
 
 /// Why a clip stays over its bound even with every key kept: the 16-bit
@@ -650,4 +883,50 @@ fn over_causes(rig: &Rig, name: &str, chans: &[Chan], bound: f64, rep: &ClipRepo
         ));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)] // test code: a failed step is a failed test
+
+    use super::*;
+
+    /// The chain lever reaches every shell point below a joint: never under
+    /// the joint's own shell, equal to it at a leaf, at the hips at least as
+    /// far as the hand's shell, and at the arm farther in a pose that
+    /// stretches it.
+    #[test]
+    fn chain_reach_covers_the_joints_below() {
+        let g = Gltf::from_glb(&crate::fixture::rig_glb().unwrap()).unwrap();
+        let rig = Rig::new(&g);
+        let rest = rig.world(&|_, _| None);
+        let all: Vec<usize> = (0..g.nodes.len()).collect();
+        let reach = rig.reach(&all, std::slice::from_ref(&rest));
+        let at = |n: usize| point(&rest[n], [0.0; 3]);
+        for (i, (&r, node)) in reach.iter().zip(&g.nodes).enumerate() {
+            assert!(r >= rig.shell_w[i], "{}", rig.names[i]);
+            if node.children.is_empty() {
+                assert!((r - rig.shell_w[i]).abs() < 1e-12, "a leaf reaches only its own shell: {}", rig.names[i]);
+            }
+        }
+        let (hips, hand) = (g.node_by_name("hips").unwrap(), g.node_by_name("hand_l").unwrap());
+        assert!(reach[hips] >= dist(at(hips), at(hand)) + rig.shell_w[hand] - 1e-12);
+        assert!(reach[hips] > rig.shell_w[hips], "the hips move more than their own shell");
+        // A frame that moves the hand half a metre farther out along the arm
+        // reaches farther from the arm's joint (the hand is its far end).
+        let arm = g.node_by_name("arm_l").unwrap();
+        let t = rig.rest_value(hand, TRANSLATION);
+        let far = [t[0] + 0.5, t[1], t[2], 0.0];
+        let stretched = rig.world(&|n, ch| (n == hand && ch == TRANSLATION).then_some(far));
+        let longer = rig.reach(&[arm], &[rest.clone(), stretched]);
+        assert!(longer[arm] > reach[arm] + 0.45, "{} against {}", longer[arm], reach[arm]);
+        // The two levers agree where nothing hangs below.
+        let r = [0.0, 0.0, 0.0, 1.0];
+        let q = [0.0, 0.0, 0.0871557, 0.9961947];
+        assert!((rig.err(hand, ROTATION, &r, &q, reach[hand]) - rig.err(hand, ROTATION, &r, &q, rig.shell_w[hand])).abs() < 1e-12);
+        assert!(rig.err(hips, ROTATION, &r, &q, reach[hips]) > rig.err(hips, ROTATION, &r, &q, rig.shell_w[hips]));
+        // Translation error does not depend on the lever.
+        let (a, b) = ([0.0; 4], [0.01, 0.0, 0.0, 0.0]);
+        assert_eq!(rig.err(hips, TRANSLATION, &a, &b, reach[hips]), rig.err(hips, TRANSLATION, &a, &b, rig.shell_w[hips]));
+    }
 }

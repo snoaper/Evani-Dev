@@ -1,0 +1,9 @@
+# The grass proof (evani-grass). Dev only: not a game for the library.
+name = "grass-field"
+kit = "grass-field"   # crate kits/evani-kit-grass-field
+look = "photoreal"
+effects = ["bloom"]
+
+[modules]
+physics = "none"
+grass = true

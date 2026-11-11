@@ -321,6 +321,11 @@ impl LookPlugin for StylizedPbrLook {
     fn build(&self, look: &mut LookContext) -> Result<(), PluginError> {
         look.palette(NAME, &PALETTE); #[cfg(feature = "film")] let film = film::take(look);
         for (name, base, roughness, metallic) in MATERIALS {
+            // The film preset's metal is polished steel that mirrors the sky
+            // and the horizon (material-view critic rounds 10 to 12: pale
+            // satin). Games without the preset keep the row as it is.
+            #[cfg(feature = "film")]
+            let (base, roughness, metallic) = if name == "metal" { ([0.80, 0.81, 0.83, 1.0], 0.12, 1.0) } else { (base, roughness, metallic) };
             let mut m = MaterialDesc::new(name, base);
             m.roughness = roughness;
             m.metallic = metallic;

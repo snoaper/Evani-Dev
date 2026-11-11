@@ -170,6 +170,19 @@ impl Pattern {
         }
     }
 
+    /// The width (m) of the pattern's fine feature that the shader
+    /// band-limits by its screen footprint: the tiles' grout (9 mm by
+    /// default), whose bevel highlight is a line a pixel or two wide at a
+    /// grazing angle and shimmered under sub-pixel camera moves (geocheck,
+    /// material-view round 4). 0: none (brick, cobble and planks draw as
+    /// before).
+    pub fn fine_width(&self) -> f32 {
+        match self {
+            Pattern::Tiles(t) => t.grout.max(0.0),
+            _ => 0.0,
+        }
+    }
+
     /// The authored colour the colour param is relative to.
     pub fn base_color(&self) -> [f32; 3] {
         match self {

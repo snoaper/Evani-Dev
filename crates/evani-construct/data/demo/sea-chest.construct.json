@@ -1,0 +1,147 @@
+{
+  "construct": 1,
+  "id": "sea-chest",
+  "seed": 11,
+  "params": {
+    "width": { "value": 0.9, "min": 0.5, "max": 1.6, "unit": "m", "live": true },
+    "depth": { "value": 0.55, "min": 0.35, "max": 1.0, "unit": "m", "live": true },
+    "height": { "value": 0.42, "min": 0.25, "max": 0.8, "unit": "m", "live": true },
+    "lid_h": { "value": 0.16, "min": 0.05, "max": 0.4, "unit": "m", "live": true },
+    "board": { "value": 0.022, "min": 0.012, "max": 0.04, "unit": "m", "live": true },
+    "strap_x": { "value": 0.3, "min": 0.1, "max": 0.7, "unit": "m", "live": true }
+  },
+  "let": {
+    "hd": "depth / 2",
+    "hw": "width / 2",
+    "hinge_x": "strap_x * 0.55"
+  },
+  "tiers": {
+    "low": { "budget": 700 },
+    "medium": { "budget": 1800 },
+    "high": { "budget": 5000 },
+    "ultra": { "budget": 10000 }
+  },
+  "materials": {
+    "wood.oak_weathered": { "colour": "#7a5a3c" },
+    "metal.iron_cast": { "colour": "#3b3b3e" },
+    "metal.brass": { "colour": "#b08d3c" },
+    "rope.hemp": { "colour": "#b49a6a" }
+  },
+  "curves": {
+    "front_bottom": { "kind": "polyline", "points": [["-hw", 0, "hd"], ["hw", 0, "hd"]] },
+    "front_top": { "kind": "polyline", "points": [["-hw", "height", "hd"], ["hw", "height", "hd"]] },
+    "back_bottom": { "kind": "polyline", "points": [["hw", 0, "-hd"], ["-hw", 0, "-hd"]] },
+    "back_top": { "kind": "polyline", "points": [["hw", "height", "-hd"], ["-hw", "height", "-hd"]] },
+    "side_bottom": { "kind": "polyline", "points": [["hw", 0, "hd - board"], ["hw", 0, "board - hd"]] },
+    "side_top": { "kind": "polyline", "points": [["hw", "height", "hd - board"], ["hw", "height", "board - hd"]] },
+    "strap_front": { "kind": "polyline", "points": [["strap_x", 0.01, "hd + 0.003"], ["strap_x", "height - 0.004", "hd + 0.003"]] },
+    "strap_back": { "kind": "polyline", "points": [["strap_x", 0.01, "-hd - 0.003"], ["strap_x", "height - 0.004", "-hd - 0.003"]] },
+    "strap_lid": { "kind": "formula", "samples": 32,
+                   "x": "strap_x", "y": "height + (lid_h + 0.003) * sin(t * 180)", "z": "(hd + 0.003) * cos(t * 180)" },
+    "lid_end": { "kind": "polyline", "points": [["hw - board", "height", 0], ["hw", "height", 0]] },
+    "handle": { "kind": "catenary", "a": ["hw + 0.018", "height - 0.07", -0.1], "b": ["hw + 0.018", "height - 0.07", 0.1], "sag": 0.06 },
+    "cap_front_low": { "kind": "polyline", "points": [["hw - 0.05", 0.0415, "hd + 0.0015"], ["hw + 0.0015", 0.0415, "hd + 0.0015"], ["hw + 0.0015", 0.0415, "hd - 0.05"]] },
+    "cap_front_high": { "kind": "polyline", "points": [["hw - 0.05", "height - 0.0415", "hd + 0.0015"], ["hw + 0.0015", "height - 0.0415", "hd + 0.0015"], ["hw + 0.0015", "height - 0.0415", "hd - 0.05"]] },
+    "cap_back_low": { "kind": "polyline", "points": [["hw - 0.05", 0.0415, "-hd - 0.0015"], ["hw + 0.0015", 0.0415, "-hd - 0.0015"], ["hw + 0.0015", 0.0415, "0.05 - hd"]] },
+    "cap_back_high": { "kind": "polyline", "points": [["hw - 0.05", "height - 0.0415", "-hd - 0.0015"], ["hw + 0.0015", "height - 0.0415", "-hd - 0.0015"], ["hw + 0.0015", "height - 0.0415", "0.05 - hd"]] },
+    "nails_front": { "kind": "polyline", "points": [["hw - board / 2", "height / 4", "hd"], ["hw - board / 2", "height * 3 / 4", "hd"]] },
+    "nails_back": { "kind": "polyline", "points": [["hw - board / 2", "height / 4", "-hd"], ["hw - board / 2", "height * 3 / 4", "-hd"]] },
+    "nails_side_front": { "kind": "polyline", "points": [["hw", "height / 4", "hd - board / 2"], ["hw", "height * 3 / 4", "hd - board / 2"]] },
+    "nails_side_back": { "kind": "polyline", "points": [["hw", "height / 4", "board / 2 - hd"], ["hw", "height * 3 / 4", "board / 2 - hd"]] },
+    "hasp": { "kind": "polyline", "points": [[0, "height - 0.01", "hd + 0.0085"], [0, "height - 0.01", "hd + 0.0135"]] },
+    "hinge_lid": { "kind": "formula", "samples": 8,
+                   "x": "hinge_x", "y": "height + (lid_h + 0.002) * sin(140 + t * 40)", "z": "(hd + 0.002) * cos(140 + t * 40)" }
+  },
+  "surfaces": {
+    "front": { "kind": "ruled", "a": "front_bottom", "b": "front_top" },
+    "back": { "kind": "ruled", "a": "back_bottom", "b": "back_top" },
+    "side": { "kind": "ruled", "a": "side_bottom", "b": "side_top" },
+    "lid": { "kind": "formula", "x": "(u - 0.5) * width", "y": "height + lid_h * sin(v * 180)", "z": "hd * cos(v * 180)" }
+  },
+  "protos": {
+    "stud": { "parts": [
+      { "op": "lathe", "profile": [[0, 0], [0.011, 0], [0.009, 0.004], [0.005, 0.007], [0, 0.008]],
+        "segments": { "low": 6, "high": 10 }, "material": "metal.iron_cast" }
+    ] },
+    "nail": { "parts": [
+      { "op": "lathe", "profile": [[0, -0.0008], [0.0048, -0.0008], [0.0044, 0.0007], [0, 0.0018]],
+        "segments": 6, "material": "metal.iron_cast" }
+    ] }
+  },
+  "parts": [
+    { "name": "front", "node": "body", "op": "boards", "on": "front", "count": { "low": 1, "medium": 3, "high": 4 },
+      "piece": { "thickness": "board", "gap": 0.004 }, "material": "wood.oak_weathered", "vary": { "tone": 0.09 },
+      "detail": { "ultra": { "piece": { "thickness": "board", "gap": 0.004, "bevel": 0.004 } } } },
+    { "name": "back", "node": "body", "op": "boards", "on": "back", "count": { "low": 1, "medium": 3, "high": 4 },
+      "piece": { "thickness": "board", "gap": 0.004 }, "material": "wood.oak_weathered", "vary": { "tone": 0.09 },
+      "detail": { "ultra": { "piece": { "thickness": "board", "gap": 0.004, "bevel": 0.004 } } } },
+    { "name": "side", "node": "body", "op": "boards", "on": "side", "count": { "low": 1, "medium": 3, "high": 4 }, "mirror": true,
+      "piece": { "thickness": "board", "gap": 0.004 }, "material": "wood.oak_weathered", "vary": { "tone": 0.09 },
+      "detail": { "ultra": { "piece": { "thickness": "board", "gap": 0.004, "bevel": 0.004 } } } },
+    { "name": "floor", "node": "body", "op": "block", "at": [0, "board / 2", 0], "half": ["hw - board", "board / 2", "hd - board"],
+      "material": "wood.oak_weathered" },
+    { "name": "lid", "node": "lid", "op": "boards", "on": "lid", "count": { "low": 1, "medium": 4, "high": 6 },
+      "cols": { "low": 6, "medium": 1, "high": 2 },
+      "piece": { "thickness": "board", "gap": 0.003 }, "material": "wood.oak_weathered", "vary": { "tone": 0.09 },
+      "detail": { "ultra": { "piece": { "thickness": "board", "gap": 0.003, "bevel": 0.004 } } } },
+    { "name": "lid_end", "node": "lid", "op": "sweep", "along": "lid_end", "up": [0, 1, 0], "mirror": true, "segments": 1, "smooth": false,
+      "profile": [["-(hd - board)", 0], ["-(hd - board) * cos(30)", "(lid_h - board) * sin(30)"], ["-(hd - board) * cos(60)", "(lid_h - board) * sin(60)"],
+                  [0, "lid_h - board"], ["(hd - board) * cos(60)", "(lid_h - board) * sin(60)"], ["(hd - board) * cos(30)", "(lid_h - board) * sin(30)"], ["hd - board", 0]],
+      "material": "wood.oak_weathered" },
+    { "name": "strap_front", "node": "straps", "op": "sweep", "along": "strap_front", "up": [0, 0, 1], "mirror": true,
+      "profile": { "rect": [0.045, 0.006] }, "material": "metal.iron_cast" },
+    { "name": "strap_back", "node": "straps", "op": "sweep", "along": "strap_back", "up": [0, 0, -1], "mirror": true,
+      "profile": { "rect": [0.045, 0.006] }, "material": "metal.iron_cast" },
+    { "name": "strap_lid", "node": "lid", "op": "sweep", "along": "strap_lid", "up": [1, 0, 0], "mirror": true,
+      "segments": { "low": 6, "medium": 4, "high": 12 }, "profile": { "rect": [0.006, 0.045] }, "material": "metal.iron_cast" },
+    { "name": "studs", "node": "straps", "op": "along", "curve": "strap_front", "count": 4, "inset": 0.05, "up": [0, 0, 1],
+      "proto": "stud", "mirror": true, "tiers": ["high", "ultra"] },
+    { "name": "lock", "node": "body", "op": "block", "at": [0, "height - 0.06", "hd + 0.004"], "half": [0.05, 0.06, 0.004], "material": "metal.brass" },
+    { "name": "keyhole", "node": "body", "op": "lathe", "at": [0, "height - 0.07", "hd + 0.008"], "rotate": [0, 90, 0],
+      "profile": [[0, 0], [0.012, 0], [0.012, 0.003], [0, 0.004]], "segments": { "low": 6, "high": 12 },
+      "material": "metal.iron_cast", "tiers": ["medium", "high", "ultra"] },
+    { "name": "handle", "node": "body", "op": "sweep", "along": "handle", "mirror": true, "profile": { "circle": [0.011, { "low": 4, "medium": 6, "high": 8 }] },
+      "segments": { "low": 4, "medium": 8, "high": 12 }, "material": "rope.hemp", "tiers": ["medium", "high", "ultra"],
+      "detail": { "ultra": { "profile": { "rope": [0.012, 3, 2] }, "twist": 1800, "segments": 24 } } },
+    { "name": "foot_front", "node": "body", "op": "block", "at": ["hw - 0.04", -0.015, "hd - 0.04"], "half": [0.04, 0.015, 0.04], "mirror": true,
+      "material": "wood.oak_weathered" },
+    { "name": "foot_back", "node": "body", "op": "block", "at": ["hw - 0.04", -0.015, "0.04 - hd"], "half": [0.04, 0.015, 0.04], "mirror": true,
+      "material": "wood.oak_weathered" },
+    { "name": "cap_front_low", "node": "straps", "op": "sweep", "along": "cap_front_low", "up": [0, 1, 0], "mirror": true, "segments": 2, "smooth": false,
+      "profile": { "rect": [0.003, 0.075] }, "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "cap_front_high", "node": "straps", "op": "sweep", "along": "cap_front_high", "up": [0, 1, 0], "mirror": true, "segments": 2, "smooth": false,
+      "profile": { "rect": [0.003, 0.075] }, "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "cap_back_low", "node": "straps", "op": "sweep", "along": "cap_back_low", "up": [0, 1, 0], "mirror": true, "segments": 2, "smooth": false,
+      "profile": { "rect": [0.003, 0.075] }, "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "cap_back_high", "node": "straps", "op": "sweep", "along": "cap_back_high", "up": [0, 1, 0], "mirror": true, "segments": 2, "smooth": false,
+      "profile": { "rect": [0.003, 0.075] }, "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "nails_front", "node": "body", "op": "along", "curve": "nails_front", "count": 2, "inset": "height / 8", "up": [0, 0, 1],
+      "proto": "nail", "mirror": true, "bake": true, "tiers": ["ultra"] },
+    { "name": "nails_back", "node": "body", "op": "along", "curve": "nails_back", "count": 2, "inset": "height / 8", "up": [0, 0, -1],
+      "proto": "nail", "mirror": true, "bake": true, "tiers": ["ultra"] },
+    { "name": "nails_side_front", "node": "body", "op": "along", "curve": "nails_side_front", "count": 2, "inset": "height / 8", "up": [1, 0, 0],
+      "proto": "nail", "mirror": true, "bake": true, "tiers": ["ultra"] },
+    { "name": "nails_side_back", "node": "body", "op": "along", "curve": "nails_side_back", "count": 2, "inset": "height / 8", "up": [1, 0, 0],
+      "proto": "nail", "mirror": true, "bake": true, "tiers": ["ultra"] },
+    { "name": "hasp", "node": "lid", "op": "sweep", "along": "hasp", "up": [0, 1, 0], "segments": 1, "smooth": false,
+      "profile": [[-0.021, 0.026], [0.021, 0.026], [0.021, -0.018], [0, -0.032], [-0.021, -0.018]], "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "hinge_back", "node": "body", "op": "block", "at": ["hinge_x", "height - 0.045", "-hd - 0.002"], "half": [0.02, 0.04, 0.002], "mirror": true,
+      "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "hinge_pin", "node": "body", "op": "lathe", "at": ["hinge_x", "height", "-hd - 0.006"], "rotate": [0, 0, 90], "mirror": true,
+      "profile": [[0, -0.021], [0.006, -0.021], [0.006, 0.021], [0, 0.021]], "segments": 8, "material": "metal.iron_cast", "tiers": ["ultra"] },
+    { "name": "hinge_lid", "node": "lid", "op": "sweep", "along": "hinge_lid", "up": [1, 0, 0], "mirror": true, "segments": 4,
+      "profile": { "rect": [0.004, 0.04] }, "material": "metal.iron_cast", "tiers": ["ultra"] }
+  ],
+  "anchors": {
+    "lid_hinge": { "at": [0, "height", "-hd"], "q": [0, 0, 0, 1], "node": "lid" },
+    "loot": { "at": [0, "height / 2", 0] },
+    "carry_l": { "at": ["-hw - 0.03", "height - 0.1", 0] },
+    "carry_r": { "at": ["hw + 0.03", "height - 0.1", 0] }
+  },
+  "stages": {
+    "order": ["intact", "damaged"],
+    "rules": {
+      "damaged": { "knock_out": { "parts": ["lid", "front"], "share": 0.3 } }
+    }
+  }
+}

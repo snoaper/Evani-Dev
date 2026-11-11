@@ -1,0 +1,454 @@
+{
+  "assets": [
+    {
+      "group": "later",
+      "hash": "bd7eacbd3fa046e9",
+      "kind": "model",
+      "name": "char-head.glb",
+      "priority": 10,
+      "size": 921588,
+      "url": "char-head.glb"
+    },
+    {
+      "group": "later",
+      "hash": "bd7eacbd3fa046e9",
+      "kind": "model",
+      "name": "char-head.high.glb",
+      "priority": 10,
+      "size": 921588,
+      "tier": "high",
+      "url": "char-head.high.glb"
+    },
+    {
+      "group": "later",
+      "hash": "ae355ef315e31455",
+      "kind": "model",
+      "name": "char-head.lite.glb",
+      "priority": 10,
+      "size": 167556,
+      "tier": "lite",
+      "url": "char-head.lite.glb"
+    },
+    {
+      "group": "later",
+      "hash": "cc4f179ecaf1e6ff",
+      "kind": "model",
+      "name": "char-head.low.glb",
+      "priority": 10,
+      "size": 261620,
+      "tier": "low",
+      "url": "char-head.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "336ec6adb2ff959d",
+      "kind": "model",
+      "name": "char-head.medium.glb",
+      "priority": 10,
+      "size": 484800,
+      "tier": "medium",
+      "url": "char-head.medium.glb"
+    },
+    {
+      "group": "later",
+      "hash": "35c9736248b3885e",
+      "kind": "model",
+      "name": "cow.glb",
+      "priority": 10,
+      "size": 26960,
+      "url": "cow.glb"
+    },
+    {
+      "group": "later",
+      "hash": "bee6f5cee4a68b89",
+      "kind": "model",
+      "name": "dog.glb",
+      "priority": 10,
+      "size": 26016,
+      "url": "dog.glb"
+    },
+    {
+      "group": "later",
+      "hash": "832e963da3fa282f",
+      "kind": "model",
+      "name": "horse.glb",
+      "priority": 10,
+      "size": 27624,
+      "url": "horse.glb"
+    },
+    {
+      "group": "later",
+      "hash": "69890c30d66d04ff",
+      "kind": "model",
+      "name": "layer-brushed.glb",
+      "priority": 10,
+      "size": 30004,
+      "url": "layer-brushed.glb"
+    },
+    {
+      "group": "later",
+      "hash": "dd8d7dfc3aad50ee",
+      "kind": "model",
+      "name": "layer-brushed.low.glb",
+      "priority": 10,
+      "size": 13688,
+      "tier": "low",
+      "url": "layer-brushed.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "915058a2e62cef0b",
+      "kind": "model",
+      "name": "layer-bubble.glb",
+      "priority": 10,
+      "size": 143408,
+      "url": "layer-bubble.glb"
+    },
+    {
+      "group": "later",
+      "hash": "f7383ca8eaa2e7f0",
+      "kind": "model",
+      "name": "layer-bubble.low.glb",
+      "priority": 10,
+      "size": 40288,
+      "tier": "low",
+      "url": "layer-bubble.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "a316235ce464debe",
+      "kind": "model",
+      "name": "layer-coat.glb",
+      "priority": 10,
+      "size": 143376,
+      "url": "layer-coat.glb"
+    },
+    {
+      "group": "later",
+      "hash": "05bfce956b82d0fb",
+      "kind": "model",
+      "name": "layer-coat.low.glb",
+      "priority": 10,
+      "size": 40256,
+      "tier": "low",
+      "url": "layer-coat.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "3c8b7b7ecd4930c6",
+      "kind": "model",
+      "name": "layer-velvet.glb",
+      "priority": 10,
+      "size": 22360,
+      "url": "layer-velvet.glb"
+    },
+    {
+      "group": "later",
+      "hash": "e9035cc5f000268f",
+      "kind": "model",
+      "name": "layer-velvet.low.glb",
+      "priority": 10,
+      "size": 10364,
+      "tier": "low",
+      "url": "layer-velvet.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "8bb273da8e722ca9",
+      "kind": "model",
+      "name": "monkey.glb",
+      "priority": 10,
+      "size": 33492,
+      "url": "monkey.glb"
+    },
+    {
+      "group": "later",
+      "hash": "eb0fd33c16304dac",
+      "kind": "model",
+      "name": "monkey.high.glb",
+      "priority": 10,
+      "size": 25904,
+      "tier": "high",
+      "url": "monkey.high.glb"
+    },
+    {
+      "group": "later",
+      "hash": "d4850610dcba158d",
+      "kind": "model",
+      "name": "monkey.low.glb",
+      "priority": 10,
+      "size": 8568,
+      "tier": "low",
+      "url": "monkey.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "d2e5ed44cf38286e",
+      "kind": "model",
+      "name": "monkey.medium.glb",
+      "priority": 10,
+      "size": 14216,
+      "tier": "medium",
+      "url": "monkey.medium.glb"
+    },
+    {
+      "group": "later",
+      "hash": "e5efabb643a35c2e",
+      "kind": "model",
+      "name": "teapot.glb",
+      "priority": 10,
+      "size": 108272,
+      "url": "teapot.glb"
+    },
+    {
+      "group": "later",
+      "hash": "8aeb677faed3d611",
+      "kind": "model",
+      "name": "teapot.high.glb",
+      "priority": 10,
+      "size": 89060,
+      "tier": "high",
+      "url": "teapot.high.glb"
+    },
+    {
+      "group": "later",
+      "hash": "c632c9ff19d1cd8b",
+      "kind": "model",
+      "name": "teapot.low.glb",
+      "priority": 10,
+      "size": 26124,
+      "tier": "low",
+      "url": "teapot.low.glb"
+    },
+    {
+      "group": "later",
+      "hash": "019e5ade7eca8c1a",
+      "kind": "model",
+      "name": "teapot.medium.glb",
+      "priority": 10,
+      "size": 46136,
+      "tier": "medium",
+      "url": "teapot.medium.glb"
+    },
+    {
+      "group": "later",
+      "hash": "89a9dddd9d80b5e4",
+      "kind": "texture",
+      "name": "textures/base.astc.ktx2",
+      "priority": 5,
+      "size": 11392,
+      "url": "textures/base.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "14a75e9aa4c7d68d",
+      "kind": "texture",
+      "name": "textures/base.bc7.ktx2",
+      "priority": 5,
+      "size": 11328,
+      "url": "textures/base.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "89a9dddd9d80b5e4",
+      "kind": "texture",
+      "name": "textures/base.high.astc.ktx2",
+      "priority": 5,
+      "size": 11392,
+      "tier": "high",
+      "url": "textures/base.high.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "14a75e9aa4c7d68d",
+      "kind": "texture",
+      "name": "textures/base.high.bc7.ktx2",
+      "priority": 5,
+      "size": 11328,
+      "tier": "high",
+      "url": "textures/base.high.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "31935f8e385e6f60",
+      "kind": "texture",
+      "name": "textures/base.high.jpg",
+      "priority": 5,
+      "size": 1034,
+      "tier": "high",
+      "url": "textures/base.high.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "31935f8e385e6f60",
+      "kind": "texture",
+      "name": "textures/base.jpg",
+      "priority": 5,
+      "size": 1034,
+      "url": "textures/base.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "89a9dddd9d80b5e4",
+      "kind": "texture",
+      "name": "textures/base.lite.astc.ktx2",
+      "priority": 5,
+      "size": 11392,
+      "tier": "lite",
+      "url": "textures/base.lite.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "14a75e9aa4c7d68d",
+      "kind": "texture",
+      "name": "textures/base.lite.bc7.ktx2",
+      "priority": 5,
+      "size": 11328,
+      "tier": "lite",
+      "url": "textures/base.lite.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "31935f8e385e6f60",
+      "kind": "texture",
+      "name": "textures/base.lite.jpg",
+      "priority": 5,
+      "size": 1034,
+      "tier": "lite",
+      "url": "textures/base.lite.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "89a9dddd9d80b5e4",
+      "kind": "texture",
+      "name": "textures/base.low.astc.ktx2",
+      "priority": 5,
+      "size": 11392,
+      "tier": "low",
+      "url": "textures/base.low.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "14a75e9aa4c7d68d",
+      "kind": "texture",
+      "name": "textures/base.low.bc7.ktx2",
+      "priority": 5,
+      "size": 11328,
+      "tier": "low",
+      "url": "textures/base.low.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "31935f8e385e6f60",
+      "kind": "texture",
+      "name": "textures/base.low.jpg",
+      "priority": 5,
+      "size": 1034,
+      "tier": "low",
+      "url": "textures/base.low.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "89a9dddd9d80b5e4",
+      "kind": "texture",
+      "name": "textures/base.medium.astc.ktx2",
+      "priority": 5,
+      "size": 11392,
+      "tier": "medium",
+      "url": "textures/base.medium.astc.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "14a75e9aa4c7d68d",
+      "kind": "texture",
+      "name": "textures/base.medium.bc7.ktx2",
+      "priority": 5,
+      "size": 11328,
+      "tier": "medium",
+      "url": "textures/base.medium.bc7.ktx2"
+    },
+    {
+      "group": "later",
+      "hash": "31935f8e385e6f60",
+      "kind": "texture",
+      "name": "textures/base.medium.jpg",
+      "priority": 5,
+      "size": 1034,
+      "tier": "medium",
+      "url": "textures/base.medium.jpg"
+    },
+    {
+      "group": "later",
+      "hash": "336ebbbca8ba1d5a",
+      "kind": "texture",
+      "name": "thumbs/animal.cow.png",
+      "priority": 5,
+      "size": 8623,
+      "url": "thumbs/animal.cow.png"
+    },
+    {
+      "group": "later",
+      "hash": "86761188d4f04f6c",
+      "kind": "texture",
+      "name": "thumbs/animal.dog.png",
+      "priority": 5,
+      "size": 7491,
+      "url": "thumbs/animal.dog.png"
+    },
+    {
+      "group": "later",
+      "hash": "dce064bdedc104c9",
+      "kind": "texture",
+      "name": "thumbs/animal.horse.png",
+      "priority": 5,
+      "size": 7432,
+      "url": "thumbs/animal.horse.png"
+    },
+    {
+      "group": "later",
+      "hash": "b8417a5b4b7446f3",
+      "kind": "texture",
+      "name": "thumbs/building.roof.png",
+      "priority": 5,
+      "size": 1262,
+      "url": "thumbs/building.roof.png"
+    },
+    {
+      "group": "later",
+      "hash": "b94cf18628b7e3f7",
+      "kind": "texture",
+      "name": "thumbs/building.wall.png",
+      "priority": 5,
+      "size": 624,
+      "url": "thumbs/building.wall.png"
+    },
+    {
+      "group": "later",
+      "hash": "e6ed651f11abb32a",
+      "kind": "texture",
+      "name": "thumbs/land.patch.png",
+      "priority": 5,
+      "size": 1914,
+      "url": "thumbs/land.patch.png"
+    },
+    {
+      "group": "later",
+      "hash": "da19f9f7a5891282",
+      "kind": "texture",
+      "name": "thumbs/shape.cube.png",
+      "priority": 5,
+      "size": 671,
+      "url": "thumbs/shape.cube.png"
+    },
+    {
+      "group": "later",
+      "hash": "978f701269a24eef",
+      "kind": "texture",
+      "name": "thumbs/shape.sphere.png",
+      "priority": 5,
+      "size": 5467,
+      "url": "thumbs/shape.sphere.png"
+    }
+  ],
+  "version": 2
+}

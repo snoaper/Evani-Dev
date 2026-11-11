@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "note": "Recipe table (BATCH1_BUILD_PLAN section 3). Master data: the 32-byte block layout, number ranges and defaults, variants, extras masks and allowed conditions. conditions = the union the catalogue rows use today. scene is filled by the viewer package.",
+  "block_bytes": 32,
+  "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+  "recipes": [
+    {
+      "code": 1,
+      "id": "metal",
+      "backend": "recipes",
+      "also": ["layers"],
+      "variants": ["plain","brushed","hammered","cast","diamond plate","embossed","grate","chain link","mesh","damascus","case colours","spangle","sequins"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail","reflections"],
+      "light": "plain metal-rough",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"base","hex":"8a8d91"},
+        {"name":"edge_polish","hex":"c8cacd"},
+        {"name":"oxide","hex":"7a4426"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.3},
+        {"name":"metal","min":0,"max":1,"default":1},
+        {"name":"aniso","min":0,"max":1,"default":0},
+        {"name":"grain_scale","min":1,"max":200,"default":40},
+        {"name":"grain_strength","min":0,"max":1,"default":0.3},
+        {"name":"edge_polish","min":0,"max":1,"default":0.5},
+        {"name":"engrave_depth","min":0,"max":1,"default":0},
+        {"name":"engrave_scale","min":1,"max":50,"default":8},
+        {"name":"layout_scale","min":1,"max":20,"default":1},
+        {"name":"spot_amount","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"grain","mask":1,"default":true},{"name":"engraving","mask":2,"default":true},{"name":"relief","mask":4,"default":true},{"name":"studs","mask":8,"default":false},{"name":"seams","mask":16,"default":false},{"name":"spots","mask":32,"default":false},{"name":"temper","mask":64,"default":false}]
+    },
+    {
+      "code": 2,
+      "id": "paint",
+      "backend": "layers",
+      "also": ["recipes"],
+      "variants": ["solid","metallic","pearl","colour-shift","matte","carbon"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail","reflections"],
+      "light": "one gloss lobe, no flakes",
+      "class": "extras 1.5 KB",
+      "scene": "ball",
+      "colours": [
+        {"name":"base","hex":"b02a2a"},
+        {"name":"under_layer","hex":"3a3a3a"},
+        {"name":"flake","hex":"d8d8e0"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.35},
+        {"name":"coat","min":0,"max":1,"default":0.8},
+        {"name":"coat_rough","min":0,"max":1,"default":0.05},
+        {"name":"flake_amount","min":0,"max":1,"default":0},
+        {"name":"flake_size","min":0.2,"max":5,"default":1},
+        {"name":"film","min":0,"max":1,"default":0},
+        {"name":"film_shift","min":0,"max":1,"default":0.5},
+        {"name":"twill_scale","min":1,"max":64,"default":16},
+        {"name":"stud_scale","min":1,"max":20,"default":1}
+      ],
+      "extras": [{"name":"clearcoat","mask":1,"default":true},{"name":"flake","mask":2,"default":true},{"name":"film","mask":4,"default":true},{"name":"twill","mask":8,"default":true},{"name":"studs","mask":16,"default":false}]
+    },
+    {
+      "code": 3,
+      "id": "plastic",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["plain","rubber","foam","tread","sheet"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "plain lit colour",
+      "class": "S",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"c03030"},
+        {"name":"speck","hex":"e0e0e0"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.45},
+        {"name":"translucency","min":0,"max":1,"default":0},
+        {"name":"speck_amount","min":0,"max":1,"default":0},
+        {"name":"speck_scale","min":1,"max":200,"default":60},
+        {"name":"tread_scale","min":1,"max":64,"default":12},
+        {"name":"tread_depth","min":0,"max":1,"default":0},
+        {"name":"mottle","min":0,"max":1,"default":0},
+        {"name":"seam_scale","min":0,"max":16,"default":0}
+      ],
+      "extras": [{"name":"translucency","mask":1,"default":true},{"name":"specks","mask":2,"default":true},{"name":"tread","mask":4,"default":true}]
+    },
+    {
+      "code": 4,
+      "id": "wood",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["flat-sawn","quarter-sawn","end grain","planks","clapboard","board and batten","logs","shingle","parquet","panels","culm","granular","lattice","charred","marquetry","solid","solid (end grain)"],
+      "conditions": ["wet","mud","dust","snow","wear","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat two-tone grain",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"early_grain","hex":"d2a46a"},
+        {"name":"late_grain","hex":"9a6a3a"},
+        {"name":"knot","hex":"5a3820"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.6},
+        {"name":"grain_scale","min":1,"max":100,"default":20},
+        {"name":"ring_warp","min":0,"max":1,"default":0.3},
+        {"name":"ring_contrast","min":0,"max":1,"default":0.5},
+        {"name":"knot_amount","min":0,"max":1,"default":0.2},
+        {"name":"plank_width","min":0.05,"max":1,"default":0.2},
+        {"name":"gap_depth","min":0,"max":1,"default":0.3},
+        {"name":"fleck","min":0,"max":1,"default":0.2},
+        {"name":"paint_peel","min":0,"max":1,"default":0},
+        {"name":"opening","min":0,"max":0.9,"default":0}
+      ],
+      "extras": [{"name":"grain_relief","mask":1,"default":true},{"name":"plank_gaps","mask":2,"default":true},{"name":"studs","mask":4,"default":false},{"name":"painted","mask":8,"default":false},{"name":"adze","mask":16,"default":false}]
+    },
+    {
+      "code": 5,
+      "id": "bark",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["furrowed","plated","smooth","peeling","fibrous","ringed","banded"],
+      "conditions": ["wet","mud","dust","snow","wear","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat furrow stripes",
+      "class": "M",
+      "scene": "cylinder",
+      "colours": [
+        {"name":"bark","hex":"6a5a4a"},
+        {"name":"furrow","hex":"3a3028"},
+        {"name":"patch","hex":"8a7a5a"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.85},
+        {"name":"furrow_depth","min":0,"max":1,"default":0.6},
+        {"name":"furrow_scale","min":1,"max":50,"default":8},
+        {"name":"plate_size","min":0.02,"max":1,"default":0.2},
+        {"name":"stretch","min":0.5,"max":4,"default":1},
+        {"name":"peel","min":0,"max":1,"default":0},
+        {"name":"cord_twist","min":0,"max":1,"default":0},
+        {"name":"far_detail","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"parallax","mask":1,"default":true},{"name":"marks","mask":2,"default":false},{"name":"embers","mask":4,"default":false}]
+    },
+    {
+      "code": 6,
+      "id": "stone",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["granular","veined","layered","ore","porous","ropy","clastic","flowstone","terrazzo","crystalline","bedded","water-worn"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat noise",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour_1","hex":"8a8a86"},
+        {"name":"colour_2","hex":"6e6e6a"},
+        {"name":"vein","hex":"d8d8d0"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.75},
+        {"name":"vein_amount","min":0,"max":1,"default":0.2},
+        {"name":"vein_scale","min":1,"max":50,"default":6},
+        {"name":"grain_scale","min":1,"max":200,"default":40},
+        {"name":"layering","min":0,"max":1,"default":0},
+        {"name":"glints","min":0,"max":1,"default":0},
+        {"name":"edge_translucency","min":0,"max":1,"default":0},
+        {"name":"pits","min":0,"max":1,"default":0},
+        {"name":"tile_size","min":0.1,"max":2,"default":0.1},
+        {"name":"chequer","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"parallax","mask":1,"default":true},{"name":"glints","mask":2,"default":true},{"name":"translucency","mask":4,"default":true},{"name":"tiles","mask":8,"default":false}]
+    },
+    {
+      "code": 7,
+      "id": "masonry",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["running bond","stack","cobble","setts","ashlar","flagstone","herringbone","basket","rubble","drystone","shingle"],
+      "conditions": ["wet","dust","snow","wear","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat pattern",
+      "class": "M",
+      "scene": "tile",
+      "colours": [
+        {"name":"unit","hex":"a85a42"},
+        {"name":"mortar","hex":"b8b2a4"},
+        {"name":"unit_tint","hex":"8a4a38"}
+      ],
+      "numbers": [
+        {"name":"unit_width","min":0.05,"max":1,"default":0.22},
+        {"name":"unit_height","min":0.03,"max":1,"default":0.07},
+        {"name":"joint_width","min":0.002,"max":0.05,"default":0.01},
+        {"name":"unevenness","min":0,"max":1,"default":0.2},
+        {"name":"rough","min":0,"max":1,"default":0.8},
+        {"name":"variation","min":0,"max":1,"default":0.4},
+        {"name":"joint_depth","min":0,"max":1,"default":0.5},
+        {"name":"fleck","min":0,"max":1,"default":0},
+        {"name":"joint_cover","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"parallax","mask":1,"default":true},{"name":"unit_variation","mask":2,"default":true},{"name":"painted","mask":4,"default":false},{"name":"glaze","mask":8,"default":false},{"name":"flecks","mask":16,"default":false}]
+    },
+    {
+      "code": 8,
+      "id": "plaster",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["smooth","stucco","concrete","limewash","polished","cast"],
+      "conditions": ["wet","dust","snow","wear","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat colour with noise",
+      "class": "M",
+      "scene": "tile",
+      "colours": [
+        {"name":"colour","hex":"dcd4c4"},
+        {"name":"crack_stain","hex":"8a8478"},
+        {"name":"lath","hex":"000000"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.85},
+        {"name":"trowel_amount","min":0,"max":1,"default":0.3},
+        {"name":"trowel_scale","min":1,"max":50,"default":6},
+        {"name":"crack_amount","min":0,"max":1,"default":0.1},
+        {"name":"crack_scale","min":1,"max":50,"default":4},
+        {"name":"aggregate","min":0,"max":1,"default":0.1},
+        {"name":"chunk_amount","min":0,"max":1,"default":0},
+        {"name":"aggregate_size","min":0.005,"max":0.05,"default":0.005},
+        {"name":"stains","min":0,"max":1,"default":0},
+        {"name":"streaks","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"cracks","mask":1,"default":true},{"name":"trowel_relief","mask":2,"default":true},{"name":"chunks","mask":4,"default":false},{"name":"aggregate","mask":8,"default":false},{"name":"boards","mask":16,"default":false}]
+    },
+    {
+      "code": 9,
+      "id": "ground",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["soil","sand","gravel","mud","road","crushed"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat noise",
+      "class": "M",
+      "scene": "tile",
+      "colours": [
+        {"name":"soil","hex":"5a4630"},
+        {"name":"stone","hex":"8a8680"},
+        {"name":"sand_tint","hex":"c8b48a"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.9},
+        {"name":"stone_size","min":0.005,"max":0.5,"default":0.05},
+        {"name":"stone_amount","min":0,"max":1,"default":0.2},
+        {"name":"ripple_amount","min":0,"max":1,"default":0},
+        {"name":"ripple_scale","min":1,"max":50,"default":8},
+        {"name":"sparkle","min":0,"max":1,"default":0},
+        {"name":"clump","min":0,"max":1,"default":0.3},
+        {"name":"crack_scale","min":1,"max":50,"default":1},
+        {"name":"furrow_scale","min":1,"max":50,"default":1},
+        {"name":"cover","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"parallax_pebbles","mask":1,"default":true},{"name":"sparkle","mask":2,"default":true},{"name":"cracks","mask":4,"default":false},{"name":"furrows","mask":8,"default":false},{"name":"cover","mask":16,"default":false}]
+    },
+    {
+      "code": 10,
+      "id": "cloth",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["plain","twill","knit","pile","satin","flatweave","felt","open","herringbone"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "the weave, sett and slubs in colour, with the sheen and fuzz",
+      "class": "0 new",
+      "scene": "cushion",
+      "colours": [
+        {"name":"colour","hex":"8a7a68"},
+        {"name":"sheen","hex":"c8c0b0"},
+        {"name":"motif","hex":"8a3a2a"}
+      ],
+      "numbers": [
+        {"name":"weave_scale","min":1,"max":400,"default":120},
+        {"name":"sheen","min":0,"max":1,"default":0.3},
+        {"name":"sheen_rough","min":0,"max":1,"default":0.5},
+        {"name":"fuzz","min":0,"max":1,"default":0.2},
+        {"name":"rough","min":0,"max":1,"default":0.8},
+        {"name":"motif_scale","min":1,"max":32,"default":1},
+        {"name":"motif_contrast","min":0,"max":1,"default":0},
+        {"name":"sett_scale","min":1,"max":64,"default":1},
+        {"name":"sett_kind","min":0,"max":7,"default":0},
+        {"name":"slub","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"sheen","mask":1,"default":true},{"name":"weave_relief","mask":2,"default":true},{"name":"fuzz_rim","mask":4,"default":true},{"name":"motif","mask":8,"default":false},{"name":"sett","mask":16,"default":false},{"name":"slubs","mask":32,"default":false}]
+    },
+    {
+      "code": 11,
+      "id": "leather",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["smooth","suede","rawhide","tooled","embossed","tufted"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","blood"],
+      "groups": ["detail"],
+      "light": "flat with soft sheen",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"6a4428"},
+        {"name":"crease","hex":"3e2616"}
+      ],
+      "numbers": [
+        {"name":"rough","min":0,"max":1,"default":0.55},
+        {"name":"grain_scale","min":1,"max":200,"default":60},
+        {"name":"grain_depth","min":0,"max":1,"default":0.4},
+        {"name":"crease_amount","min":0,"max":1,"default":0.3},
+        {"name":"nap","min":0,"max":1,"default":0},
+        {"name":"wear_lighten","min":0,"max":1,"default":0},
+        {"name":"tooling","min":0,"max":1,"default":0},
+        {"name":"craze_scale","min":1,"max":50,"default":1}
+      ],
+      "extras": [{"name":"crease_relief","mask":1,"default":true},{"name":"nap","mask":2,"default":true},{"name":"crazed","mask":4,"default":false}]
+    },
+    {
+      "code": 12,
+      "id": "fur",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["solid","stripes","spots","patches","rosettes","dapple","roan","merle","mottle","crimp","reticulated"],
+      "conditions": ["wet","mud","dust","snow","blood"],
+      "groups": ["fur"],
+      "light": "painted coat + sheen rim (batch 1 draws this on every tier)",
+      "class": "L",
+      "scene": "ball",
+      "colours": [
+        {"name":"base","hex":"8a5a3a"},
+        {"name":"tip","hex":"c09060"},
+        {"name":"pattern","hex":"2a1a10"}
+      ],
+      "numbers": [
+        {"name":"length","min":0,"max":1,"default":0.3},
+        {"name":"density","min":0,"max":1,"default":0.7},
+        {"name":"sheen","min":0,"max":1,"default":0.3},
+        {"name":"sheen_shift","min":0,"max":1,"default":0.5},
+        {"name":"pattern_scale","min":1,"max":50,"default":8},
+        {"name":"pattern_contrast","min":0,"max":1,"default":0.5},
+        {"name":"flow_angle","min":0,"max":360,"default":0},
+        {"name":"clump","min":0,"max":1,"default":0.2},
+        {"name":"points","min":0,"max":1,"default":0},
+        {"name":"mix","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"shells","mask":1,"default":false},{"name":"pattern","mask":2,"default":true}]
+    },
+    {
+      "code": 13,
+      "id": "feather",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["plain","barred","speckled","eyed","plume","scalloped","quill"],
+      "conditions": ["wet","mud","dust","snow","wear","blood"],
+      "groups": ["detail"],
+      "light": "flat barred colour",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"6a5a4a"},
+        {"name":"barring","hex":"2a2a2a"},
+        {"name":"iridescent_hue","hex":"2a8a6a"}
+      ],
+      "numbers": [
+        {"name":"feather_size","min":0.005,"max":0.3,"default":0.05},
+        {"name":"barring","min":0,"max":1,"default":0.3},
+        {"name":"barb_scale","min":10,"max":400,"default":100},
+        {"name":"iridescence","min":0,"max":1,"default":0},
+        {"name":"rough","min":0,"max":1,"default":0.6},
+        {"name":"edge_relief","min":0,"max":1,"default":0.3}
+      ],
+      "extras": [{"name":"iridescence","mask":1,"default":true},{"name":"edge_relief","mask":2,"default":true}]
+    },
+    {
+      "code": 14,
+      "id": "scales",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["overlapping","hex","plates","bumps"],
+      "conditions": ["wet","mud","dust","snow","wear","blood"],
+      "groups": ["detail"],
+      "light": "flat pattern",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"4a7a4a"},
+        {"name":"pattern","hex":"2a3a2a"},
+        {"name":"shimmer_hue","hex":"6ac0a0"}
+      ],
+      "numbers": [
+        {"name":"scale_size","min":0.003,"max":0.2,"default":0.03},
+        {"name":"shape","min":0,"max":1,"default":0},
+        {"name":"relief_depth","min":0,"max":1,"default":0.5},
+        {"name":"pattern_scale","min":1,"max":50,"default":6},
+        {"name":"pattern_contrast","min":0,"max":1,"default":0.4},
+        {"name":"iridescence","min":0,"max":1,"default":0},
+        {"name":"rough","min":0,"max":1,"default":0.5},
+        {"name":"pattern_kind","min":0,"max":4,"default":0}
+      ],
+      "extras": [{"name":"relief","mask":1,"default":true},{"name":"shimmer","mask":2,"default":true}]
+    },
+    {
+      "code": 15,
+      "id": "hide",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["plain","wrinkled","warty","slick","plates"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","blood"],
+      "groups": ["skin"],
+      "light": "lit colour, wrinkles painted",
+      "class": "S",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"8a8078"},
+        {"name":"wrinkle","hex":"5a5248"},
+        {"name":"scatter","hex":"a06a5a"}
+      ],
+      "numbers": [
+        {"name":"wrinkle_depth","min":0,"max":1,"default":0.5},
+        {"name":"wrinkle_scale","min":1,"max":50,"default":10},
+        {"name":"wetness","min":0,"max":1,"default":0},
+        {"name":"scatter","min":0,"max":1,"default":0.2},
+        {"name":"rough","min":0,"max":1,"default":0.6},
+        {"name":"spots","min":0,"max":1,"default":0},
+        {"name":"bristles","min":0,"max":1,"default":0},
+        {"name":"plate_scale","min":1,"max":20,"default":1},
+        {"name":"bristle_scale","min":10,"max":200,"default":10}
+      ],
+      "extras": [{"name":"wrinkle_relief","mask":1,"default":true},{"name":"scatter","mask":2,"default":true},{"name":"bristles","mask":4,"default":true}]
+    },
+    {
+      "code": 16,
+      "id": "skin",
+      "backend": "character",
+      "also": [],
+      "variants": ["tone","trait"],
+      "conditions": ["wet","mud","dust","snow","blood"],
+      "groups": ["skin"],
+      "light": "wrap light",
+      "class": "0 new",
+      "scene": "head",
+      "colours": [
+        {"name":"tone","hex":"d8a888"},
+        {"name":"undertone","hex":"c08060"},
+        {"name":"trait","hex":"a06050"}
+      ],
+      "numbers": [
+        {"name":"tone","min":0,"max":1,"default":0.5},
+        {"name":"undertone","min":0,"max":1,"default":0.5},
+        {"name":"pore_scale","min":10,"max":400,"default":120},
+        {"name":"wrinkles","min":0,"max":1,"default":0},
+        {"name":"freckles","min":0,"max":1,"default":0},
+        {"name":"redness","min":0,"max":1,"default":0}
+      ],
+      "extras": []
+    },
+    {
+      "code": 17,
+      "id": "hair",
+      "backend": "character",
+      "also": [],
+      "variants": ["straight","curly","coarse"],
+      "conditions": ["wet","mud","dust","snow","blood"],
+      "groups": ["fur"],
+      "light": "one highlight",
+      "class": "0 new",
+      "scene": "head",
+      "colours": [
+        {"name":"colour","hex":"4a3020"},
+        {"name":"root","hex":"2a1a10"}
+      ],
+      "numbers": [
+        {"name":"root_dark","min":0,"max":1,"default":0.3},
+        {"name":"shift","min":0,"max":1,"default":0.5},
+        {"name":"highlight_1","min":0,"max":1,"default":0.4},
+        {"name":"highlight_2","min":0,"max":1,"default":0.2}
+      ],
+      "extras": []
+    },
+    {
+      "code": 18,
+      "id": "eye",
+      "backend": "character",
+      "also": [],
+      "variants": ["human","animal"],
+      "conditions": ["wet","mud","dust","snow","wear","blood"],
+      "groups": ["skin"],
+      "light": "painted iris + catch-light",
+      "class": "0 new",
+      "scene": "head",
+      "colours": [
+        {"name":"iris_1","hex":"4a7a9a"},
+        {"name":"iris_2","hex":"2a4a3a"}
+      ],
+      "numbers": [
+        {"name":"pupil","min":0,"max":1,"default":0.4},
+        {"name":"iris_depth","min":0,"max":1,"default":0.5},
+        {"name":"wetness","min":0,"max":1,"default":0.7}
+      ],
+      "extras": []
+    },
+    {
+      "code": 19,
+      "id": "keratin",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["horn","bone","antler","tooth","shell","beetle","hoof","scutes","banded","spiral"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "flat glossy colour",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"d8ccb0"},
+        {"name":"ring_edge","hex":"a89878"}
+      ],
+      "numbers": [
+        {"name":"translucency","min":0,"max":1,"default":0.2},
+        {"name":"rings","min":0,"max":1,"default":0.3},
+        {"name":"ring_scale","min":1,"max":100,"default":20},
+        {"name":"rough","min":0,"max":1,"default":0.5},
+        {"name":"nacre","min":0,"max":1,"default":0},
+        {"name":"bands","min":0,"max":16,"default":0},
+        {"name":"spot_scale","min":1,"max":40,"default":1}
+      ],
+      "extras": [{"name":"edge_translucency","mask":1,"default":true},{"name":"nacre","mask":2,"default":true},{"name":"spots","mask":4,"default":false}]
+    },
+    {
+      "code": 20,
+      "id": "foliage",
+      "backend": "recipes",
+      "also": ["nature"],
+      "variants": ["leaf","needle","grass","straw","turf","moss","litter"],
+      "conditions": ["wet","mud","dust","snow","wear","growth","blood"],
+      "groups": ["foliage"],
+      "light": "flat, no back-light",
+      "class": "M",
+      "scene": "",
+      "colours": [
+        {"name":"colour_1","hex":"4a7a30"},
+        {"name":"colour_2","hex":"6a9a40"},
+        {"name":"back_light","hex":"9ac060"}
+      ],
+      "numbers": [
+        {"name":"variation","min":0,"max":1,"default":0.3},
+        {"name":"thickness","min":0,"max":1,"default":0.3},
+        {"name":"vein","min":0,"max":1,"default":0.5},
+        {"name":"gloss","min":0,"max":1,"default":0.2},
+        {"name":"edge_dry","min":0,"max":1,"default":0},
+        {"name":"blade_scale","min":2,"max":200,"default":30},
+        {"name":"bare","min":0,"max":1,"default":0},
+        {"name":"underside","min":0,"max":1,"default":0},
+        {"name":"fan","min":0,"max":1,"default":0},
+        {"name":"patches","min":0,"max":1,"default":0}
+      ],
+      "extras": [
+        {"name":"back_light","mask":1,"default":true},
+        {"name":"veins","mask":2,"default":true},
+        {"name":"bare","mask":4,"default":true}
+      ]
+    },
+    {
+      "code": 21,
+      "id": "thin",
+      "backend": "recipes",
+      "also": ["nature"],
+      "variants": ["paper","wax","petal","membrane","lampshade","wallpaper","newsprint","lace","wing","segments"],
+      "conditions": ["wet","mud","dust","snow","wear","growth","blood"],
+      "groups": ["detail","foliage"],
+      "light": "flat colour",
+      "class": "0 new",
+      "scene": "nature",
+      "colours": [
+        {"name":"colour","hex":"e8dcc0"},
+        {"name":"light_through","hex":"f0c880"},
+        {"name":"under","hex":"c8c0b0"}
+      ],
+      "numbers": [
+        {"name":"thickness","min":0,"max":1,"default":0.3},
+        {"name":"pattern","min":0,"max":1,"default":0},
+        {"name":"motif_scale","min":1,"max":32,"default":1},
+        {"name":"peel","min":0,"max":1,"default":0},
+        {"name":"fade","min":0,"max":1,"default":0},
+        {"name":"dots","min":0,"max":1,"default":0},
+        {"name":"film","min":0,"max":1,"default":0},
+        {"name":"cross","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"stripes","mask":1,"default":false},{"name":"motif","mask":2,"default":false},{"name":"peel","mask":4,"default":false},{"name":"damask","mask":8,"default":false},{"name":"film","mask":16,"default":false}]
+    },
+    {
+      "code": 22,
+      "id": "organic",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["flesh","bread","fruit","slime","mushroom","kernels","pastry"],
+      "conditions": ["wet","dust","snow","wear","oxide","blood"],
+      "groups": ["detail"],
+      "light": "flat colour",
+      "class": "S",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour_1","hex":"c06a5a"},
+        {"name":"colour_2","hex":"8a3a30"}
+      ],
+      "numbers": [
+        {"name":"wetness","min":0,"max":1,"default":0.3},
+        {"name":"scatter","min":0,"max":1,"default":0.3},
+        {"name":"crumb_amount","min":0,"max":1,"default":0},
+        {"name":"crumb_scale","min":1,"max":100,"default":20},
+        {"name":"rough","min":0,"max":1,"default":0.6},
+        {"name":"marbling","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"scatter","mask":1,"default":true},{"name":"clear","mask":2,"default":false}]
+    },
+    {
+      "code": 23,
+      "id": "ceramic",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["earthenware","stoneware","porcelain","terracotta","enamel","tile","subway","hex","mosaic","roof"],
+      "conditions": ["wet","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["detail"],
+      "light": "one gloss lobe",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"body","hex":"c88a5a"},
+        {"name":"glaze","hex":"e8e4dc"},
+        {"name":"speck","hex":"3a2a20"}
+      ],
+      "numbers": [
+        {"name":"glaze_gloss","min":0,"max":1,"default":0.7},
+        {"name":"glaze_depth","min":0,"max":1,"default":0.4},
+        {"name":"crackle_amount","min":0,"max":1,"default":0},
+        {"name":"crackle_scale","min":1,"max":100,"default":12},
+        {"name":"speck_amount","min":0,"max":1,"default":0},
+        {"name":"drip","min":0,"max":1,"default":0},
+        {"name":"tile_zoom","min":1,"max":8,"default":1},
+        {"name":"tile_ratio","min":0.5,"max":4,"default":0.5},
+        {"name":"barrel","min":0,"max":1,"default":0},
+        {"name":"lustre","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"crackle","mask":1,"default":true},{"name":"glaze_depth","mask":2,"default":true},{"name":"motif","mask":4,"default":false},{"name":"lustre","mask":8,"default":false}]
+    },
+    {
+      "code": 24,
+      "id": "glass",
+      "backend": "recipes",
+      "also": ["nature"],
+      "variants": ["window","bottle","crystal","stained","leaded","wired","block"],
+      "conditions": ["wet","mud","dust","snow","wear","oxide","growth","blood"],
+      "groups": ["glass"],
+      "light": "flat tinted see-through",
+      "class": "M",
+      "scene": "nature",
+      "colours": [
+        {"name":"tint","hex":"c8e0e0"},
+        {"name":"came","hex":"3a3c40"}
+      ],
+      "numbers": [
+        {"name":"thickness","min":0,"max":1,"default":0.3},
+        {"name":"frost","min":0,"max":1,"default":0},
+        {"name":"waviness","min":0,"max":1,"default":0},
+        {"name":"pane_scale","min":1,"max":40,"default":6},
+        {"name":"backlight","min":0,"max":1,"default":0.5},
+        {"name":"swirl","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"backlight","mask":1,"default":true}]
+    },
+    {
+      "code": 25,
+      "id": "gem",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["brilliant","step","cabochon","raw crystal","amber"],
+      "conditions": ["wet","dust","snow","wear","growth","blood"],
+      "groups": ["glass"],
+      "light": "tinted gloss with one sparkle",
+      "class": "L",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"a02050"},
+        {"name":"inclusion","hex":"e0c0d0"},
+        {"name":"core_glow","hex":"ff5080"}
+      ],
+      "numbers": [
+        {"name":"dispersion","min":0,"max":1,"default":0.3},
+        {"name":"sparkle","min":0,"max":1,"default":0.6},
+        {"name":"facet_scale","min":1,"max":30,"default":6},
+        {"name":"inclusions","min":0,"max":1,"default":0.1},
+        {"name":"clarity","min":0,"max":1,"default":0.8},
+        {"name":"core_glow","min":0,"max":1,"default":0.2}
+      ],
+      "extras": [{"name":"sparkle","mask":1,"default":true},{"name":"inner_glow","mask":2,"default":true},{"name":"clear","mask":4,"default":false}]
+    },
+    {
+      "code": 26,
+      "id": "water",
+      "backend": "nature",
+      "also": [],
+      "variants": ["pool","river","sea","liquid"],
+      "conditions": ["wet","dust","snow","blood"],
+      "groups": ["water"],
+      "light": "flat tinted with a Fresnel edge",
+      "class": "0 new",
+      "scene": "nature",
+      "colours": [
+        {"name":"colour","hex":"2a6a8a"},
+        {"name":"deep","hex":"0a2a3a"}
+      ],
+      "numbers": [
+        {"name":"depth_fade","min":0,"max":1,"default":0.5},
+        {"name":"wave_size","min":0,"max":1,"default":0.3},
+        {"name":"foam","min":0,"max":1,"default":0},
+        {"name":"murk","min":0,"max":1,"default":0.2}
+      ],
+      "extras": []
+    },
+    {
+      "code": 27,
+      "id": "ice",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["clear","blue","frost","icicle"],
+      "conditions": ["mud","dust","snow","blood"],
+      "groups": ["glass"],
+      "light": "white with a blue rim",
+      "class": "M",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"b8dcf0"},
+        {"name":"deep","hex":"5a9ac8"},
+        {"name":"rim","hex":"e8f6ff"}
+      ],
+      "numbers": [
+        {"name":"clarity","min":0,"max":1,"default":0.6},
+        {"name":"crack_amount","min":0,"max":1,"default":0.3},
+        {"name":"crack_scale","min":1,"max":50,"default":8},
+        {"name":"sparkle","min":0,"max":1,"default":0.3},
+        {"name":"scatter","min":0,"max":1,"default":0.3},
+        {"name":"frost","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"inner_cracks","mask":1,"default":true},{"name":"sparkle","mask":2,"default":true},{"name":"scatter","mask":4,"default":true},{"name":"ridges","mask":8,"default":false}]
+    },
+    {
+      "code": 28,
+      "id": "fire",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["flame","embers","lava","smoke","steam"],
+      "conditions": ["dust"],
+      "groups": ["detail"],
+      "light": "static glowing card",
+      "class": "M",
+      "scene": "card",
+      "colours": [
+        {"name":"core","hex":"fff0a0"},
+        {"name":"edge","hex":"ff6a10"},
+        {"name":"smoke","hex":"2a2420"}
+      ],
+      "numbers": [
+        {"name":"intensity","min":0,"max":4,"default":1},
+        {"name":"flicker_speed","min":0,"max":20,"default":6},
+        {"name":"flicker_amount","min":0,"max":1,"default":0.4},
+        {"name":"softness","min":0,"max":1,"default":0.5},
+        {"name":"scroll_speed","min":0,"max":5,"default":1},
+        {"name":"embers","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"flicker","mask":1,"default":true}]
+    },
+    {
+      "code": 29,
+      "id": "glow",
+      "backend": "recipes",
+      "also": [],
+      "variants": ["lamp","neon","screen","rune","hologram","energy"],
+      "conditions": ["wet","dust","snow","wear","oxide","blood"],
+      "groups": [],
+      "light": "plain emissive",
+      "class": "S",
+      "scene": "ball",
+      "colours": [
+        {"name":"colour","hex":"ffd890"},
+        {"name":"rim_scanline","hex":"ffffff"}
+      ],
+      "numbers": [
+        {"name":"intensity","min":0,"max":8,"default":1},
+        {"name":"pulse_speed","min":0,"max":10,"default":1},
+        {"name":"pulse_amount","min":0,"max":1,"default":0},
+        {"name":"scanline_density","min":0,"max":400,"default":0},
+        {"name":"scanline_speed","min":0,"max":10,"default":1},
+        {"name":"flicker","min":0,"max":1,"default":0},
+        {"name":"rim","min":0,"max":1,"default":0}
+      ],
+      "extras": [{"name":"pulse","mask":1,"default":true},{"name":"hologram","mask":2,"default":true}]
+    }
+  ]
+}

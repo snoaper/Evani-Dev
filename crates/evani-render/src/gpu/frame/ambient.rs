@@ -183,7 +183,7 @@ impl super::Gpu {
                 }
                 #[cfg(feature = "models")]
                 {
-                    draws += self.models.draw_shadows(&mut rp, &self.small_bg, off);
+                    #[cfg(all(feature = "material-recipes-blend", feature = "gtao", not(feature = "relief")))] self.models.blend_ao(true); draws += self.models.draw_shadows(&mut rp, &self.small_bg, off); #[cfg(all(feature = "material-recipes-blend", feature = "gtao", not(feature = "relief")))] self.models.blend_ao(false);
                 }
             }
         }

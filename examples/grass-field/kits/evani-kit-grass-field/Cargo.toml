@@ -1,0 +1,23 @@
+[package]
+name = "evani-kit-grass-field"
+description = "Evani.Dev grass proof kit: four grass patches (meadow, lawn, mud, wheat) on a dirt field, a walker who tramples a path through the meadow, fixed camera views"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Plants the patches and stamps the walker (the app's `grass` feature).
+grass = ["dep:evani-grass"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward"] }
+evani-grass = { workspace = true, optional = true }
+# The ground (a procedural dirt box) and the Preetham sky dome with clouds.
+evani-material-proc = { workspace = true, features = ["sky"] }
+
+[lints]
+workspace = true

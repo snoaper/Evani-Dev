@@ -72,7 +72,8 @@ fn triangles(m: &MeshInstance, meshes: &mut HashMap<MeshId, evani_render::mesh::
     let mesh = meshes.entry(m.mesh).or_insert_with(|| {
         builtin(m.mesh)
             .or_else(|| (0..crate::propmesh::COUNT).find(|&k| crate::propmesh::id(k) == m.mesh).map(|k| crate::propmesh::build().swap_remove(k)))
-            .expect("a built-in or prop mesh")
+            .or_else(|| crate::candy::KartMeshes::placeholder_mesh(m.mesh))
+            .expect("a built-in, prop or candy kart mesh")
     });
     let world = |i: u32| {
         let v = mesh.vertices[i as usize];
@@ -237,10 +238,12 @@ fn review_dump() {
     // Karts on the grid; on Low each needs a blob under it.
     let mut low = RenderWorld::default();
     draw::push_blobs(&r, 1.0, &mut low);
+    let kart_meshes = crate::candy::KartMeshes::placeholder();
     for (i, k) in r.karts.iter().enumerate() {
         let mut rw = RenderWorld::default();
         let s = &r.roster[k.spec];
-        draw::draw_kart(k, (s.color, s.suit), k.pos, k.yaw + k.slip + k.spin_angle, c.t.max_speed, &mats, &mut rw);
+        let art = draw::KartArt { meshes: &kart_meshes, full: true, time: 0.0 };
+        draw::draw_kart(k, (s.color, s.suit), k.pos, k.yaw + k.slip + k.spin_angle, c.t.max_speed, &mats, art, &mut rw);
         let lit = rw.meshes.iter().any(|m| !emissive(m.material));
         let blob = low.blobs.iter().any(|b| {
             let g = ground.height(b[0], b[2]).unwrap_or(b[1]);

@@ -11,8 +11,17 @@
 //! MSAA resolve into `hdr`) a `view_model` pass loads `hdr`, clears a
 //! one-sample depth buffer of its own, draws them with the one-sample
 //! forward pipeline and throws that depth away.
+//!
+//! With `ViewModel::mark_depth` (off by default) that depth is kept and
+//! bound, and `vm_mark` runs a full-screen step on the scene depth after
+//! the forward pass's depth is final (resolved from 4x when it is): wherever
+//! the view model drew it writes depth 1.0, the nearest in reversed-Z.
+//! While the option is off, none of this exists: no pipeline, no bind
+//! group, the same depth usage, the same store op, no extra pass.
 
 use evani_core::plugin::MaterialDesc;
+
+use core::cell::Cell;
 
 use super::{Gpu, Target, pipelines};
 use crate::mesh::MESH_SLOTS;
@@ -33,6 +42,23 @@ pub(super) struct VmGpu {
     raw: Vec<InstanceRaw>,
     /// The view model's own depth buffer, at the `hdr` target's size.
     depth: Option<([u32; 2], wgpu::Texture, wgpu::TextureView)>,
+    /// The mark-depth step runs this frame (option on, a depth reader).
+    mark: bool,
+    /// The depth texture above can be bound for reading (made while the
+    /// mark-depth option was on).
+    bindable: bool,
+    /// The view-model pass really ran this frame (its depth is fresh).
+    drew: Cell<bool>,
+    /// The mark step's pipeline and bindings; made on first use only.
+    marker: Option<Marker>,
+}
+
+/// GPU side of `ViewModel::mark_depth`.
+struct Marker {
+    pipe: wgpu::RenderPipeline,
+    layout: wgpu::BindGroupLayout,
+    /// Reads the view model's depth; rebuilt with that texture.
+    bg: Option<wgpu::BindGroup>,
 }
 
 impl VmGpu {
@@ -45,6 +71,10 @@ impl VmGpu {
             world: Vec::new(),
             raw: Vec::new(),
             depth: None,
+            mark: false,
+            bindable: false,
+            drew: Cell::new(false),
+            marker: None,
         }
     }
 }
@@ -52,8 +82,8 @@ impl VmGpu {
 impl Gpu {
     /// Pack this frame's view model (after the world's instances are
     /// packed, before they are uploaded) and write its frame uniform.
-    pub(super) fn vm_prepare(&mut self, rw: &RenderWorld, lighting: &Lighting, materials: &[MaterialDesc]) {
-        self.vm.off = None; #[cfg(feature = "view-model-models")] if rw.view_model.meshes.is_empty() { self.vm_models_frame(rw, lighting, materials); return; }
+    pub(super) fn vm_prepare(&mut self, rw: &RenderWorld, lighting: &Lighting, materials: &[MaterialDesc], depth_read: bool) {
+        self.vm.off = None; self.vm.mark = crate::view_model::marks_depth(&rw.view_model, depth_read); self.vm.drew.set(false); #[cfg(feature = "view-model-models")] if rw.view_model.meshes.is_empty() { self.vm_models_frame(rw, lighting, materials); return; }
         let vm = &rw.view_model;
         let Some(size) = find_hdr(&self.targets) else {
             return;
@@ -74,24 +104,7 @@ impl Gpu {
         shaders::write_frame(&mut self.frame_words, &vp, cam.eye, lighting, materials);
         self.vm.off = Some(self.ring.push(&self.frame_words[..]));
         self.vm.px = px;
-        if self.vm.depth.as_ref().map(|d| d.0) != Some(size) {
-            let tex = self.device.create_texture(&wgpu::TextureDescriptor {
-                label: Some("evani.view_model_depth"),
-                size: wgpu::Extent3d {
-                    width: size[0],
-                    height: size[1],
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth32Float,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[],
-            });
-            let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
-            self.vm.depth = Some((size, tex, view));
-        }
+        self.vm_ensure_depth(size);
     }
 
     /// The `view_model` pass into `hdr` (after the forward pass and its
@@ -120,7 +133,7 @@ impl Gpu {
                 view: depth,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(crate::depth::CLEAR),
-                    store: wgpu::StoreOp::Discard,
+                    store: depth_store(self.vm.mark),
                 }),
                 stencil_ops: None,
             }),
@@ -128,6 +141,7 @@ impl Gpu {
             occlusion_query_set: None,
             multiview_mask: None,
         });
+        self.vm.drew.set(true);
         rp.set_pipeline(pipe);
         rp.set_vertex_buffer(0, self.mesh_vb.slice(..));
         rp.set_vertex_buffer(1, self.instances.buf.slice(..));
@@ -163,6 +177,156 @@ impl Gpu {
     }
 }
 
+impl Gpu {
+    /// The view model's depth buffer at `size`: made again when the size
+    /// changes, or when the mark-depth step needs to read it and the one
+    /// made before could not be. Also makes the mark step's pipeline (once)
+    /// and its binding. With the option off this is only the plain
+    /// `RENDER_ATTACHMENT` texture the pass always had.
+    fn vm_ensure_depth(&mut self, size: [u32; 2]) {
+        let mark = self.vm.mark;
+        let stale = self.vm.depth.as_ref().map(|d| d.0) != Some(size) || (mark && !self.vm.bindable);
+        if stale {
+            let tex = self.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("evani.view_model_depth"),
+                size: wgpu::Extent3d {
+                    width: size[0],
+                    height: size[1],
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth32Float,
+                usage: depth_usage(mark),
+                view_formats: &[],
+            });
+            let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+            self.vm.depth = Some((size, tex, view));
+            self.vm.bindable = mark;
+            if let Some(m) = self.vm.marker.as_mut() {
+                m.bg = None;
+            }
+        }
+        if !mark {
+            return;
+        }
+        if self.vm.marker.is_none() {
+            self.vm.marker = Some(make_marker(&self.device));
+        }
+        if let (Some(m), Some((_, _, view))) = (self.vm.marker.as_mut(), self.vm.depth.as_ref())
+            && m.bg.is_none()
+        {
+            m.bg = Some(self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("evani.view_model_mark"),
+                layout: &m.layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(view),
+                }],
+            }));
+        }
+    }
+
+    /// The mark-depth step (`ViewModel::mark_depth`): after the scene depth
+    /// is final, write depth 1.0 into `depth` where the view-model pass drew.
+    /// Nothing runs unless the option is on, a pass reads depth and the
+    /// view-model pass ran this frame.
+    pub(super) fn vm_mark(&self, enc: &mut wgpu::CommandEncoder, depth: &Target) -> u32 {
+        let (true, true, Some(Marker { pipe, bg: Some(bg), .. })) = (self.vm.mark, self.vm.drew.get(), self.vm.marker.as_ref()) else {
+            return 0;
+        };
+        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("view_model_mark_depth"),
+            color_attachments: &[],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &depth.view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+            multiview_mask: None,
+        });
+        rp.set_pipeline(pipe);
+        rp.set_bind_group(0, bg, &[]);
+        rp.draw(0..3, 0..1);
+        1
+    }
+}
+
+/// The usage of the view model's depth texture: attachment only, plus
+/// binding for reading while the mark-depth step needs it.
+fn depth_usage(mark: bool) -> wgpu::TextureUsages {
+    if mark {
+        wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
+    } else {
+        wgpu::TextureUsages::RENDER_ATTACHMENT
+    }
+}
+
+/// What the view-model pass does with its depth at the end: keep it only
+/// for the mark-depth step to read.
+fn depth_store(mark: bool) -> wgpu::StoreOp {
+    if mark { wgpu::StoreOp::Store } else { wgpu::StoreOp::Discard }
+}
+
+fn make_marker(device: &wgpu::Device) -> Marker {
+    let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("evani.view_model_mark"),
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Depth,
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            },
+            count: None,
+        }],
+    });
+    let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("evani.view_model_mark"),
+        bind_group_layouts: &[Some(&layout)],
+        immediate_size: 0,
+    });
+    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("evani.view_model_mark"),
+        source: wgpu::ShaderSource::Wgsl(crate::view_model::MARK_DEPTH_WGSL.into()),
+    });
+    let pipe = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("evani.view_model_mark"),
+        layout: Some(&pl),
+        vertex: wgpu::VertexState {
+            module: &module,
+            entry_point: Some("vs_main"),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Always),
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        }),
+        multisample: wgpu::MultisampleState::default(),
+        fragment: Some(wgpu::FragmentState {
+            module: &module,
+            entry_point: Some("fs_main"),
+            compilation_options: Default::default(),
+            targets: &[],
+        }),
+        multiview_mask: None,
+        cache: None,
+    });
+    Marker { pipe, layout, bg: None }
+}
+
 /// The `hdr` target's size, if it exists.
 fn find_hdr(targets: &[Target]) -> Option<[u32; 2]> {
     targets.iter().find(|t| t.name == "hdr").map(|t| t.size)
@@ -189,23 +353,6 @@ impl Gpu {
         shaders::write_frame(&mut self.frame_words, &vp, cam.eye, lighting, materials);
         self.vm.off = Some(self.ring.push(&self.frame_words[..]));
         self.vm.px = px;
-        if self.vm.depth.as_ref().map(|d| d.0) != Some(size) {
-            let tex = self.device.create_texture(&wgpu::TextureDescriptor {
-                label: Some("evani.view_model_depth"),
-                size: wgpu::Extent3d {
-                    width: size[0],
-                    height: size[1],
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth32Float,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[],
-            });
-            let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
-            self.vm.depth = Some((size, tex, view));
-        }
+        self.vm_ensure_depth(size);
     }
 }

@@ -18,6 +18,7 @@ import { createServer } from 'node:http';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
+import { waitDevToolsUrl } from './devtools-port.mjs';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => {
@@ -125,15 +126,7 @@ try {
   ];
   if (!/headless_shell|chrome-headless-shell/.test(chromePath)) flags.unshift('--headless=new');
   chrome = spawn(chromePath, flags, { stdio: 'ignore', windowsHide: true });
-  let wsUrl = null;
-  for (let i = 0; i < 200 && !wsUrl; i++) {
-    const f = join(profile, 'DevToolsActivePort');
-    if (existsSync(f)) {
-      const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-      if (p && path) wsUrl = `ws://127.0.0.1:${p}${path}`;
-    }
-    if (!wsUrl) await sleep(100);
-  }
+  let wsUrl = await waitDevToolsUrl(profile);
   if (!wsUrl) throw new Error('Chrome did not open its debugging port');
   const cdp = await Cdp.connect(wsUrl);
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });

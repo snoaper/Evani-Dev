@@ -1,0 +1,239 @@
+{
+  "schema": "evani-engine-pack-pins/1",
+  "about": "Everything `cargo xtask engine-pack` puts in an engine pack, pinned. docs/ENGINE_PACK.md explains each field. A change to any pin is a new pack_version.",
+  "pack_version": "0.1.1",
+  "live_protocol": "evani-live/1",
+  "engine": {
+    "include": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "README.md",
+      "DECISIONS.md",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
+      "Cargo.toml",
+      "Cargo.lock",
+      "clippy.toml",
+      ".cargo/config.toml",
+      ".mcp.json",
+      ".vibedeck/dev-harness/",
+      "packaging/",
+      "catalog/",
+      "assets/",
+      "crates/",
+      "looks/",
+      "docs/",
+      "kits/evani-kit-example/",
+      "kits/evani-kit-kart-racer/",
+      "apps/sandbox/",
+      "apps/bench/",
+      "tools/xtask/",
+      "tools/evani-guide/",
+      "tools/evani-reqcheck/",
+      "tools/evani-cargo-xtask/",
+      "tools/evani-live-bridge/",
+      "tools/evani-lookguard/",
+      "tools/evani-geocheck/",
+      "tools/evani-geocheck-2d/",
+      "tools/evani-convert/",
+      "tools/evani-model/",
+      "tools/evani-model-fur-locks/",
+      "tools/evani-host/",
+      "tools/blender/",
+      "tools/blender-addon/",
+      "tools/bench-runner/",
+      "tools/convert-runner/",
+      "tools/smooth-bootstrap.mjs",
+      "tools/bake-index.rs",
+      "tests/fixtures/models/rig.src.glb",
+      "tests/fixtures/models/rig.static.glb",
+      "tests/fixtures/models/rig.clips.evc1",
+      "tests/fixtures/models/char-head.glb",
+      "tests/fixtures/models/relief-tile.glb",
+      "tests/fixtures/models/p10b.high.glb",
+      "tests/fixtures/models/p10b.low.glb",
+      "tests/fixtures/models/p10b.map.json",
+      "examples/ground-textures/kits/evani-kit-ground-textures/shaders/ground.wgsl"
+    ],
+    "exclude": [
+      "docs/model_research/",
+      "apps/sandbox/assets/models/frontier-marshal.base.astc.ktx2",
+      "apps/sandbox/assets/models/frontier-marshal.base.bc7.ktx2",
+      "apps/sandbox/assets/models/frontier-marshal.base.jpg",
+      "apps/sandbox/assets/models/frontier-marshal.glb",
+      "apps/sandbox/assets/models/frontier-marshal.low.base.jpg",
+      "apps/sandbox/assets/models/frontier-marshal.low.glb",
+      "apps/sandbox/assets/models/frontier-marshal.low.normal.png",
+      "apps/sandbox/assets/models/frontier-marshal.mr.png",
+      "apps/sandbox/assets/models/frontier-marshal.normal.astc.ktx2",
+      "apps/sandbox/assets/models/frontier-marshal.normal.bc7.ktx2",
+      "apps/sandbox/assets/models/frontier-marshal.normal.png",
+      "apps/sandbox/dist/"
+    ],
+    "workspace_members": [
+      "crates/evani-core",
+      "crates/evani-render",
+      "crates/evani-fx",
+      "crates/evani-physics",
+      "crates/evani-net",
+      "crates/evani-xr",
+      "crates/evani-live",
+      "crates/evani-gltf",
+      "crates/evani-ui",
+      "crates/evani-anim",
+      "crates/evani-combat",
+      "crates/evani-destruct",
+      "crates/evani-model",
+      "crates/evani-material-proc",
+      "crates/evani-material-layers",
+      "crates/evani-material-character",
+      "crates/evani-material-nature",
+      "kits/evani-kit-example",
+      "kits/evani-kit-kart-racer",
+      "looks/evani-look-basic",
+      "looks/evani-look-toon",
+      "looks/evani-look-cartoon2d",
+      "looks/evani-look-pixel16",
+      "looks/evani-look-pixelhd",
+      "looks/evani-look-stylizedpbr",
+      "looks/evani-look-photoreal",
+      "apps/sandbox",
+      "apps/bench",
+      "tools/xtask",
+      "tools/evani-reqcheck",
+      "tools/evani-cargo-xtask",
+      "tools/evani-live-bridge",
+      "tools/evani-lookguard",
+      "tools/evani-geocheck",
+      "tools/evani-geocheck-2d",
+      "tools/evani-guide",
+      "tools/evani-model",
+      "tools/evani-convert",
+      "tools/evani-model-fur-locks"
+    ],
+    "parts": {
+      "engine-runtime": ["crates/evani-core/", "crates/evani-render/", "crates/evani-fx/", "crates/evani-physics/", "crates/evani-net/", "crates/evani-xr/", "crates/evani-live/", "crates/evani-gltf/", "crates/evani-ui/", "crates/evani-anim/", "crates/evani-combat/", "crates/evani-destruct/"],
+      "procedural-and-materials": ["crates/evani-material-proc/", "crates/evani-material-layers/", "crates/evani-material-character/", "crates/evani-material-nature/", "catalog/"],
+      "evani-model": ["crates/evani-model/", "tools/evani-model/", "tools/evani-model-fur-locks/"],
+      "looks-and-assets": ["looks/", "assets/"],
+      "dev-tools-source": ["tools/", "apps/bench/", ".vibedeck/dev-harness/", "packaging/", ".mcp.json", "tests/fixtures/models/"],
+      "templates": ["kits/evani-kit-example/", "apps/sandbox/"],
+      "geocheck-reference-kit": ["kits/evani-kit-kart-racer/"],
+      "ai-guidance-and-docs": ["docs/", "AGENTS.md", "CLAUDE.md", "GEMINI.md", "README.md", "DECISIONS.md"]
+    }
+  },
+  "rust": {
+    "version": "1.99.1",
+    "commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+    "hosts": {
+      "windows-x64": "x86_64-pc-windows-msvc",
+      "macos-arm64": "aarch64-apple-darwin",
+      "macos-x64": "x86_64-apple-darwin"
+    },
+    "targets": ["wasm32-unknown-unknown"],
+    "components": ["rustc", "cargo", "rust-std", "rustdoc", "clippy", "rustfmt", "rust-lld"],
+    "bin": ["cargo", "rustc", "rustdoc", "cargo-clippy", "clippy-driver", "rustfmt", "cargo-fmt"]
+  },
+  "prebuilt": [
+    { "package": "evani-xtask", "bin": "evani-xtask", "as": "evani", "why": "the engine's command line, `evani <command>` (the same commands as `cargo xtask`); runs before any linker is present" },
+    { "package": "evani-cargo-xtask", "bin": "cargo-xtask", "why": "lets `cargo xtask <command>` run the prebuilt `evani` (the pack's .cargo/config.toml has no xtask alias), so nobody compiles the build tool" },
+    { "package": "evani-reqcheck", "bin": "evani-reqcheck", "why": "the requirements checker; runs before any Rust is present" },
+    { "package": "evani-live-bridge", "bin": "evani-live-bridge", "why": "the live tools (MCP) server the Evani.dev tab talks to" },
+    { "package": "evani-convert", "bin": "evani-convert", "why": "model import (`cargo xtask convert`)" },
+    { "package": "evani-model-tool", "bin": "evani-model", "why": "Evani.Model's command line" }
+  ],
+  "tools": [
+    {
+      "name": "trunk",
+      "version": "0.21.14",
+      "licence": "MIT OR Apache-2.0",
+      "kind": "bin",
+      "why": "builds a game's web page and wasm (runs wasm-bindgen and wasm-opt)",
+      "platforms": {
+        "windows-x64": { "file": "trunk.exe", "url": "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-pc-windows-msvc.zip", "sha256_upstream": "cd6ac15b9daff0365e5695036791ef2ce3c63f61c014f5a8c532363266e4569c", "local": ["~/.cargo/bin/trunk.exe"] },
+        "macos-arm64": { "file": "trunk", "url": "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-aarch64-apple-darwin.tar.gz", "sha256_upstream": "764e299dd50d89442a4e96a236349f57961984b701e74d3dbdb39cd1c9f5101e", "local": ["~/.cargo/bin/trunk"] },
+        "macos-x64": { "file": "trunk", "url": "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-apple-darwin.tar.gz", "sha256_upstream": "f1ba0e3bbe24e0ae219c6d22c33e24e2825c1608dd27c2556e323495110f1a95", "local": ["~/.cargo/bin/trunk"] }
+      }
+    },
+    {
+      "name": "wasm-bindgen",
+      "version": "0.2.129",
+      "licence": "MIT OR Apache-2.0",
+      "kind": "bin",
+      "why": "makes the JavaScript glue for a game's wasm; must equal the wasm-bindgen crate in Cargo.lock",
+      "platforms": {
+        "windows-x64": { "file": "wasm-bindgen.exe", "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz", "sha256_upstream": "79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6", "local": ["~/.cargo/bin/wasm-bindgen.exe"] },
+        "macos-arm64": { "file": "wasm-bindgen", "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz", "sha256_upstream": "81d4a23d56b3c3eb8187658329116d50e0b228a93b343825fb71f70179051cd1", "local": ["~/.cargo/bin/wasm-bindgen"] },
+        "macos-x64": { "file": "wasm-bindgen", "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz", "sha256_upstream": "7e028879a68ec53dae14048b55cc5215f6df75b17a9c1426fac8fa086d3202fd", "local": ["~/.cargo/bin/wasm-bindgen"] }
+      }
+    },
+    {
+      "name": "wasm-opt",
+      "version": "version_123",
+      "note": "Trunk 0.21.14's own default (it downloads binaryen version_123 into its cache and runs that); `wasm-opt --version` prints `wasm-opt version 123 (version_123)`",
+      "licence": "Apache-2.0",
+      "kind": "bin",
+      "why": "shrinks a game's wasm (`data-wasm-opt=\"z\"` in every index.html); only wasm-opt ships, not all of binaryen",
+      "platforms": {
+        "windows-x64": { "file": "wasm-opt.exe", "url": "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-windows.tar.gz", "sha256_upstream": "7b3568424a0f871a52865d5c78177db646b1832a8c487321e27703103f936880", "local": ["~/AppData/Local/trunkrs/trunk/cache/wasm-opt-version_123/bin/wasm-opt.exe", "~/.cargo/bin/wasm-opt.exe"] },
+        "macos-arm64": { "file": "wasm-opt", "url": "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-arm64-macos.tar.gz", "sha256_upstream": "74428be348c1a09863e7b642a1fa948cabf8ec9561052233d8288e941951725b", "local": [] },
+        "macos-x64": { "file": "wasm-opt", "url": "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-macos.tar.gz", "sha256_upstream": "cc18b14d2b673d9c66bf54f31ff2b0ceb23ba5132455b893965ae2792f9e00dd", "local": [] }
+      }
+    },
+    {
+      "name": "gltfpack",
+      "version": "1.3",
+      "licence": "MIT",
+      "kind": "convert",
+      "why": "model import: mesh compression and LODs",
+      "platforms": { "windows-x64": { "dir": "gltfpack-1.3", "record": "convert-tools.json", "copy": ["gltfpack.exe"], "url": "https://github.com/zeux/meshoptimizer/releases/download/v1.3/gltfpack-windows.zip", "sha256_upstream": "f6e9c09d66af23da3da71b86f0652d2413e81c734e0aecd1cd3d0e6e6e8645c0" } }
+    },
+    {
+      "name": "ktx",
+      "version": "4.4.2",
+      "licence": "Apache-2.0",
+      "kind": "convert",
+      "why": "model import: ASTC/BC7 GPU textures",
+      "platforms": { "windows-x64": { "dir": "ktx-4.4.2", "record": "convert-tools.json", "copy": ["bin/ktx.exe", "bin/ktx.dll"], "url": "https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Windows-x64.exe", "sha256_upstream": "1f323b0fec19794f5e6c0425a61d4b1da396872a10be862d105f4f4b2d2957fe" } }
+    },
+    {
+      "name": "gltf-transform",
+      "version": "4.5.1",
+      "licence": "MIT",
+      "kind": "convert",
+      "why": "model import: glTF clean-up; runs on the Node that Evani.App already ships",
+      "note": "an npm package: every file is pinned by the committed lockfile (sha512 per package); sha256_upstream is the lockfile's own SHA-256 and the packer checks the installed copy came from it",
+      "platforms": { "windows-x64": { "dir": "gltf-transform-4.5.1", "record": "convert-tools.json", "copy": ["*"], "url": "npm:@gltf-transform/cli@4.5.1", "lockfile": "tools/evani-convert/npm/package-lock.json" } }
+    },
+    {
+      "name": "msdf-atlas-gen",
+      "version": "1.4",
+      "licence": "MIT",
+      "kind": "convert",
+      "why": "sharp text: font atlases (`[ui] fonts`)",
+      "platforms": { "windows-x64": { "dir": "msdf-atlas-gen-1.4", "record": "font-tools.json", "copy": ["*"], "url": "https://github.com/Chlumsky/msdf-atlas-gen/releases/download/v1.4/msdf-atlas-gen-1.4-win64.zip", "sha256_upstream": "55ab2bef57b9c7bf305b610989fa8eeda812d85bc93e632b8c39ce05b6e64e9d" } }
+    },
+    {
+      "name": "blender",
+      "version": "5.2.2",
+      "licence": "GPL-3.0-or-later (a separate program; no Blender code in the engine)",
+      "kind": "external",
+      "why": "model import of .blend files only; never in the pack (GPL, about 400 MB): when a .blend is dropped, `evani doctor --fix --blender` downloads this exact release, checks its SHA-256 and installs it into the per-user state folder",
+      "platforms": { "windows-x64": { "url": "https://download.blender.org/release/Blender5.2/blender-5.2.2-windows-x64.zip", "sha256_upstream": "3849d17a682cba006075aaa3f3597ecb5c9c30ec31035b2e092c53e40679b535", "install": "doctor --fix --blender" } }
+    }
+  ],
+  "runtime_allow": {
+    "windows-x64": [
+      { "path": "tools/bin/trunk.exe", "reason": "upstream's release build uses the dynamic Visual C++ runtime; trunk only runs a game build, which needs the C++ Build Tools (they bring that runtime) and is never run before the requirements checker passes" },
+      { "path": "tools/convert/ktx-4.4.2/bin/ktx.exe", "reason": "upstream's release build uses the dynamic Visual C++ runtime; it only runs for model texture import, and we may not ship Microsoft's runtime DLLs (the C++ Build Tools install it)" },
+      { "path": "tools/convert/ktx-4.4.2/bin/ktx.dll", "reason": "the library ktx.exe loads: same reason as ktx.exe" },
+      { "path": "tools/convert/gltf-transform-4.5.1/node_modules/@img/sharp-win32-x64/lib/libvips-42.dll", "reason": "an npm prebuilt that imports only the universal C runtime (api-ms-win-crt-*), which Windows 10 and 11 include; used only by gltf-transform's image step" }
+    ]
+  },
+  "requirements": {
+    "windows-x64": ["msvc-linker", "windows-sdk"],
+    "macos-arm64": ["xcode-clt"],
+    "macos-x64": ["xcode-clt"]
+  }
+}

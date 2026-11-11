@@ -137,3 +137,30 @@ fn iridescence_colours_only_with_a_thin_film() {
         "never brighter than a mirror: {a:?}"
     );
 }
+
+/// The clear coat's mirrored sun (evani-render's model_lit_layers.wgsl,
+/// mirrored line for line): a disc of the coat light's size with a sharp
+/// edge. Guard for critic round 3 of material-view (one soft lobe read as
+/// plain paint, not a coat): inside the disc it is fully on, a degree past
+/// its edge it is off, and head on it is about as bright as the sun.
+#[test]
+fn the_coat_mirrors_the_sun_as_a_crisp_disc() {
+    fn smoothstep(a: f32, b: f32, x: f32) -> f32 {
+        let t = ((x - a) / (b - a)).clamp(0.0, 1.0);
+        t * t * (3.0 - 2.0 * t)
+    }
+    let disc = |cos_light: f32, ccr: f32, off_deg: f32| {
+        let soft = (1.0 - cos_light) * (0.12 + 4.0 * ccr * ccr);
+        smoothstep(cos_light - soft, cos_light + soft, off_deg.to_radians().cos())
+    };
+    let c = crate::params::coat_cos(crate::params::COAT_LIGHT_DEFAULT);
+    let size = crate::params::COAT_LIGHT_DEFAULT;
+    for ccr in [0.03, 0.05, 0.1] {
+        assert!(disc(c, ccr, size - 1.0) > 0.99, "inside, roughness {ccr}");
+        assert!(disc(c, ccr, size + 1.0) < 0.01, "a degree past the edge, roughness {ccr}");
+    }
+    // Head on: the coat's Fresnel times the disc's gain is about one sun.
+    let gain: f32 = 25.0;
+    assert!((0.04 * gain - 1.0).abs() < 0.05);
+    assert!(BRDF_WGSL.contains("const LY_COAT_DISC: f32 = 25.0;"));
+}

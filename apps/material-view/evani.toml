@@ -1,0 +1,67 @@
+# The material-view's module manifest. `cargo xtask build material-view` turns this into
+# Cargo features of the evani-material-view crate; anything not listed is not built.
+name = "material-view"
+kit = "material-view"      # crate kits/evani-kit-material-view
+look = "stylizedpbr"       # crate looks/evani-look-stylizedpbr (its film preset)
+# A tool app, not a game (DECISIONS.md "Tool apps"): no kit gameplay, so the
+# review skips only its ECS entity count; every other check still holds.
+kind = "tool"
+effects = ["bloom", "vignette", "shadows"]   # each is an evani-fx feature; [] = no fx module
+
+[modules]
+physics = "none"     # a viewer moves nothing
+net = false
+xr = false
+live = true          # dev only; `--ship` builds always drop it
+models = true        # the layered finishes' models, the head and the test shapes
+# The material families this viewer shows (each is the app feature
+# `material-<family>`; a family not listed ships nothing).
+materials = ["styles", "layers", "characters", "nature", "playground", "catalogue", "studio"]
+# The procedural library's categories (docs/PROCEDURAL.md): the Procedural
+# tab lists every category and asset, each with its switch and params.
+procedural = ["geometry", "terrain", "rocks", "vegetation", "trees", "water", "sky", "roads", "buildings", "architecture", "furniture", "props", "industrial", "city", "vehicles", "aircraft", "boats", "humans", "clothing", "animals", "weapons", "agriculture", "textures", "effects"]
+
+# The catalogue's recipes and condition layers (the viewer draws them all;
+# P14). Each recipe turns on its app feature (recipe-<name>), cloth the
+# layers family, skin/hair/eye the character family, water/glass/foliage/thin
+# the nature module; each layer cond-<layer>.
+[materials]
+recipes = ["metal", "paint", "plastic", "wood", "wood-layouts", "bark", "stone", "masonry", "plaster", "ground", "cloth", "leather", "fur", "feather", "scales", "hide", "skin", "hair", "eye", "keratin", "foliage", "thin", "organic", "organic-food", "ceramic", "glass", "gem", "water", "ice", "fire", "glow", "cutout", "blend", "refraction"]
+conditions = ["wet", "mud", "dust", "snow", "wear", "oxide", "growth", "blood"]
+
+# What a reviewer should try in the demo (`cargo xtask review` puts it on the card).
+[review]
+try = [
+  "Tap each scene icon along the bottom: shader ball, cushion, head, ground, pool and lamp corner. Each should show its own material and camera.",
+  "Drag on the view to orbit, pinch or scroll to zoom, two fingers or right-drag to pan, double-tap to reset.",
+  "Open the drawer, pick a material, then move a slider. The view should change at once; the group's reset puts it back.",
+  "Tap Studio, Overcast, Sunset and Night lamp, then drag the sun dial. The light should follow.",
+  "Turn on Compare and drag the split line: the saved values on one side, your tuning on the other.",
+  "Open World rooms: each world's slots, filled ones open their material, empty ones say try a material here.",
+]
+# The DOM HUD the review checks in every capture (index.html).
+hud = ["#mv-hud"]
+# The target pack's moments (kits/material-view/target/moments.md): one per
+# scene, set up by capture.frame { moment } (kit moments.rs).
+moments = ["styles", "ball", "cushion", "head", "head_close", "ground", "pool", "lamp",
+  # Proofs (kit moments.rs PROOFS): one catalogue row each on its own shape,
+  # each captured on Low and on Ultra, so the critic can judge them on both
+  # (critic round 2, item 12).
+  "proof_lace@low", "proof_lace@ultra", "proof_damask@low", "proof_damask@ultra", "proof_newsprint@low", "proof_newsprint@ultra", "proof_hay@low", "proof_hay@ultra",
+  "proof_wheat@low", "proof_wheat@ultra", "proof_lawn@low", "proof_lawn@ultra", "proof_meadow@low", "proof_meadow@ultra", "proof_oak_leaf@low", "proof_oak_leaf@ultra",
+  "proof_maple_leaf@low", "proof_maple_leaf@ultra", "proof_rose@low", "proof_rose@ultra", "proof_crystal@low", "proof_crystal@ultra", "proof_pine@low", "proof_pine@ultra",
+  "proof_slime@low", "proof_slime@ultra", "proof_denim@low", "proof_denim@ultra", "proof_wallpaper@low", "proof_wallpaper@ultra", "proof_leather@low", "proof_leather@ultra",
+  "proof_hide@low", "proof_hide@ultra", "proof_horn@low", "proof_horn@ultra", "proof_coat@low", "proof_coat@ultra", "proof_frosted@low", "proof_frosted@ultra",
+  # Critic round 5: the rows round 4 fixed that the packet did not show,
+  # and the held stew, cake and milk (their library tile and reason).
+  "proof_wine@low", "proof_wine@ultra", "proof_meat@low", "proof_meat@ultra", "proof_velvet_green@low", "proof_velvet_green@ultra", "proof_cushion_velvet@low", "proof_cushion_velvet@ultra",
+  "proof_cheese@low", "proof_cheese@ultra", "proof_chocolate@low", "proof_chocolate@ultra", "proof_jerky@low", "proof_jerky@ultra", "proof_fish@low", "proof_fish@ultra",
+  "proof_pie@low", "proof_pie@ultra", "proof_tobacco@low", "proof_tobacco@ultra", "proof_spruce@low", "proof_spruce@ultra", "proof_fir@low", "proof_fir@ultra",
+  "proof_stew@low", "proof_stew@ultra", "proof_cake@low", "proof_cake@ultra", "proof_milk@low", "proof_milk@ultra"]
+# The run video: the shader ball on the turntable.
+video = "spin"
+
+# A playground for the Evani.app library: it must support free roam
+# (docs/PLAYGROUNDS.md). A viewer has no goals, so free roam is how it plays.
+[playground]
+free_roam = true

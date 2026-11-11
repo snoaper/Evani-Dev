@@ -157,8 +157,16 @@ fn the_block_points_at_each_surfaces_texels() {
         assert_eq!(floats[first + 1], b.texels[0][1]);
         let last = b.texels.len() - 1;
         assert_eq!(floats[first + 2 * last + 1], b.texels[last][1]);
-        // Colour multipliers are 1 at the default colours.
-        assert_eq!(d[HEADER_RECS + SURF_RECS * k + 3], [1.0, 1.0, 1.0, 0.0]);
+        // Colour multipliers are 1 at the default colours; then the mean
+        // height a band-limited fine feature fades to.
+        assert_eq!(d[HEADER_RECS + SURF_RECS * k + 3], [1.0, 1.0, 1.0, b.mean_height]);
+        assert!(b.mean_height > 0.2 && b.mean_height < 1.0, "{k}: {}", b.mean_height);
+        // The fine feature: the tiles' grout only (round 4's shimmer fix).
+        let fine = d[HEADER_RECS + SURF_RECS * k + 1][3];
+        match cfg.patterns()[k] {
+            Pattern::Tiles(t) => assert_eq!(fine, t.grout),
+            _ => assert_eq!(fine, 0.0),
+        }
     }
     assert_eq!(tier_mode("lite"), 0);
     assert_eq!(tier_mode("low"), 1);
@@ -221,6 +229,11 @@ fn scene() -> Scene {
 }
 
 fn world() -> World {
+    world_with(false)
+}
+
+/// The test world; `staged`: the relief as `install` makes it.
+fn world_with(staged: bool) -> World {
     use evani_core::plugin::MaterialDesc;
     let mut w = World::new();
     let look = evani_core::plugin::LookData {
@@ -231,10 +244,11 @@ fn world() -> World {
     let mut reg = evani_core::params::ParamRegistry::new();
     let mut pw = crate::ProcWorld::new(scene()).unwrap();
     pw.register_params(&mut reg).unwrap();
-    let mut rel = Relief::new(ReliefConfig {
+    let cfg = ReliefConfig {
         bake_size: 32,
         ..ReliefConfig::default()
-    });
+    };
+    let mut rel = if staged { Relief::new_staged(cfg) } else { Relief::new(cfg) };
     rel.register_params(&mut reg).unwrap();
     w.insert_resource(reg);
     w.insert_resource(pw);
@@ -299,4 +313,121 @@ fn the_system_appends_the_block_and_follows_params_and_tiers() {
     assert_eq!(km.data().len(), base + rel.block().len());
     assert_eq!(&km.data()[base..], rel.block());
     let _ = pattern::BRICK_COLOR;
+}
+
+/// A tier switch never bakes on the frame: start-up bakes every tier size and
+/// a switch reuses them (Lite to Ultra rebaked every pattern at full size, a
+/// 0.6 s stall in the viewer, 2026-10-25).
+#[test]
+fn tier_switches_reuse_earlier_bakes() {
+    let mut w = world();
+    frame(&mut w);
+    let full = w.res::<Relief>().bakes().to_vec();
+    let n0 = w.res::<Relief>().rebakes;
+    for t in ["lite", "ultra", "low", "lite", "high", "low"] {
+        w.res_mut::<Relief>().set_tier(t);
+        frame(&mut w);
+    }
+    let rel = w.res::<Relief>();
+    // Start-up baked the Lite and Low sizes too: no switch bakes.
+    assert_eq!(rel.rebakes, n0);
+    drop(rel);
+    w.res_mut::<Relief>().set_tier("ultra");
+    frame(&mut w);
+    assert_eq!(w.res::<Relief>().bakes(), &full[..], "the same bakes as at start-up");
+}
+
+/// `install`'s staged start bakes at most one pattern a frame, sends no code
+/// or data until every pattern of the tier is in, and then sends exactly
+/// what the one-shot start sends; afterwards the cache fills one size a
+/// frame, so tier switches still never bake (start-up held the viewer's
+/// page 0.3-0.5 s baking everything at once, 2026-10-29).
+#[test]
+fn the_staged_start_bakes_a_pattern_a_frame_and_ends_the_same() {
+    let mut eager = world();
+    frame(&mut eager);
+    frame(&mut eager);
+    let mut w = world_with(true);
+    let mut frames = 0;
+    let mut last = 0;
+    while w.res::<Relief>().staging() {
+        frame(&mut w);
+        frames += 1;
+        let n = w.res::<Relief>().rebakes;
+        assert!(n <= last + 1, "one bake a frame at most");
+        last = n;
+        if w.res::<Relief>().staging() {
+            assert!(!w.res::<KitMaterial>().wgsl().contains("fn kit_surface("), "no relief code while staging");
+        }
+        assert!(frames < 20, "staging ends");
+    }
+    assert!(frames >= all().len(), "one pattern a frame");
+    frame(&mut w);
+    assert_eq!(w.res::<KitMaterial>().data(), eager.res::<KitMaterial>().data(), "the same block");
+    assert_eq!(w.res::<KitMaterial>().wgsl(), eager.res::<KitMaterial>().wgsl(), "the same code");
+    assert_eq!(w.res::<Relief>().bakes(), eager.res::<Relief>().bakes());
+    // The cache fills one size a frame; then no tier switch bakes.
+    for _ in 0..3 * all().len() {
+        let n = w.res::<Relief>().rebakes;
+        frame(&mut w);
+        assert!(w.res::<Relief>().rebakes <= n + 1);
+    }
+    let n0 = w.res::<Relief>().rebakes;
+    for t in ["lite", "ultra", "low", "high"] {
+        w.res_mut::<Relief>().set_tier(t);
+        frame(&mut w);
+    }
+    assert_eq!(w.res::<Relief>().rebakes, n0);
+}
+
+/// The tiles' grout is band-limited by its screen footprint, axis by axis
+/// (the 1 px bevel highlight that shimmered on the yard plinth's grazing
+/// face, geocheck material-view round 4): untouched at two pixels and wider,
+/// gone at one, smooth between; the derivatives come from kit_surface before
+/// any branch, and the global footprint `fw` is unchanged.
+#[test]
+fn the_grout_fades_by_its_own_screen_width_only() {
+    let fade = |fine: f32, per_px: f32| {
+        let x = ((fine / per_px.max(1e-9) - 1.0) / (2.0 - 1.0)).clamp(0.0, 1.0);
+        x * x * (3.0 - 2.0 * x)
+    };
+    let g = Tiles::default().grout;
+    assert_eq!(fade(g, g / 2.0), 1.0, "two pixels wide: as before");
+    assert_eq!(fade(g, g / 6.0), 1.0, "square-on close-up: as before");
+    assert_eq!(fade(g, g), 0.0, "one pixel wide: no bevel highlight");
+    let mid = fade(g, g / 1.5);
+    assert!(mid > 0.4 && mid < 0.6, "{mid}");
+    let code = wgsl(0, 1, 2, 1234).unwrap();
+    for c in [
+        "let fw = length(fwidth(p)) * 0.6;",
+        "rl_dx = dpdx(p);",
+        "rl_dy = dpdy(p);",
+        "let ku = smoothstep(1.0, 2.0, fine / max(du, 1e-9));",
+        "let kv = smoothstep(1.0, 2.0, fine / max(dv, 1e-9));",
+        "o2.s = t.s * vec2<f32>(ku, kv);",
+        "t = rl_fine(k, t, u, v);",
+    ] {
+        assert!(code.contains(c), "relief shader has `{c}`");
+    }
+    // Derivatives before the first branch of kit_surface.
+    let ks = &code[code.find("fn kit_surface(").unwrap()..];
+    assert!(ks.find("rl_dy = dpdy(p);").unwrap() < ks.find("if (").unwrap());
+    for p in all() {
+        let want = if let Pattern::Tiles(t) = p { t.grout } else { 0.0 };
+        assert_eq!(p.fine_width(), want);
+    }
+}
+
+/// Guard (critic round 6 of material-view: the Low yard's cobbles were
+/// flat): Low (mode 1) lights every relief surface with its bent normal and
+/// roughness, as the full tiers do; only Lite paints the flat colour.
+#[test]
+fn low_lights_the_relief_with_its_bent_normal() {
+    assert_eq!((tier_mode("lite"), tier_mode("low"), tier_mode("high"), tier_mode("ultra")), (0, 1, 2, 2));
+    let code = wgsl(0, 1, 2, 1234).unwrap();
+    let shade = &code[code.find("fn rl_shade(").expect("rl_shade")..];
+    let shade = &shade[..shade.find("\n}").expect("rl_shade end")];
+    let write = shade.find("*nr = vec4<f32>(normalize(n - g)").expect("rl_shade writes the bent normal");
+    let guard = shade[..write].rfind("if (mode").expect("the write is guarded by the tier mode");
+    assert!(shade[guard..write].starts_with("if (mode >= 1u)"), "Low must write the bent normal: {}", &shade[guard..write]);
 }

@@ -1,0 +1,16 @@
+[package]
+name = "evani-reqcheck"
+description = "Evani.Dev build requirements checker: finds the system tools a game build needs (MSVC linker and Windows SDK, or Xcode Command Line Tools), says in plain words what is missing, and proves a build works with a tiny offline probe build"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Standard library only, on purpose: this program ships prebuilt in the
+# engine pack and must run before any Rust toolchain or linker is present,
+# so it stays small and has nothing to unpack or load.
+[dependencies]
+
+[lints]
+workspace = true

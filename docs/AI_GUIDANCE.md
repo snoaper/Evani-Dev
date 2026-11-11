@@ -54,7 +54,7 @@ ERROR (and on WARN with `--strict`).
   `evani_core::play::free_roam_test` (area `playground`, docs/PLAYGROUNDS.md; `build --ship`
   refuses it too); a kit that draws 3D (or a `3d`-style look) while no crate turns on evani-render's
   `forward` feature (area `render path`, README "Render").
-- WARN: a playground whose last ship build is over the 10 MB package cap; no geocheck report; a 2D
+- WARN: a game playground whose last ship build is over the 10 MB package cap (the library and Scenes have no cap); no geocheck report; a 2D
   game that turns on `forward` but draws no 3D; `default` features that don't mirror `evani.toml`; a look guard that
   can't be approved on this machine; out-of-date guidance or MCP server.
 - Freshness: a geocheck report or review card only counts when it is newer than everything the game
@@ -124,6 +124,21 @@ What a checkout needs: commit `.mcp.json`, run `cargo xtask doctor --fix` once p
 pulling bridge changes when it warns), and approve `evani-live` once in Claude Code (`/mcp`) or
 Evani.App. The command path is relative because Claude Code starts it from the project folder and
 doesn't expand `${CLAUDE_PROJECT_DIR}` in `.mcp.json` commands.
+
+## Pictures for Evani.App's visual review
+
+An agent that hands pictures to Evani.App's visual review (`request_review` with captures) writes the
+picture notes (`visual-review.json`) with `node tools/studio/visual-review.mjs write --spec <spec.json>`,
+never by hand: Evani.App reads each number only as a finite number or non-empty text, so `true`/`false`,
+`null` and `""` are refused as "has no value" (the Distance fog review, 2026-11-11, was refused three
+times for that). The tool computes sizes and SHA-256, records which capture path made each picture, and
+checks the whole file by Evani.App's rules before writing it; Evani.App itself works out whether a picture
+changed since the last round (its earlier-round fields are written only with `--legacy-fields`). Engine
+scenes shot with `tools/studio/asset-shoot.mjs` get a backup automatically: an unusable browser screenshot
+is retaken through the engine's own off-screen read-back (`capture.frame`) when the build has `live`, and
+Evani.App's project capture hook (`.vibedeck/visual-capture.json` -> `tools/studio/review-backup.mjs`)
+shoots the views again from the `capture-recipe.json` left beside them. How: docs/ASSET_STUDIO_GUIDE.md,
+1.3 step 5c. The always-loaded block stays under its 8 KB cap, so it doesn't repeat this.
 
 ## Eval harness (stub)
 

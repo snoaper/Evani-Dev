@@ -1,0 +1,41 @@
+{
+  "assets": [
+    {
+      "format": "glb",
+      "hash": "7b21d7cee250dd58",
+      "kind": "mesh",
+      "name": "models/cow/cow.high.glb",
+      "size": 270052,
+      "tier": "high",
+      "url": "cow.high.glb"
+    },
+    {
+      "format": "glb",
+      "hash": "cce3f131f20c6a4e",
+      "kind": "mesh",
+      "name": "models/cow/cow.low.glb",
+      "size": 112716,
+      "tier": "low",
+      "url": "cow.low.glb"
+    },
+    {
+      "format": "glb",
+      "hash": "b9f85ee94cbe21c3",
+      "kind": "mesh",
+      "name": "models/cow/cow.medium.glb",
+      "size": 173984,
+      "tier": "medium",
+      "url": "cow.medium.glb"
+    },
+    {
+      "format": "glb",
+      "hash": "87d07a4b13c14e6c",
+      "kind": "mesh",
+      "name": "models/cow/cow.ultra.glb",
+      "size": 338456,
+      "tier": "ultra",
+      "url": "cow.ultra.glb"
+    }
+  ],
+  "version": 1
+}

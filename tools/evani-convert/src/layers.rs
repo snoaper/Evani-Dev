@@ -23,14 +23,38 @@ pub fn has(j: &Value) -> bool {
         .any(|m| m.get("extensions").and_then(Value::as_object).is_some_and(|e| KHR_NAMES.iter().any(|n| e.contains_key(*n))))
 }
 
+/// A paint recipe material (`extras.evani_recipe` code 2): the recipe stage
+/// draws its clear coat from the block, so an authored clear coat must not
+/// also become layered data (a game listing `cloth` would draw two).
+fn is_paint_block(m: &Value) -> bool {
+    m.pointer("/extras/evani_recipe")
+        .and_then(Value::as_str)
+        .and_then(|h| h.get(..2))
+        .and_then(|h| u8::from_str_radix(h, 16).ok())
+        .and_then(evani_guide::materials::recipe_of_code)
+        == Some("paint")
+}
+
 /// Write each material's layer extras, drop the four extensions (from the
 /// materials and the extension lists) and say what was done.
 pub fn apply(doc: &mut Doc) -> Vec<String> {
     let mut notes = Vec::new();
     let mut count = 0;
     let mut dropped = Vec::new();
+    let mut paint_coats = 0;
     if let Some(mats) = doc.json.get_mut("materials").and_then(Value::as_array_mut) {
         for (i, m) in mats.iter_mut().enumerate() {
+            if is_paint_block(m)
+                && let Some(e) = m.get_mut("extensions").and_then(Value::as_object_mut)
+                && e.remove(evani_material_layers::parse::KHR_CLEARCOAT).is_some()
+            {
+                paint_coats += 1;
+                if e.is_empty()
+                    && let Some(o) = m.as_object_mut()
+                {
+                    o.remove("extensions");
+                }
+            }
             let Some(ext) = m.get("extensions").cloned() else { continue };
             let Some(layers) = Layers::from_khr(&ext) else { continue };
             let name = m.get("name").and_then(Value::as_str).map_or_else(|| format!("material {i}"), str::to_owned);
@@ -64,6 +88,9 @@ pub fn apply(doc: &mut Doc) -> Vec<String> {
     }
     if count > 0 {
         notes.push(format!("layers: {count} material(s) carry sheen, clear coat, anisotropy or iridescence as extras.evani_layers (drawn with the engine's `material-layers` render feature)"));
+    }
+    if paint_coats > 0 {
+        notes.push(format!("layers: {paint_coats} paint material(s) keep their clear coat in the material block (extras.evani_recipe), so the authored KHR_materials_clearcoat is left out (the recipe stage draws that coat)"));
     }
     if !dropped.is_empty() {
         notes.push(format!("layers: factors only, these extension textures are left out: {}", dropped.join(", ")));
@@ -107,6 +134,30 @@ mod tests {
         // The engine reads back what was written.
         let l = Layers::from_extras(&m[0]["extras"]).unwrap();
         assert_eq!(l.sheen_color, [0.9, 0.3, 0.4]);
+    }
+
+    #[test]
+    fn a_paint_block_keeps_its_clear_coat_out_of_the_layers() {
+        // Paint's coat is drawn from the block (P10a): an authored clear coat
+        // on it must not become layered data (a second coat in a `cloth` game).
+        let paint_block = format!("02{}", "00".repeat(31));
+        let mut d = doc(json!({
+            "asset": {"version": "2.0"},
+            "extensionsUsed": ["KHR_materials_clearcoat", "KHR_materials_sheen"],
+            "materials": [
+                {"name": "car", "extras": {"evani_recipe": paint_block}, "extensions": {"KHR_materials_clearcoat": {"clearcoatFactor": 1.0}}},
+                {"name": "plain_car", "extensions": {"KHR_materials_clearcoat": {"clearcoatFactor": 1.0}}},
+                {"name": "cape", "extensions": {"KHR_materials_sheen": {"sheenColorFactor": [1.0, 0.0, 0.0]}}}
+            ]
+        }));
+        let notes = apply(&mut d);
+        let m = &d.json["materials"];
+        assert!(m[0]["extras"].get("evani_layers").is_none(), "no layered coat on a paint block: {}", m[0]);
+        assert!(m[0].get("extensions").is_none(), "the authored coat extension is gone");
+        assert_eq!(m[0]["extras"]["evani_recipe"], json!(paint_block), "the block is untouched");
+        assert!(m[1]["extras"]["evani_layers"]["clearcoat"].is_object(), "a material without a paint block still gets its coat");
+        assert!(m[2]["extras"]["evani_layers"]["sheen"].is_object());
+        assert!(notes.iter().any(|n| n.contains("1 paint material(s)")), "{notes:?}");
     }
 
     #[test]

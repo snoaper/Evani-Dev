@@ -20,7 +20,7 @@ pub enum TargetKind {
     /// `compute`). Not a texture: the renderer doesn't allocate it; the
     /// system that owns the compute pass does.
     #[cfg(feature = "compute")]
-    Buffer,
+    Buffer, #[cfg(feature = "game-passes")] #[doc = " A texture a game pass owns (feature `game-passes`, `crate::game_pass`): the renderer's game-pass code allocates it, not the target list."] Game,
 }
 
 impl TargetKind {
@@ -30,7 +30,7 @@ impl TargetKind {
         match self {
             TargetKind::Swapchain => false,
             #[cfg(feature = "compute")]
-            TargetKind::Buffer => false,
+            TargetKind::Buffer => false, #[cfg(feature = "game-passes")] TargetKind::Game => false,
             _ => true,
         }
     }
@@ -56,7 +56,7 @@ pub struct TargetDesc {
     /// Size relative to the render resolution (bloom mips use 0.5, 0.25...).
     pub scale: f32,
     /// Only alive inside one frame; may alias other transient targets.
-    pub transient: bool,
+    pub transient: bool, #[cfg(feature = "effect-mesh")] pub fixed: [u32; 2], // a fixed size in pixels ([0, 0]: scaled); feature `effect-mesh`
 }
 
 impl TargetDesc {
@@ -65,7 +65,7 @@ impl TargetDesc {
             name,
             kind,
             scale: 1.0,
-            transient: false,
+            transient: false, #[cfg(feature = "effect-mesh")] fixed: [0, 0],
         }
     }
 
@@ -300,7 +300,7 @@ impl RenderGraph {
                     return Err(GraphError::ReadsSwapchain(p.name));
                 }
                 #[cfg(feature = "compute")]
-                if p.outputs.contains(&t) && ((p.kind == PassKind::Compute) != (td.kind == TargetKind::Buffer)) {
+                #[cfg(feature = "game-passes")] if p.outputs.contains(&t) && td.kind != TargetKind::Game && ((p.kind == PassKind::Compute) != (td.kind == TargetKind::Buffer)) { return Err(GraphError::WrongOutputKind { pass: p.name, target: t }); } #[cfg(all(feature = "compute", not(feature = "game-passes")))] if p.outputs.contains(&t) && ((p.kind == PassKind::Compute) != (td.kind == TargetKind::Buffer)) {
                     return Err(GraphError::WrongOutputKind { pass: p.name, target: t });
                 }
             }
@@ -385,7 +385,7 @@ impl RenderGraph {
     }
 }
 
-#[cfg(test)]
+#[cfg(test)] #[allow(clippy::items_after_test_module, reason = "new declarations are appended at the end of this file so no shipped line moves")]
 mod tests {
     use super::*;
 
@@ -547,5 +547,15 @@ mod tests {
         assert!(g.set_enabled("sprites", false));
         assert!(g.is_compiled());
         assert!(!g.pass("sprites").unwrap().enabled);
+    }
+}
+
+#[cfg(feature = "effect-mesh")]
+impl TargetDesc {
+    /// A target of a fixed `w` x `h` pixels whatever the render size (a
+    /// per-frame lookup texture an effect draws and then samples).
+    pub const fn fixed(mut self, w: u32, h: u32) -> Self {
+        self.fixed = [w, h];
+        self
     }
 }

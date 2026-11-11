@@ -1,0 +1,1301 @@
+{
+ "library": "Evani.Materials",
+ "version": 0,
+ "source": "Meridian Vale 1.0.2 master world, 24 zones",
+ "rooms": [
+  {
+   "room": "meadow",
+   "zone": "Z01",
+   "name": "Meadow and rolling hills",
+   "description": "Open grassland, slopes, a stream, a fence line and a hilltop windmill.",
+   "slots": [
+    {
+     "id": "meadow.grass_ground",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Rolling turf ground with worn path edge"
+    },
+    {
+     "id": "meadow.grass_blades",
+     "family": "nature",
+     "look": "Back-lit grass tips and flower patches"
+    },
+    {
+     "id": "meadow.tree_leaf",
+     "family": "nature",
+     "look": "Round-crown leaves glowing against the sun"
+    },
+    {
+     "id": "meadow.tree_bark",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Trunk and branch bark"
+    },
+    {
+     "id": "meadow.stream_water",
+     "family": "nature",
+     "look": "Clear shallow stream with ripples and bank foam"
+    },
+    {
+     "id": "meadow.fence_wood",
+     "family": "playground",
+     "look": "Weathered planks on posts"
+    },
+    {
+     "id": "meadow.windmill_wall",
+     "family": "playground",
+     "look": "Painted plaster or brick tower"
+    },
+    {
+     "id": "meadow.windmill_sail_cloth",
+     "family": "layered",
+     "look": "Woven sail cloth with sheen"
+    },
+    {
+     "id": "meadow.rock",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Grey field stone with lichen"
+    }
+   ]
+  },
+  {
+   "room": "forest",
+   "zone": "Z02",
+   "name": "Forest",
+   "description": "Dense canopy with a clearing, logs, a rock group and a woodland route.",
+   "slots": [
+    {
+     "id": "forest.floor",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Leaf litter, roots and dark soil"
+    },
+    {
+     "id": "forest.canopy_leaf",
+     "family": "nature",
+     "look": "Layered leaves with dappled back-light"
+    },
+    {
+     "id": "forest.pine_needle",
+     "family": "nature",
+     "look": "Dark pine foliage"
+    },
+    {
+     "id": "forest.bark",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Rough trunk bark"
+    },
+    {
+     "id": "forest.log_wood",
+     "family": "playground",
+     "look": "Cut log ends with growth rings"
+    },
+    {
+     "id": "forest.fern",
+     "family": "nature",
+     "look": "Thin translucent fronds"
+    },
+    {
+     "id": "forest.mushroom",
+     "family": "nature",
+     "look": "Thin glowing caps"
+    },
+    {
+     "id": "forest.rock_moss",
+     "family": "playground",
+     "look": "Boulders with moss in the cracks"
+    },
+    {
+     "id": "forest.lantern",
+     "family": "nature",
+     "look": "Warm lantern glass and shade"
+    }
+   ]
+  },
+  {
+   "room": "mountain",
+   "zone": "Z03",
+   "name": "Mountain and cliffs",
+   "description": "Ledges, a pass, a rope bridge, a waterfall and a lookout.",
+   "slots": [
+    {
+     "id": "mountain.cliff_rock",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Layered alpine rock with strata"
+    },
+    {
+     "id": "mountain.alpine_ground",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Thin turf over scree"
+    },
+    {
+     "id": "mountain.waterfall",
+     "family": "nature",
+     "look": "White falling water with mist foam"
+    },
+    {
+     "id": "mountain.pool_water",
+     "family": "nature",
+     "look": "Cold still pool under the fall"
+    },
+    {
+     "id": "mountain.bridge_planks",
+     "family": "playground",
+     "look": "Narrow plank deck"
+    },
+    {
+     "id": "mountain.bridge_rope",
+     "family": "GAP",
+     "note": "GAP-R",
+     "look": "Twisted rope rails and cables"
+    },
+    {
+     "id": "mountain.lookout_deck",
+     "family": "playground",
+     "look": "Timber platform with railings"
+    },
+    {
+     "id": "mountain.telescope_metal",
+     "family": "layered",
+     "look": "Brushed brass tube"
+    }
+   ]
+  },
+  {
+   "room": "snow",
+   "zone": "Z04",
+   "name": "Snow and ice",
+   "description": "Snow terrain, a frozen pond, pines and a cabin with a stove.",
+   "slots": [
+    {
+     "id": "snow.ground",
+     "family": "GAP",
+     "note": "GAP-S",
+     "look": "Soft snow with sparkle and footprints"
+    },
+    {
+     "id": "snow.drift",
+     "family": "GAP",
+     "note": "GAP-S",
+     "look": "Wind-sculpted drift edge"
+    },
+    {
+     "id": "snow.frozen_pond",
+     "family": "nature",
+     "note": "approximate as a glass slab; GAP-I for cracks",
+     "look": "Clear ice over dark water"
+    },
+    {
+     "id": "snow.ice_rock",
+     "family": "GAP",
+     "note": "GAP-I",
+     "look": "Blue translucent ice cliff"
+    },
+    {
+     "id": "snow.pine_needle",
+     "family": "nature",
+     "look": "Dark pine with snow caps"
+    },
+    {
+     "id": "snow.cabin_wood",
+     "family": "playground",
+     "look": "Log or plank cabin walls"
+    },
+    {
+     "id": "snow.stove_metal",
+     "family": "layered",
+     "look": "Black iron with warm glow"
+    },
+    {
+     "id": "snow.sled_wood",
+     "family": "playground",
+     "look": "Smooth worn runners and slats"
+    },
+    {
+     "id": "snow.hare_fur",
+     "family": "characters",
+     "look": "White winter fur"
+    },
+    {
+     "id": "snow.snowman",
+     "family": "GAP",
+     "note": "GAP-S",
+     "look": "Packed snow with coal and carrot"
+    }
+   ]
+  },
+  {
+   "room": "desert",
+   "zone": "Z05",
+   "name": "Desert and Wild West",
+   "description": "Canyon, cacti and a frontier street of wooden buildings.",
+   "slots": [
+    {
+     "id": "desert.sand",
+     "family": "GAP",
+     "note": "GAP-D",
+     "look": "Dry rippled sand"
+    },
+    {
+     "id": "desert.canyon_rock",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Red banded sandstone"
+    },
+    {
+     "id": "desert.cactus",
+     "family": "nature",
+     "look": "Waxy green with spines and back-light"
+    },
+    {
+     "id": "desert.saloon_wood",
+     "family": "playground",
+     "look": "Sun-bleached planks"
+    },
+    {
+     "id": "desert.street_boards",
+     "family": "playground",
+     "look": "Worn boardwalk"
+    },
+    {
+     "id": "desert.cloth_awning",
+     "family": "layered",
+     "look": "Faded canvas"
+    },
+    {
+     "id": "desert.wagon_wheel",
+     "family": "layered",
+     "look": "Iron-banded wood"
+    },
+    {
+     "id": "desert.tumbleweed",
+     "family": "nature",
+     "look": "Dry thin twigs"
+    },
+    {
+     "id": "desert.lantern",
+     "family": "nature",
+     "look": "Oil lamp glass"
+    }
+   ]
+  },
+  {
+   "room": "beach",
+   "zone": "Z06",
+   "name": "Beach and island",
+   "description": "Sand, shoreline, palms, rock stacks and a jetty.",
+   "slots": [
+    {
+     "id": "beach.sand_dry",
+     "family": "GAP",
+     "note": "GAP-D",
+     "look": "Pale dry sand"
+    },
+    {
+     "id": "beach.sand_wet",
+     "family": "GAP",
+     "note": "GAP-D",
+     "look": "Dark wet sand at the tide line"
+    },
+    {
+     "id": "beach.sea_water",
+     "family": "nature",
+     "material": "studio.proc.ocean",
+     "look": "Clear shallow sea with foam on the shore"
+    },
+    {
+     "id": "beach.palm_leaf",
+     "family": "nature",
+     "look": "Long back-lit fronds"
+    },
+    {
+     "id": "beach.sea_stack_rock",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Wave-worn rock"
+    },
+    {
+     "id": "beach.jetty_planks",
+     "family": "playground",
+     "look": "Salt-bleached deck"
+    },
+    {
+     "id": "beach.umbrella_cloth",
+     "family": "layered",
+     "look": "Striped canvas"
+    },
+    {
+     "id": "beach.towel_cloth",
+     "family": "layered",
+     "look": "Terry weave"
+    },
+    {
+     "id": "beach.crab_shell",
+     "family": "characters",
+     "note": "closest: chitin shine",
+     "look": "Hard glossy shell"
+    }
+   ]
+  },
+  {
+   "room": "harbour",
+   "zone": "Z07",
+   "name": "Quayside and harbour",
+   "description": "Docks, a boat, a waterfront building, crates and a street link.",
+   "slots": [
+    {
+     "id": "harbour.sea_water",
+     "family": "nature",
+     "material": "studio.proc.ocean",
+     "look": "Murky harbour water with debris sheen"
+    },
+    {
+     "id": "harbour.quay_stone",
+     "family": "playground",
+     "look": "Large wet cobble or slab edge"
+    },
+    {
+     "id": "harbour.dock_planks",
+     "family": "playground",
+     "look": "Damp, dark timber deck"
+    },
+    {
+     "id": "harbour.hull_wood",
+     "family": "playground",
+     "look": "Painted boat planks"
+    },
+    {
+     "id": "harbour.rope",
+     "family": "GAP",
+     "note": "GAP-R",
+     "look": "Mooring ropes and nets"
+    },
+    {
+     "id": "harbour.crate_wood",
+     "family": "playground",
+     "look": "Stacked shipping crates"
+    },
+    {
+     "id": "harbour.office_wall",
+     "family": "playground",
+     "look": "Brick or clapboard front"
+    },
+    {
+     "id": "harbour.window_glass",
+     "family": "nature",
+     "look": "Salt-streaked window"
+    },
+    {
+     "id": "harbour.anchor_metal",
+     "family": "GAP",
+     "note": "GAP-O",
+     "look": "Rusted iron"
+    },
+    {
+     "id": "harbour.lighthouse_wall",
+     "family": "playground",
+     "look": "Painted stone tower"
+    }
+   ]
+  },
+  {
+   "room": "village",
+   "zone": "Z08",
+   "name": "Village and countryside",
+   "description": "Houses, gardens, a square with a well, a lane and field boundaries.",
+   "slots": [
+    {
+     "id": "village.lane_cobble",
+     "family": "playground",
+     "look": "Rough cobble lane"
+    },
+    {
+     "id": "village.house_wall",
+     "family": "playground",
+     "look": "Plaster or brick cottage wall"
+    },
+    {
+     "id": "village.roof",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Thatch or clay shingles"
+    },
+    {
+     "id": "village.garden_grass",
+     "family": "nature",
+     "look": "Neat lawn and flower patches"
+    },
+    {
+     "id": "village.hedge_leaf",
+     "family": "nature",
+     "look": "Dense clipped hedge"
+    },
+    {
+     "id": "village.well_stone",
+     "family": "playground",
+     "look": "Mossy ring of stone"
+    },
+    {
+     "id": "village.fence_wood",
+     "family": "playground",
+     "look": "Picket planks"
+    },
+    {
+     "id": "village.villager_skin",
+     "family": "characters",
+     "look": "Skin, eyes and hair of villagers"
+    },
+    {
+     "id": "village.cloth_clothing",
+     "family": "layered",
+     "look": "Woven wool and linen"
+    },
+    {
+     "id": "village.sheep_wool",
+     "family": "characters",
+     "look": "Fluffy fleece fur"
+    }
+   ]
+  },
+  {
+   "room": "city",
+   "zone": "Z09",
+   "name": "Modern city block",
+   "description": "Shops, apartments, pavements, a crossing and a small park.",
+   "slots": [
+    {
+     "id": "city.pavement",
+     "family": "playground",
+     "look": "Concrete slab paving"
+    },
+    {
+     "id": "city.road",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Asphalt with markings"
+    },
+    {
+     "id": "city.apartment_wall",
+     "family": "playground",
+     "look": "Plaster and brick facade"
+    },
+    {
+     "id": "city.shop_glass",
+     "family": "nature",
+     "look": "Large shop windows with reflection"
+    },
+    {
+     "id": "city.car_paint",
+     "family": "layered",
+     "look": "Clear-coated car paint"
+    },
+    {
+     "id": "city.traffic_metal",
+     "family": "layered",
+     "look": "Painted brushed steel poles"
+    },
+    {
+     "id": "city.park_lawn",
+     "family": "nature",
+     "look": "Mown park grass"
+    },
+    {
+     "id": "city.bench_wood",
+     "family": "playground",
+     "look": "Slatted park bench"
+    },
+    {
+     "id": "city.street_lamp",
+     "family": "nature",
+     "look": "Glowing lamp shade"
+    }
+   ]
+  },
+  {
+   "room": "castle",
+   "zone": "Z10",
+   "name": "Castle and medieval town",
+   "description": "Gate, walls, towers, a courtyard and a market.",
+   "slots": [
+    {
+     "id": "castle.stone_wall",
+     "family": "playground",
+     "look": "Large ashlar or rough brick curtain wall"
+    },
+    {
+     "id": "castle.tower_stone",
+     "family": "playground",
+     "look": "Round tower masonry with moss at the base"
+    },
+    {
+     "id": "castle.courtyard_cobble",
+     "family": "playground",
+     "look": "Worn cobble square"
+    },
+    {
+     "id": "castle.gate_wood",
+     "family": "playground",
+     "look": "Iron-banded oak planks"
+    },
+    {
+     "id": "castle.gate_iron",
+     "family": "layered",
+     "look": "Dark brushed iron"
+    },
+    {
+     "id": "castle.roof_slate",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Slate or clay roof tiles"
+    },
+    {
+     "id": "castle.banner_cloth",
+     "family": "layered",
+     "look": "Heavy dyed banner cloth"
+    },
+    {
+     "id": "castle.market_awning",
+     "family": "layered",
+     "look": "Striped stall canvas"
+    },
+    {
+     "id": "castle.guard_skin",
+     "family": "characters",
+     "look": "Guard face, eyes and hair"
+    },
+    {
+     "id": "castle.torch",
+     "family": "nature",
+     "look": "Flickering torch glow"
+    },
+    {
+     "id": "castle.town_grass",
+     "family": "nature",
+     "look": "Trampled town grass"
+    }
+   ]
+  },
+  {
+   "room": "caves",
+   "zone": "Z11",
+   "name": "Caves and underground",
+   "description": "A tunnel, a chamber, crystals, mine supports and water.",
+   "slots": [
+    {
+     "id": "caves.rock_wall",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Damp dark rock with wet sheen"
+    },
+    {
+     "id": "caves.floor_stone",
+     "family": "playground",
+     "look": "Rough flagged floor with puddles"
+    },
+    {
+     "id": "caves.crystal",
+     "family": "layered",
+     "note": "GAP-K for internal glow",
+     "look": "Glassy crystal with colour shift"
+    },
+    {
+     "id": "caves.pool_water",
+     "family": "nature",
+     "look": "Still dark cave pool"
+    },
+    {
+     "id": "caves.support_beam",
+     "family": "playground",
+     "look": "Old timber props"
+    },
+    {
+     "id": "caves.rail_metal",
+     "family": "layered",
+     "look": "Rusted track and minecart"
+    },
+    {
+     "id": "caves.lantern",
+     "family": "nature",
+     "look": "Dim mining lamp"
+    }
+   ]
+  },
+  {
+   "room": "interiors",
+   "zone": "Z12",
+   "name": "Everyday interiors",
+   "description": "A home, a shop, a cafe and an office connected to the world.",
+   "slots": [
+    {
+     "id": "interiors.floor_boards",
+     "family": "playground",
+     "look": "Polished wood floor"
+    },
+    {
+     "id": "interiors.floor_tiles",
+     "family": "playground",
+     "look": "Glazed kitchen and cafe tiles"
+    },
+    {
+     "id": "interiors.wall_plaster",
+     "family": "playground",
+     "look": "Painted plaster with trim"
+    },
+    {
+     "id": "interiors.sofa_cloth",
+     "family": "layered",
+     "look": "Upholstery with sheen and weave"
+    },
+    {
+     "id": "interiors.bed_cloth",
+     "family": "layered",
+     "look": "Bedding and blanket"
+    },
+    {
+     "id": "interiors.window_glass",
+     "family": "nature",
+     "look": "Clean window glass"
+    },
+    {
+     "id": "interiors.counter_wood",
+     "family": "playground",
+     "look": "Varnished counter top"
+    },
+    {
+     "id": "interiors.coffee_machine_metal",
+     "family": "layered",
+     "look": "Brushed steel and chrome"
+    },
+    {
+     "id": "interiors.screen_glass",
+     "family": "nature",
+     "note": "GAP-H for emissive display",
+     "look": "Computer screen glass"
+    },
+    {
+     "id": "interiors.plant_leaf",
+     "family": "nature",
+     "look": "Potted plant leaves"
+    },
+    {
+     "id": "interiors.lamp_shade",
+     "family": "nature",
+     "look": "Lampshade with warm light inside"
+    }
+   ]
+  },
+  {
+   "room": "jungle",
+   "zone": "Z13",
+   "name": "Jungle and ancient ruins",
+   "description": "Dense vegetation, vines and a ruined stone temple.",
+   "slots": [
+    {
+     "id": "jungle.floor",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Humid leaf mulch and roots"
+    },
+    {
+     "id": "jungle.canopy_leaf",
+     "family": "nature",
+     "look": "Big thick leaves with strong back-light"
+    },
+    {
+     "id": "jungle.vine",
+     "family": "nature",
+     "look": "Hanging vine curtain"
+    },
+    {
+     "id": "jungle.ruin_stone",
+     "family": "playground",
+     "look": "Mossy, cracked block masonry"
+    },
+    {
+     "id": "jungle.pyramid_stone",
+     "family": "playground",
+     "look": "Stepped weathered stone"
+    },
+    {
+     "id": "jungle.idol_stone",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Carved weathered statue"
+    },
+    {
+     "id": "jungle.broken_route",
+     "family": "playground",
+     "look": "Cobbled route broken by roots"
+    },
+    {
+     "id": "jungle.pool_water",
+     "family": "nature",
+     "look": "Green still water"
+    }
+   ]
+  },
+  {
+   "room": "swamp",
+   "zone": "Z14",
+   "name": "Swamp and wetlands",
+   "description": "Reeds, shallow water, twisted trees and a boardwalk.",
+   "slots": [
+    {
+     "id": "swamp.mud",
+     "family": "GAP",
+     "note": "GAP-M",
+     "look": "Dark wet mud with sheen"
+    },
+    {
+     "id": "swamp.water",
+     "family": "nature",
+     "look": "Murky green water with low reflection"
+    },
+    {
+     "id": "swamp.reed",
+     "family": "nature",
+     "look": "Thin back-lit reeds"
+    },
+    {
+     "id": "swamp.lily_pad",
+     "family": "nature",
+     "look": "Flat floating leaves"
+    },
+    {
+     "id": "swamp.twisted_tree_bark",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Gnarled wet bark"
+    },
+    {
+     "id": "swamp.boardwalk_planks",
+     "family": "playground",
+     "look": "Slick damp boards"
+    },
+    {
+     "id": "swamp.stilt_hut_wood",
+     "family": "playground",
+     "look": "Rotting stilt hut timber"
+    },
+    {
+     "id": "swamp.frog_skin",
+     "family": "characters",
+     "note": "closest: wet skin",
+     "look": "Wet green frog skin"
+    }
+   ]
+  },
+  {
+   "room": "farm",
+   "zone": "Z15",
+   "name": "Farm and orchard",
+   "description": "A barn, crop rows, a pen, fruit trees and farm props.",
+   "slots": [
+    {
+     "id": "farm.field_soil",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Ploughed soil rows"
+    },
+    {
+     "id": "farm.crop_leaf",
+     "family": "nature",
+     "look": "Young crop leaves"
+    },
+    {
+     "id": "farm.barn_wood",
+     "family": "playground",
+     "look": "Red-painted weathered planks"
+    },
+    {
+     "id": "farm.roof",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Corrugated or shingle roof"
+    },
+    {
+     "id": "farm.haybale",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Dry straw with golden back-light"
+    },
+    {
+     "id": "farm.fruit_tree_leaf",
+     "family": "nature",
+     "look": "Orchard leaves and fruit"
+    },
+    {
+     "id": "farm.cow_fur",
+     "family": "characters",
+     "look": "Short cow hide"
+    },
+    {
+     "id": "farm.chicken_feather",
+     "family": "characters",
+     "look": "Feathers"
+    },
+    {
+     "id": "farm.tractor_paint",
+     "family": "layered",
+     "look": "Chipped enamel paint"
+    },
+    {
+     "id": "farm.trough_water",
+     "family": "nature",
+     "look": "Small still trough water"
+    }
+   ]
+  },
+  {
+   "room": "industrial",
+   "zone": "Z16",
+   "name": "Industrial yard and warehouse",
+   "description": "Warehouse, machinery, pipes, containers and a loading bay.",
+   "slots": [
+    {
+     "id": "industrial.yard_concrete",
+     "family": "playground",
+     "look": "Stained concrete with puddles"
+    },
+    {
+     "id": "industrial.warehouse_wall",
+     "family": "playground",
+     "look": "Plaster, brick and sheet panels"
+    },
+    {
+     "id": "industrial.container_metal",
+     "family": "GAP",
+     "note": "GAP-O",
+     "look": "Corrugated painted steel with rust"
+    },
+    {
+     "id": "industrial.pipe_metal",
+     "family": "layered",
+     "look": "Brushed pipes and valves"
+    },
+    {
+     "id": "industrial.machine_paint",
+     "family": "layered",
+     "look": "Industrial enamel with clear coat"
+    },
+    {
+     "id": "industrial.crane_steel",
+     "family": "layered",
+     "look": "Painted steel girders"
+    },
+    {
+     "id": "industrial.forklift_paint",
+     "family": "layered",
+     "look": "Yellow paint with wear"
+    },
+    {
+     "id": "industrial.crate_wood",
+     "family": "playground",
+     "look": "Rough pallet and crate wood"
+    },
+    {
+     "id": "industrial.lamp_shade",
+     "family": "nature",
+     "look": "Caged work lamp"
+    }
+   ]
+  },
+  {
+   "room": "space",
+   "zone": "Z17",
+   "name": "Space station and futuristic city",
+   "description": "A station interior, corridor, futuristic street, doors and platforms.",
+   "slots": [
+    {
+     "id": "space.floor_panel",
+     "family": "playground",
+     "look": "Glossy tech floor tiles"
+    },
+    {
+     "id": "space.wall_metal",
+     "family": "layered",
+     "look": "Brushed hull panels"
+    },
+    {
+     "id": "space.paint_coat",
+     "family": "layered",
+     "look": "Clear-coated white shell plates"
+    },
+    {
+     "id": "space.window_glass",
+     "family": "nature",
+     "look": "Thick viewport glass"
+    },
+    {
+     "id": "space.hologram",
+     "family": "GAP",
+     "note": "GAP-H",
+     "look": "Emissive translucent display"
+    },
+    {
+     "id": "space.tech_light",
+     "family": "nature",
+     "look": "Cool light strip behind a diffuser"
+    },
+    {
+     "id": "space.robot_body",
+     "family": "characters",
+     "note": "plus layered coat",
+     "look": "Robot face lens and glossy casing"
+    },
+    {
+     "id": "space.landing_pad",
+     "family": "playground",
+     "look": "Marked metal deck"
+    }
+   ]
+  },
+  {
+   "room": "alien",
+   "zone": "Z18",
+   "name": "Alien planet",
+   "description": "Unusual plants, strange rock formations and an exploration landmark.",
+   "slots": [
+    {
+     "id": "alien.ground",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Violet porous soil"
+    },
+    {
+     "id": "alien.plant_leaf",
+     "family": "nature",
+     "look": "Glowing translucent alien fronds"
+    },
+    {
+     "id": "alien.spire_rock",
+     "family": "layered",
+     "note": "GAP-K for internal glow",
+     "look": "Iridescent crystalline spires"
+    },
+    {
+     "id": "alien.pool",
+     "family": "nature",
+     "look": "Magenta glowing pool"
+    },
+    {
+     "id": "alien.floating_rock",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Smooth drifting rock"
+    },
+    {
+     "id": "alien.critter_skin",
+     "family": "characters",
+     "look": "Soft skin and large glossy eyes"
+    }
+   ]
+  },
+  {
+   "room": "volcano",
+   "zone": "Z19",
+   "name": "Volcano and lava",
+   "description": "A crater, dark rock, lava and a safe crossing route.",
+   "slots": [
+    {
+     "id": "volcano.ash_ground",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Dark ash and cinder"
+    },
+    {
+     "id": "volcano.basalt",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Black columnar basalt"
+    },
+    {
+     "id": "volcano.lava",
+     "family": "GAP",
+     "note": "GAP-L",
+     "look": "Glowing flowing magma with cooling crust"
+    },
+    {
+     "id": "volcano.vent",
+     "family": "GAP",
+     "note": "GAP-L, GAP-F",
+     "look": "Glowing steaming vent"
+    },
+    {
+     "id": "volcano.crossing_stone",
+     "family": "playground",
+     "look": "Scorched stepping stones"
+    },
+    {
+     "id": "volcano.torch",
+     "family": "nature",
+     "look": "Strong fire light"
+    }
+   ]
+  },
+  {
+   "room": "reef",
+   "zone": "Z20",
+   "name": "Underwater reef",
+   "description": "Coral, aquatic plants, seabed, wreckage and a readable route.",
+   "slots": [
+    {
+     "id": "reef.seabed",
+     "family": "GAP",
+     "note": "GAP-T, GAP-D",
+     "look": "Rippled sand and pebbles"
+    },
+    {
+     "id": "reef.coral",
+     "family": "nature",
+     "look": "Thin glowing coral branches"
+    },
+    {
+     "id": "reef.kelp",
+     "family": "nature",
+     "look": "Swaying translucent strands"
+    },
+    {
+     "id": "reef.water_volume",
+     "family": "GAP",
+     "note": "GAP-U",
+     "look": "Blue depth fog, caustics, light shafts"
+    },
+    {
+     "id": "reef.wreck_wood",
+     "family": "playground",
+     "look": "Encrusted ship timber"
+    },
+    {
+     "id": "reef.wreck_metal",
+     "family": "GAP",
+     "note": "GAP-O",
+     "look": "Corroded metal fittings"
+    },
+    {
+     "id": "reef.fish_scale",
+     "family": "characters",
+     "note": "closest: scale shine",
+     "look": "Shimmering fish skin"
+    },
+    {
+     "id": "reef.sea_surface",
+     "family": "nature",
+     "look": "Surface seen from below"
+    }
+   ]
+  },
+  {
+   "room": "haunted",
+   "zone": "Z21",
+   "name": "Haunted village and graveyard",
+   "description": "Crooked buildings, a gate, tombstones and an atmospheric focal point.",
+   "slots": [
+    {
+     "id": "haunted.grass_dead",
+     "family": "nature",
+     "look": "Dry, pale, sparse grass"
+    },
+    {
+     "id": "haunted.house_wood",
+     "family": "playground",
+     "look": "Rotten, warped planks"
+    },
+    {
+     "id": "haunted.chapel_stone",
+     "family": "playground",
+     "look": "Cold mossy stone"
+    },
+    {
+     "id": "haunted.tombstone",
+     "family": "playground",
+     "look": "Cracked stone with moss"
+    },
+    {
+     "id": "haunted.gate_iron",
+     "family": "layered",
+     "look": "Rusty wrought iron"
+    },
+    {
+     "id": "haunted.dead_tree_bark",
+     "family": "GAP",
+     "note": "GAP-B",
+     "look": "Black bare bark"
+    },
+    {
+     "id": "haunted.ghost",
+     "family": "GAP",
+     "note": "GAP-G",
+     "look": "Pale translucent glow"
+    },
+    {
+     "id": "haunted.pumpkin",
+     "family": "nature",
+     "look": "Lit carved pumpkin shell"
+    },
+    {
+     "id": "haunted.lantern",
+     "family": "nature",
+     "look": "Cold flickering lantern"
+    }
+   ]
+  },
+  {
+   "room": "candy",
+   "zone": "Z22",
+   "name": "Candy and toy world",
+   "description": "Sweet and toy forms, playful structures and a colourful route.",
+   "slots": [
+    {
+     "id": "candy.ground",
+     "family": "playground",
+     "look": "Glazed tile route like glossy candy"
+    },
+    {
+     "id": "candy.gumdrop",
+     "family": "GAP",
+     "note": "GAP-C",
+     "look": "Glossy jelly with inner glow"
+    },
+    {
+     "id": "candy.candy_cane",
+     "family": "layered",
+     "look": "Lacquered striped sugar"
+    },
+    {
+     "id": "candy.lollipop_tree",
+     "family": "layered",
+     "look": "Clear-coated lollipop swirl"
+    },
+    {
+     "id": "candy.cupcake_house",
+     "family": "GAP",
+     "note": "GAP-C",
+     "look": "Frosting, sponge and sprinkles"
+    },
+    {
+     "id": "candy.toy_plastic",
+     "family": "layered",
+     "look": "Glossy moulded plastic"
+    },
+    {
+     "id": "candy.toy_soldier",
+     "family": "characters",
+     "look": "Painted doll face and eyes"
+    },
+    {
+     "id": "candy.felt_cloth",
+     "family": "layered",
+     "look": "Stuffed-toy felt"
+    }
+   ]
+  },
+  {
+   "room": "dungeon",
+   "zone": "Z23",
+   "name": "Dungeon and temple interiors",
+   "description": "Connected chambers, stairs, doors and an inspectable puzzle mechanism.",
+   "slots": [
+    {
+     "id": "dungeon.floor_flag",
+     "family": "playground",
+     "look": "Damp flagstones"
+    },
+    {
+     "id": "dungeon.wall_brick",
+     "family": "playground",
+     "look": "Dark block masonry with moss and seepage"
+    },
+    {
+     "id": "dungeon.door_wood",
+     "family": "playground",
+     "look": "Heavy iron-bound door"
+    },
+    {
+     "id": "dungeon.dial_metal",
+     "family": "layered",
+     "look": "Aged bronze mechanism"
+    },
+    {
+     "id": "dungeon.altar_stone",
+     "family": "playground",
+     "look": "Carved altar slab"
+    },
+    {
+     "id": "dungeon.chest",
+     "family": "layered",
+     "look": "Wood and brass chest"
+    },
+    {
+     "id": "dungeon.torch",
+     "family": "nature",
+     "look": "Wall torch glow"
+    },
+    {
+     "id": "dungeon.statue_stone",
+     "family": "GAP",
+     "note": "GAP-T",
+     "look": "Carved statue stone"
+    }
+   ]
+  },
+  {
+   "room": "sports",
+   "zone": "Z24",
+   "name": "Sports ground and amusement park",
+   "description": "A pitch, a court, stands, a ride, stalls and public paths.",
+   "slots": [
+    {
+     "id": "sports.pitch_grass",
+     "family": "nature",
+     "look": "Mown striped pitch"
+    },
+    {
+     "id": "sports.court_surface",
+     "family": "playground",
+     "look": "Painted court tiles with lines"
+    },
+    {
+     "id": "sports.stands_concrete",
+     "family": "playground",
+     "look": "Concrete steps and bench seats"
+    },
+    {
+     "id": "sports.ferris_metal",
+     "family": "layered",
+     "look": "Painted steel frame with clear coat"
+    },
+    {
+     "id": "sports.stall_awning",
+     "family": "layered",
+     "look": "Striped fairground canvas"
+    },
+    {
+     "id": "sports.booth_wood",
+     "family": "playground",
+     "look": "Painted booth planks"
+    },
+    {
+     "id": "sports.path_paving",
+     "family": "playground",
+     "look": "Park paving"
+    },
+    {
+     "id": "sports.ride_lights",
+     "family": "nature",
+     "look": "Bulb strings and lamp shades"
+    },
+    {
+     "id": "sports.goal_metal",
+     "family": "layered",
+     "look": "White painted post"
+    }
+   ]
+  }
+ ],
+ "source_doc": "Evani.Dev .vibedeck/plans/world-kit-materials.md, section 9 (World rooms seed list)"
+}

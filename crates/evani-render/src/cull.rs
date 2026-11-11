@@ -54,6 +54,8 @@ pub struct CullStats {
     pub judged: u32,
     /// Custom mesh bounds `[x, y, z, r]` and the library revision they are of.
     bounds: Vec<[f32; 4]>,
+    /// The library slot revision each bound was computed at.
+    slot_revs: Vec<u64>,
     revision: u64,
 }
 
@@ -96,15 +98,27 @@ fn seen(see: &dyn Fn([f32; 3], f32) -> bool, pos: [f32; 3], rot: [f32; 4], scale
 }
 
 impl CullStats {
-    /// Bounds of custom meshes, rebuilt when the library's revision moved.
+    /// Bounds of custom meshes, recomputed for the slots that changed since
+    /// the library revision last seen (a streamed chunk costs its own
+    /// vertices, not the library's).
     fn refresh(&mut self, lib: Option<&MeshLibrary>) {
         let (rev, meshes) = lib.map_or((0, &[][..]), |l| (l.revision(), l.meshes()));
         if rev == self.revision && meshes.len() == self.bounds.len() {
             return;
         }
+        if rev < self.revision {
+            // A different (younger) library: nothing seen so far applies.
+            self.slot_revs.clear();
+        }
         self.revision = rev;
-        self.bounds.clear();
-        for m in meshes {
+        self.bounds.resize(meshes.len(), [0.0; 4]);
+        self.slot_revs.resize(meshes.len(), 0);
+        for (j, m) in meshes.iter().enumerate() {
+            let r = lib.map_or(0, |l| l.slot_revision(j));
+            if r == self.slot_revs[j] && r != 0 {
+                continue;
+            }
+            self.slot_revs[j] = r;
             let (mut lo, mut hi) = ([f32::MAX; 3], [f32::MIN; 3]);
             for v in &m.vertices {
                 lo = [0, 1, 2].map(|k| lo[k].min(v[k]));
@@ -112,7 +126,7 @@ impl CullStats {
             }
             let c = [0, 1, 2].map(|k| (lo[k] + hi[k]) * 0.5);
             let r2 = m.vertices.iter().fold(0.0f32, |a, v| a.max([0, 1, 2].iter().map(|&k| (v[k] - c[k]) * (v[k] - c[k])).sum::<f32>()));
-            self.bounds.push(if m.vertices.is_empty() { [0.0; 4] } else { [c[0], c[1], c[2], r2.sqrt()] });
+            self.bounds[j] = if m.vertices.is_empty() { [0.0; 4] } else { [c[0], c[1], c[2], r2.sqrt()] };
         }
     }
 

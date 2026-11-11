@@ -393,6 +393,19 @@ pub fn build(x: &Inputs) -> Result<(Value, Vec<String>), String> {
         if g_err > 0 {
             problems.push(format!("{}: the Khronos validator found {g_err} errors in its geometry (uncompressed twin): {}", t.file, g_lines.join("; ")));
         }
+        // A corner whose normal faces away from every triangle it is in
+        // draws as lit from behind, and evani-gltf's normals test fails a
+        // game model with one. The converter lays its own slivers flat
+        // (normals::snap_slivers); a fault the input brings (a master built
+        // inside out, an Evani.Model tier) is named here so it is fixed
+        // before the file reaches a game.
+        if let Some(tw) = &t.twin {
+            let bytes = std::fs::read(tw).map_err(|e| format!("{}: {e}", tw.display()))?;
+            let flipped = crate::normals::flipped_vertices(&bytes)?;
+            if flipped > 0 {
+                notes.push(format!("{}: {flipped} vertex normal(s) point against every triangle using them (a corner lit from behind; a game model with one fails evani-gltf's normals test). Repair the master's normals (tools/models/fix_flipped_normals.py) or its winding, then convert again", t.file));
+            }
+        }
         validator.push(json!({ "file": t.file, "errors": v_err, "warnings": v_warn, "error_lines": v_lines, "geometry": { "checked": t.twin.is_some(), "errors": g_err, "warnings": g_warn, "error_lines": g_lines } }));
         let lod0_nodes = g.evani.as_ref().and_then(|e| e.lods.first()).and_then(|l| l.node_index).map(|i| subtree(&g, i)).unwrap_or_else(|| scene_nodes(&g));
         checks.push(json!({ "what": format!("{} level 0", t.tier), "file": t.file, "meshcheck": meshcheck(&g, &lod0_nodes) }));

@@ -39,7 +39,7 @@ use crate::model::stream::{self, Backend, web::Shim};
 use crate::model::{self, INSTANCE_WORDS, MATERIAL_WORDS, ModelId, ModelState, Models, Part, Prepared, TexSource, VERTEX_BYTES};
 use crate::world::RenderWorld;
 use evani_core::assets::AssetManifest;
-use crate::texture::{self, DeviceTex, TexSize}; #[cfg(feature = "level-groups")] mod level;
+use crate::texture::{self, DeviceTex, TexSize}; #[cfg(feature = "level-groups")] mod level; #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] mod cut;
 
 const VERTEX_ATTRS: [wgpu::VertexAttribute; 4] =
     wgpu::vertex_attr_array![0 => Unorm16x4, 1 => Snorm8x4, 2 => Snorm8x4, 3 => Unorm16x2];
@@ -117,7 +117,7 @@ fn material_layout(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                 count: None,
-            }, #[cfg(feature = "relief")] tex(5), #[cfg(feature = "relief")] super::models_relief::uniform(6), #[cfg(feature = "relief")] super::models_relief::uniform(7), #[cfg(all(feature = "look-surface", not(feature = "relief")))] tex(5), #[cfg(all(feature = "look-surface", not(feature = "relief")))] tex(6), #[cfg(all(feature = "look-surface", not(feature = "relief")))] super::models_surface::uniform(8), #[cfg(all(feature = "material-layers", not(feature = "relief")))] tex(9), #[cfg(all(feature = "material-layers", not(feature = "relief")))] super::models_surface::uniform(10), #[cfg(all(feature = "material-layers", not(feature = "relief")))] super::models_surface::uniform(11),
+            }, #[cfg(feature = "relief")] tex(5), #[cfg(feature = "relief")] super::models_relief::uniform(6), #[cfg(feature = "relief")] super::models_relief::uniform(7), #[cfg(all(feature = "look-surface", not(feature = "relief")))] tex(5), #[cfg(all(feature = "look-surface", not(feature = "relief")))] tex(6), #[cfg(all(feature = "look-surface", not(feature = "relief")))] super::models_surface::uniform(8), #[cfg(all(feature = "material-layers", not(feature = "relief")))] tex(9), #[cfg(all(feature = "material-layers", not(feature = "relief")))] super::models_surface::uniform(10), #[cfg(all(feature = "material-layers", not(feature = "relief")))] super::models_surface::uniform(11), #[cfg(all(feature = "material-recipes", not(feature = "relief")))] super::models_surface::uniform(12), #[cfg(all(feature = "material-recipes", not(feature = "relief")))] super::models_surface::uniform(13), #[cfg(all(feature = "char-materials", not(feature = "relief")))] super::models_surface::uniform(14),
         ],
     })
 }
@@ -125,15 +125,15 @@ fn material_layout(dev: &wgpu::Device) -> wgpu::BindGroupLayout {
 /// The model pipeline (`model_vs` / `model_fs` of the forward module), 1x
 /// or 4x to match the forward pass. No culling: the shader discards back
 /// faces of single-sided parts.
-pub fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule, ms: bool) -> wgpu::RenderPipeline {
+pub fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule, ms: bool, lite: bool, #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] see: u8) -> wgpu::RenderPipeline {
     #[cfg(all(feature = "shadows", not(feature = "ambient")))]
     let frame = &layouts.fwd; #[cfg(feature = "ambient")] let frame = &layouts.fwd_amb;
     #[cfg(not(feature = "shadows"))]
     let frame = &layouts.b;
-    let mat = material_layout(dev);
+    let mat = material_layout(dev); #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] let copy = blend::copy_for(dev, see);
     let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
-        bind_group_layouts: &[Some(frame), Some(&mat), #[cfg(feature = "point-lights")] Some(&layouts.lights.empty), #[cfg(feature = "point-lights")] Some(&layouts.lights.lights)],
+        #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] bind_group_layouts: &[Some(frame), Some(&mat), #[cfg(feature = "point-lights")] Some(&layouts.lights.empty), #[cfg(feature = "point-lights")] Some(&layouts.lights.lights)], #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] bind_group_layouts: &blend::groups(frame, &mat, &copy, layouts, see),
         immediate_size: 0,
     });
     let buffers = [
@@ -154,28 +154,28 @@ pub fn pipeline(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModu
         vertex: wgpu::VertexState {
             module,
             entry_point: Some("model_vs"),
-            compilation_options: Default::default(),
+            #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] compilation_options: Default::default(), #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] compilation_options: blend::options(see),
             buffers: &buffers,
         },
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: Some(true),
+            #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] depth_write_enabled: Some(true), #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] depth_write_enabled: Some(see == 0),
             depth_compare: Some(crate::depth::COMPARE),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }),
         multisample: wgpu::MultisampleState {
-            count: if ms { MSAA_SAMPLES } else { 1 },
+            #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] count: if ms { MSAA_SAMPLES } else { 1 }, #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] count: if ms && see != 2 { MSAA_SAMPLES } else { 1 },
             ..Default::default()
         },
         fragment: Some(wgpu::FragmentState {
             module, #[cfg(not(any(feature = "relief", feature = "look-surface")))]
-            entry_point: Some("model_fs"), #[cfg(feature = "relief")] entry_point: Some("model_relief_fs"), #[cfg(all(feature = "look-surface", not(feature = "relief")))] entry_point: Some(LIT_FS),
-            compilation_options: Default::default(),
+            entry_point: Some(if lite { LITE_FS } else { "model_fs" }), #[cfg(feature = "relief")] entry_point: Some(if lite { LITE_FS } else { "model_relief_fs" }), #[cfg(all(feature = "look-surface", not(feature = "relief")))] entry_point: Some(if lite { LITE_FS } else { LIT_FS }),
+            #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] compilation_options: Default::default(), #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] compilation_options: blend::options(see),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
-                blend: None,
+                #[cfg(not(all(feature = "material-recipes-blend", not(feature = "relief"))))] blend: None, #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] blend: blend::state(see),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
         }),
@@ -281,7 +281,7 @@ struct GpuModel {
     /// The parts' bytes (as `parts`, in order) until the cones are baked.
     cones: model::sun::Lazy,
     /// Drawn and `Ready`; false while it waits for its cones.
-    shown: bool, #[cfg(feature = "skinning")] skin: skin::ModelSkin,
+    shown: bool, next: Option<Box<GpuModel>>, #[cfg(feature = "skinning")] skin: skin::ModelSkin,
 }
 
 /// Instances `first..first + count` of the instance buffer draw part
@@ -309,8 +309,8 @@ pub(super) struct ModelGpu {
     resident: u64,
     synced: bool,
     instances: wgpu::Buffer,
-    staging: Vec<f32>,
-    runs: Vec<Run>, #[cfg(feature = "relief")] relief: wgpu::Buffer, #[cfg(feature = "skinning")] skin: skin::SkinGpu, #[cfg(feature = "view-model-models")] vm_runs: Vec<Run>, #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: super::models_layers::LayersGpu,
+    staging: Vec<f32>, reads: model::read::Reads, bake_rate: f64,
+    runs: Vec<Run>, #[cfg(feature = "relief")] relief: wgpu::Buffer, #[cfg(feature = "skinning")] skin: skin::SkinGpu, #[cfg(feature = "view-model-models")] vm_runs: Vec<Run>, #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: super::models_layers::LayersGpu, #[cfg(all(feature = "material-recipes", not(feature = "relief")))] recipes: super::models_recipes::RecipesGpu, #[cfg(all(feature = "char-materials", not(feature = "relief")))] chars: super::char_live::CharLiveGpu, #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] cut: super::models_recipes::CutShadows, #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] blend: blend::BlendGpu, #[cfg(feature = "swatches")] swatch_runs: Vec<Run>,
     /// This frame's before/after split (S3-14), copied from `Models.split`.
     #[cfg(feature = "hooks")]
     split: Option<crate::model::Split>,
@@ -485,8 +485,8 @@ impl ModelGpu {
             resident: 0,
             synced: false,
             instances: instance_buffer(dev, (INSTANCE_WORDS * 4 * 64) as u64),
-            staging: Vec::new(),
-            runs: Vec::new(), #[cfg(feature = "relief")] relief: super::models_relief::frame_buffer(dev), #[cfg(feature = "skinning")] skin: skin::SkinGpu::new(dev, layouts), #[cfg(feature = "view-model-models")] vm_runs: Vec::new(), #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: super::models_layers::LayersGpu::new(dev, queue),
+            staging: Vec::new(), reads: model::read::Reads::default(), bake_rate: model::sun::START_RATE,
+            runs: Vec::new(), #[cfg(feature = "relief")] relief: super::models_relief::frame_buffer(dev), #[cfg(feature = "skinning")] skin: skin::SkinGpu::new(dev, layouts), #[cfg(feature = "view-model-models")] vm_runs: Vec::new(), #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: super::models_layers::LayersGpu::new(dev, queue), #[cfg(all(feature = "material-recipes", not(feature = "relief")))] recipes: super::models_recipes::RecipesGpu::new(dev, queue), #[cfg(all(feature = "char-materials", not(feature = "relief")))] chars: super::char_live::CharLiveGpu::new(dev), #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] cut: super::models_recipes::CutShadows::new(dev, &layouts.b), #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] blend: blend::BlendGpu::new(dev), #[cfg(feature = "swatches")] swatch_runs: Vec::new(),
             #[cfg(feature = "hooks")]
             split: None,
         }
@@ -526,7 +526,7 @@ impl ModelGpu {
     /// baked sun cones.
     pub fn prepare(&mut self, dev: &wgpu::Device, queue: &wgpu::Queue, world: &World, rw: &RenderWorld, settled: bool, cones_read: bool) {
         self.runs.clear(); #[cfg(feature = "view-model-models")] self.vm_runs.clear();
-        self.staging.clear(); #[cfg(feature = "relief")] super::models_relief::write_frame(queue, &self.relief, world); #[cfg(all(feature = "material-layers", not(feature = "relief")))] self.layers.write_frame(queue, world);
+        self.staging.clear(); #[cfg(feature = "relief")] super::models_relief::write_frame(queue, &self.relief, world); #[cfg(all(feature = "material-layers", not(feature = "relief")))] self.layers.write_frame(queue, world); #[cfg(all(feature = "material-recipes", not(feature = "relief")))] self.recipes.write_frame(queue, world); #[cfg(all(feature = "char-materials", not(feature = "relief")))] self.chars.write_frame(queue, world);
         let Some(mut models) = world.try_res_mut::<Models>() else {
             return;
         };
@@ -579,7 +579,7 @@ impl ModelGpu {
                     }
                     models.stream.boot_left = models.stream.boot_left.saturating_sub(1);
                 }
-                Msg::Glb(id, Ok(b)) => models.loaded(id, &b),
+                Msg::Glb(id, Ok(b)) => self.reads.push(id, b),
                 Msg::Glb(id, Err(e)) => {
                     world.res_mut::<ErrorLog>().error(format!("model {}: {e}", models.url(id).unwrap_or("?")));
                     models.set_state(id, ModelState::Failed(e));
@@ -598,7 +598,7 @@ impl ModelGpu {
                 }
             }
         }
-        for (id, prepared) in core::mem::take(&mut models.pending) {
+        self.reads.run(&mut models, &evani_core::time::now_ms, model::read::BUDGET_MS); for (id, prepared) in core::mem::take(&mut models.pending) {
             let url = models.url(id).unwrap_or("").to_owned();
             self.start(id, url, prepared, &mut models.stream);
         }
@@ -616,7 +616,7 @@ impl ModelGpu {
             let id = l.id; #[cfg(feature = "level-groups")] let before = self.resident;
             let mut log = world.res_mut::<ErrorLog>();
             match self.upload(dev, queue, l, budget, &mut log) {
-                Ok(mut m) => { #[cfg(feature = "level-groups")] models.stream.levels.uploaded(id, self.resident - before);
+                Ok(mut m) => { #[cfg(feature = "level-groups")] models.stream.levels.uploaded(id, self.resident - before); #[cfg(feature = "swatches")] if let Some(mut s) = world.try_res_mut::<crate::swatch::Swatches>() { s.note_upload(id.0 as usize); }
                     let at = id.0 as usize;
                     if self.ready.len() <= at {
                         self.ready.resize_with(at + 1, || None);
@@ -625,7 +625,7 @@ impl ModelGpu {
                     if m.shown {
                         models.set_state(id, ModelState::Ready);
                     }
-                    self.ready[at] = Some(m);
+                    keep_old(&mut self.ready[at], m);
                 }
                 Err(e) => {
                     log.error(format!("model {}: {e}", models.url(id).unwrap_or("?")));
@@ -634,18 +634,19 @@ impl ModelGpu {
             }
         } #[cfg(feature = "level-groups")] self.sweep_released(&mut models);
         // The sun cones: one model's share a frame where they are read.
-        let drawn = |mi: usize| models.draws.iter().any(|d| d.model.0 as usize == mi);
-        let next = model::sun::pick(cones_read, self.ready.iter().enumerate().map(|(mi, gm)| gm.as_ref().map_or((true, false, false), |g| (g.cones.baked(), !g.shown, drawn(mi)))));
-        if let Some(gm) = next.and_then(|mi| self.ready.get_mut(mi)).and_then(Option::as_mut)
-            && let Some(baked) = gm.cones.advance(model::sun::FRAME_UNITS)
-        { #[cfg(feature = "skinning")] let baked = model::skin::unproxy(baked, &mut gm.skin.keep, &gm.skin.bind);
+        let drawn = |mi: usize| models.draws.iter().any(|d| d.model.0 as usize == mi) && !models.standing_in(ModelId(mi as u32)); // a handle's last tier while its own file loads is not baked
+        let next = model::sun::pick(cones_read, self.ready.iter().enumerate().map(|(mi, gm)| gm.as_ref().map(|g| g.next.as_deref().unwrap_or(g)).map_or((true, false, false), |g| (g.cones.baked(), !g.shown, drawn(mi))))); #[cfg(feature = "sun-exact")] let next = next.or_else(|| model::sun::pick(cones_read, self.ready.iter().enumerate().map(|(mi, gm)| gm.as_ref().map_or((true, false, false), |g| (g.cones.settled(), false, drawn(mi)))))); // then a drawn model whose exact casts or fade still run
+        let (units, t0) = (model::sun::frame_units(self.bake_rate), evani_core::time::now_ms());
+        if let Some(gm) = next.and_then(|mi| self.ready.get_mut(mi)).and_then(Option::as_mut).map(baking)
+            && let Some(baked) = gm.cones.advance(units)
+        { #[cfg(all(feature = "skinning", not(feature = "sun-exact")))] let baked = model::skin::unproxy(baked, &mut gm.skin.keep, &gm.skin.bind); #[cfg(all(feature = "skinning", feature = "sun-exact"))] let baked = if gm.cones.settled() { model::skin::unproxy(baked, &mut gm.skin.keep, &gm.skin.bind) } else { model::skin::unproxy(baked, &mut gm.skin.keep.clone(), &gm.skin.bind) }; // coarse and fade frames come back more than once
             for (gp, p) in gm.parts.iter().zip(&baked) {
                 queue.write_buffer(&gp.vb, 0, &p.vertices);
             }
-        }
+        } self.bake_rate = next.map_or(self.bake_rate, |_| model::sun::next_rate(self.bake_rate, units, evani_core::time::now_ms() - t0)); // the bake's time budget (sun::BAKE_MS)
         // A model waiting for its cones shows once they are in, or at once
         // when the frame has a shadow map again (they are not read).
-        for (mi, gm) in self.ready.iter_mut().enumerate() {
+        for (mi, gm) in self.ready.iter_mut().enumerate() { promote(gm, cones_read);
             if let Some(gm) = gm
                 && !gm.shown
                 && (gm.cones.baked() || !cones_read)
@@ -653,7 +654,7 @@ impl ModelGpu {
                 gm.shown = true;
                 models.set_state(ModelId(mi as u32), ModelState::Ready);
             }
-        }
+        } #[cfg(feature = "capture")] baking::report(&self.ready, &models.draws);
         // This frame's instances, one run per part of each drawn model: a
         // shared part draws every instance, a level's part the instances
         // at that level.
@@ -673,7 +674,7 @@ impl ModelGpu {
                     self.runs.push(Run { model: mi, part: pi, first, count });
                 }
             }
-        } #[cfg(feature = "view-model-models")] self.vm_stage(&mut models, rw);
+        } #[cfg(feature = "swatches")] self.swatch_split(world); #[cfg(feature = "view-model-models")] self.vm_stage(&mut models, rw); #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] self.blend_frame(world, rw);
         models.draws.clear(); #[cfg(feature = "skinning")] models.skin.clear();
         models.stream.frame();
         if self.staging.is_empty() {
@@ -774,7 +775,7 @@ impl ModelGpu {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
-            queue.write_buffer(&ub, 0, bytemuck::cast_slice(&words)); #[cfg(feature = "relief")] let hv = m.relief.height.and_then(|i| views.get(i)).and_then(Option::as_ref); #[cfg(feature = "relief")] let rub = super::models_relief::material_buffer(dev, queue, &m.relief, hv.is_some()); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let mrv = m.surface.mr.and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(&self.defaults[0].1); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let ocv = m.surface.occlusion.and_then(|i| views.get(i)).and_then(Option::as_ref); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let sub = super::models_surface::material_buffer(dev, queue, &m.surface, ocv.is_some()); #[cfg(all(feature = "material-layers", not(feature = "relief")))] let lub = super::models_layers::material_buffer(dev, queue, &m.layers);
+            queue.write_buffer(&ub, 0, bytemuck::cast_slice(&words)); #[cfg(feature = "relief")] let hv = m.relief.height.and_then(|i| views.get(i)).and_then(Option::as_ref); #[cfg(feature = "relief")] let rub = super::models_relief::material_buffer(dev, queue, &m.relief, hv.is_some()); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let mrv = m.surface.mr.and_then(|i| views.get(i)).and_then(Option::as_ref).unwrap_or(&self.defaults[0].1); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let ocv = m.surface.occlusion.and_then(|i| views.get(i)).and_then(Option::as_ref); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let sub = super::models_surface::material_buffer(dev, queue, &m.surface, ocv.is_some()); #[cfg(all(feature = "material-layers", not(feature = "relief")))] let lub = super::models_layers::material_buffer(dev, queue, &m.layers); #[cfg(all(feature = "material-recipes", not(feature = "relief")))] let cub = self.recipes.material_buffer(dev, queue, &m.recipe);
             materials.push(dev.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("evani.model.material"),
                 layout: &self.layout,
@@ -783,10 +784,10 @@ impl ModelGpu {
                     wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(view(0, 0)) },
                     wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(view(1, 1)) },
                     wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(view(2, 0)) },
-                    wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&self.sampler) }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(hv.unwrap_or(&self.defaults[0].1)) }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 6, resource: rub.as_entire_binding() }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 7, resource: self.relief.as_entire_binding() }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(mrv) }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::TextureView(ocv.unwrap_or(&self.defaults[0].1)) }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 8, resource: sub.as_entire_binding() }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&self.layers.weave_view) }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 10, resource: lub.as_entire_binding() }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 11, resource: self.layers.frame.as_entire_binding() },
+                    wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&self.sampler) }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(hv.unwrap_or(&self.defaults[0].1)) }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 6, resource: rub.as_entire_binding() }, #[cfg(feature = "relief")] wgpu::BindGroupEntry { binding: 7, resource: self.relief.as_entire_binding() }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(mrv) }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::TextureView(ocv.unwrap_or(&self.defaults[0].1)) }, #[cfg(all(feature = "look-surface", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 8, resource: sub.as_entire_binding() }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&self.layers.weave_view) }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 10, resource: lub.as_entire_binding() }, #[cfg(all(feature = "material-layers", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 11, resource: self.layers.frame.as_entire_binding() }, #[cfg(all(feature = "material-recipes", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 12, resource: cub.as_entire_binding() }, #[cfg(all(feature = "material-recipes", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 13, resource: self.recipes.frame.as_entire_binding() }, #[cfg(all(feature = "char-materials", not(feature = "relief")))] wgpu::BindGroupEntry { binding: 14, resource: self.chars.buf.as_entire_binding() },
                 ],
             }));
-            uniforms.push(ub); #[cfg(feature = "relief")] uniforms.push(rub); #[cfg(all(feature = "look-surface", not(feature = "relief")))] uniforms.push(sub); #[cfg(all(feature = "material-layers", not(feature = "relief")))] uniforms.push(lub);
+            #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] self.cut.keep(dev, &self.recipes.frame, l.id, materials.len().saturating_sub(1), words[8] > 0.5 || words[15] > 0.5, &ub, view(0, 0), &self.sampler, &cub); #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] self.blend.keep(l.id, materials.len().saturating_sub(1), words[15], words[19]); uniforms.push(ub); #[cfg(feature = "relief")] uniforms.push(rub); #[cfg(all(feature = "look-surface", not(feature = "relief")))] uniforms.push(sub); #[cfg(all(feature = "material-layers", not(feature = "relief")))] uniforms.push(lub); #[cfg(all(feature = "material-recipes", not(feature = "relief")))] { self.recipes.keep(l.id, materials.len().saturating_sub(1), &cub, &m.recipe); uniforms.push(cub); } #[cfg(feature = "material-split")] self.recipes.keep_kind(l.id, materials.len().saturating_sub(1), m.surface.words[crate::model::surface::KIND_WORD].round().clamp(0.0, 255.0) as u8);
         }
         let mut parts = Vec::with_capacity(prepared.parts.len());
         let mut cpu = Vec::with_capacity(prepared.parts.len());
@@ -813,7 +814,7 @@ impl ModelGpu {
             parts.push(GpuPart { vb, ib, count, part: p.clone(), #[cfg(feature = "skinning")] sb });
             cpu.push(Part { vertices, indices, ..p });
         } #[cfg(feature = "skinning")] let (cpu, keep) = model::skin::proxies(cpu, &prepared.bind);
-        Ok(GpuModel { parts, materials, _textures: textures, _uniforms: uniforms, cones: model::sun::Lazy::new(cpu), shown: false, #[cfg(feature = "skinning")] skin: skin::ModelSkin { bind: prepared.bind, keep } })
+        Ok(GpuModel { parts, materials, _textures: textures, _uniforms: uniforms, cones: model::sun::Lazy::new(cpu), shown: false, next: None, #[cfg(feature = "skinning")] skin: skin::ModelSkin { bind: prepared.bind, keep } })
     }
 
     /// One texture with its top `skip` levels dropped.
@@ -899,10 +900,10 @@ impl ModelGpu {
         pipes: &Pipelines,
         tris: &mut u32,
     ) -> u32 {
-        let (false, Some(pipe)) = (self.runs.is_empty(), pipes.model(ms)) else {
+        #[cfg(not(feature = "material-split"))] let (false, Some(pipe)) = (self.runs.is_empty(), pipes.model(ms)) else {
             return 0;
-        };
-        rp.set_pipeline(pipe);
+        }; #[cfg(feature = "material-split")] if self.runs.is_empty() { return 0; } #[cfg(feature = "material-split")] let mut cur: Option<&wgpu::RenderPipeline> = None;
+        #[cfg(not(feature = "material-split"))] rp.set_pipeline(pipe);
         rp.set_vertex_buffer(1, self.instances.slice(..));
         let mut draws = 0;
         for &(off, px) in views {
@@ -914,11 +915,11 @@ impl ModelGpu {
                 };
                 let Some(p) = gm.parts.get(r.part) else {
                     continue;
-                }; #[cfg(feature = "skinning")] if p.sb.is_some() { continue; }
+                }; #[cfg(feature = "skinning")] if p.sb.is_some() { continue; } #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] if self.blend_skips(r.model, p.part.material, pipes, ms) { continue; }
                 let Some(mat) = gm.materials.get(p.part.material) else {
                     continue;
                 };
-                rp.set_bind_group(1, mat, &[]);
+                #[cfg(feature = "material-split")] { let (code, kind) = self.recipes.split_of(r.model, p.part.material); let Some(pipe) = pipes.model_for(ms, code, kind) else { continue; }; if !cur.is_some_and(|c| core::ptr::eq(c, pipe)) { rp.set_pipeline(pipe); cur = Some(pipe); } } rp.set_bind_group(1, mat, &[]);
                 rp.set_vertex_buffer(0, p.vb.slice(..));
                 rp.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
                 #[cfg(feature = "hooks")]
@@ -948,12 +949,12 @@ impl ModelGpu {
         for r in &self.runs {
             let Some(p) = self.ready.get(r.model).and_then(Option::as_ref).and_then(|m| m.parts.get(r.part)) else {
                 continue;
-            }; #[cfg(feature = "skinning")] if p.sb.is_some() { continue; }
+            }; #[cfg(feature = "skinning")] if p.sb.is_some() { continue; } #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] if self.cut.group(r.model, p.part.material).is_some() { continue; }
             rp.set_vertex_buffer(0, p.vb.slice(..));
             rp.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
             rp.draw_indexed(0..p.count, 0, r.first..r.first + r.count);
             draws += 1;
-        } #[cfg(feature = "skinning")] self.skin_shadows(rp, bg, off, &mut draws);
+        } #[cfg(all(feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))] { draws += self.cut_shadows(rp, bg, off); } #[cfg(feature = "skinning")] self.skin_shadows(rp, bg, off, &mut draws);
         draws
     }
 }
@@ -1019,3 +1020,104 @@ mod vm;
 /// the skinned model pipelines. Declared last: no line above moves.
 #[cfg(all(feature = "material-layers", not(feature = "relief")))]
 pub(super) const LIT_FS: &str = "model_layered_fs";
+
+/// The see-through pass (batch 3 B3-P3, feature `material-recipes-blend`).
+/// Declared last: no line above moves.
+#[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))]
+mod blend;
+
+/// The stand-in's fragment stage (startfix): the plain textured `model_fs`
+/// of the same module, which builds in seconds where the full stage (every
+/// material recipe) takes tens of seconds. Declared last: no line above moves.
+pub(super) const LITE_FS: &str = "model_fs";
+
+/// The stand-in model pipeline: [`pipeline`] with [`LITE_FS`] (opaque, like
+/// the model pipeline). Declared last: no line above moves.
+pub(super) fn pipeline_lite(dev: &wgpu::Device, layouts: &Layouts, module: &wgpu::ShaderModule, ms: bool) -> wgpu::RenderPipeline {
+    pipeline(dev, layouts, module, ms, true, #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] 0)
+}
+
+/// The studio's swatch balls (feature `swatches`). Declared last: no line
+/// above moves.
+#[cfg(feature = "swatches")]
+mod swatch;
+
+// Appended (no shipped line moves, so no game's panic locations change).
+/// Live builds only (`capture`): the drawn models hidden while their sun
+/// cones bake (Lite and Low read them; a model rebuilt there stays hidden
+/// until its cones are in, while the scene still sees the earlier copy as
+/// ready and draws no stand-in). The page shows the count as
+/// `<html data-evani-baking="n">` and the review's captures wait for it:
+/// material-view's Low stew proof was taken with three of five spheres
+/// hidden (critic rounds 7 and 8).
+#[cfg(feature = "capture")]
+mod baking {
+    use std::cell::Cell;
+
+    thread_local! {
+        static SHOWN: Cell<Option<usize>> = const { Cell::new(None) };
+    }
+
+    pub(super) fn report(ready: &[Option<super::GpuModel>], draws: &[crate::model::ModelInstance]) {
+        let n = ready.iter().enumerate().filter(|(mi, gm)| gm.as_ref().is_some_and(|g| !g.shown || g.next.is_some()) && draws.iter().any(|d| d.model.0 as usize == *mi)).count();
+        if SHOWN.with(Cell::get) == Some(n) {
+            return;
+        }
+        SHOWN.with(|s| s.set(Some(n)));
+        if let Some(el) = web_sys::window().and_then(|w| w.document()).and_then(|d| d.document_element()) {
+            let _ = el.set_attribute("data-evani-baking", &n.to_string());
+        }
+    }
+}
+
+// Appended (bake-keeps-old-copy, 2026-11-02): a model uploaded again (a
+// kit's `replace_glb`, a new device) on a tier that reads the sun cones
+// keeps drawing its previous copy until the new copy's cones are in, as
+// `Models::replace_glb` promises; before, the slot took the new copy hidden
+// and the viewer's styled spheres vanished for seconds on Low.
+
+// The slot logic is `model::swap` (tested natively).
+use model::swap::{SlotCopy, keep_old, promote};
+
+/// The copy whose cones bake ([`SlotCopy::baking`]).
+fn baking(gm: &mut GpuModel) -> &mut GpuModel {
+    gm.baking()
+}
+
+impl SlotCopy for GpuModel {
+    fn shown(&self) -> bool {
+        self.shown
+    }
+    fn set_shown(&mut self) {
+        self.shown = true;
+    }
+    fn baked(&self) -> bool {
+        self.cones.baked()
+    }
+    fn next(&self) -> Option<&Self> {
+        self.next.as_deref()
+    }
+    fn set_next(&mut self, next: Option<Box<Self>>) {
+        self.next = next;
+    }
+    fn take_next(&mut self) -> Option<Box<Self>> {
+        self.next.take()
+    }
+    fn baking(&mut self) -> &mut Self {
+        match self.next {
+            Some(ref mut n) => n,
+            None => self,
+        }
+    }
+}
+
+impl ModelGpu {
+    /// Model work still under way: files being read, textures arriving,
+    /// a drawn model's copy hidden or waiting while its cones bake
+    /// (tier-settle; a model not drawn does not hold it).
+    #[cfg(feature = "capture")]
+    pub(super) fn settling(&self, models: &Models) -> bool {
+        let drawn = |mi: usize| models.draws.iter().any(|d| d.model.0 as usize == mi);
+        !self.reads.is_empty() || !self.loading.is_empty() || self.ready.iter().enumerate().any(|(mi, g)| g.as_ref().is_some_and(|g| g.next.is_some() || !g.shown) && drawn(mi))
+    }
+}

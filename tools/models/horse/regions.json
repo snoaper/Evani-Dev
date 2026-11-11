@@ -1,0 +1,4 @@
+{
+  "about": "Body-chart bone classes for the test horse (cargo xtask convert --regions tools/models/horse/regions.json): the Rigify horse metarig names the converter does not read on its own. forefoot is the fore cannon (a leg); breast is the pectoral muscle (trunk).",
+  "bones": {"forefoot.L": "leg", "forefoot.R": "leg", "breast.L": "spine", "breast.R": "spine"}
+}

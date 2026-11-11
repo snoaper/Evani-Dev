@@ -20,7 +20,8 @@
 //!
 //! Tiers (`Tiers::active().id`): `lite` paints each relief surface its flat
 //! mean colour (a 16 x 16 bake for the means only), `low` the baked colour
-//! with no relief (bake capped at 128), every other tier the full relief.
+//! lit with its bent normal (bake capped at 128), every other tier the full
+//! relief.
 
 pub mod bake;
 pub mod params;
@@ -140,7 +141,8 @@ impl ReliefConfig {
     }
 }
 
-/// The shader mode for a tier: 0 flat colour, 1 baked colour, 2 full.
+/// The shader mode for a tier: 0 flat colour, 1 baked colour lit with its
+/// bent normal (a 128 bake), 2 full.
 pub fn tier_mode(tier: &str) -> u32 {
     match tier {
         "lite" => 0,
@@ -178,9 +180,9 @@ pub fn header(cfg: &ReliefConfig, bakes: &[SurfaceBake], mode: u32) -> Vec<[f32;
         let col = cfg.colors.get(k).copied().unwrap_or(base);
         let mul: [f32; 3] = std::array::from_fn(|i| col[i] / base[i].max(1e-4));
         d.push([first as f32, b.n as f32, b.levels as f32, b.slope_scale]);
-        d.push([b.tile[0], b.tile[1], b.depth, 0.0]);
+        d.push([b.tile[0], b.tile[1], b.depth, cfg.patterns()[k.min(3)].fine_width()]);
         d.push([b.mean_color[0], b.mean_color[1], b.mean_color[2], b.mean_rough]);
-        d.push([mul[0], mul[1], mul[2], 0.0]);
+        d.push([mul[0], mul[1], mul[2], b.mean_height]);
         first += 2 * b.texels.len();
     }
     d

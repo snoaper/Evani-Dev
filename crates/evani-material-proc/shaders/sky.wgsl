@@ -30,7 +30,8 @@
 //
 // Records: 3 = sun direction (towards the sun, unit) and time (s); 4 =
 // turbidity, rayleigh, mie coefficient, mie directional g; 5 = cloud scale,
-// speed, coverage, density; 6 = cloud elevation, brightness, sun disc (0/1).
+// speed, coverage, density; 6 = cloud elevation, brightness, sun disc (0/1),
+// open below the horizon (0/1).
 // The CPU mirror (src/sky.rs `radiance`) must follow any change here.
 
 const MP_PI: f32 = 3.141592653589793;
@@ -214,4 +215,15 @@ fn mp_sky(dir_in: vec3<f32>) -> vec3<f32> {
         col = mix(col, aerial, alpha);
     }
     return max(col, vec3<f32>(0.0)) * r6.y;
+}
+
+// The dome's colour and cover: with record 6.w set, the dome is open below
+// the horizon (alpha 0: the forward pass drops the fragment, so the depth
+// stays at the far plane there and a sea drawn afterwards reaches the
+// skyline).
+fn mp_sky_rgba(dir: vec3<f32>) -> vec4<f32> {
+    if (kit_data[6].w > 0.5 && dir.y < 0.0) {
+        return vec4<f32>(0.0);
+    }
+    return vec4<f32>(mp_sky(dir), 1.0);
 }

@@ -3,6 +3,9 @@
 //! Vertices are interleaved position + normal; triangles wind
 //! counter-clockwise seen from outside (front face CCW, back faces culled).
 
+mod store;
+pub use store::{INDEX_BYTES, MeshBuf, MeshStore, MeshSync, MeshWrite, VERTEX_BYTES};
+
 /// Which built-in mesh an instance draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MeshId(pub u16);
@@ -38,58 +41,148 @@ impl MeshId {
 pub const BUILTIN_MESH_COUNT: usize = 8;
 
 /// Most meshes a game can draw: the built-ins plus custom meshes in the
-/// [`MeshLibrary`].
-pub const MAX_MESHES: usize = 64;
+/// [`MeshLibrary`]. Each slot costs 20 bytes of CPU-side tables (a draw
+/// range, a triangle count and an instance count) and nothing on the GPU
+/// beyond the shared vertex and index buffers: no uniform, bind group or
+/// shader constant depends on it.
+pub const MAX_MESHES: usize = 256;
+
+/// Custom meshes a game can register: [`MAX_MESHES`] less the built-ins
+/// (248).
+pub const MAX_CUSTOM_MESHES: usize = MAX_MESHES - BUILTIN_MESH_COUNT;
 
 /// Mesh slots the renderer packs instances into: the built-ins, plus the
 /// custom ones with feature `meshes` (so games without it keep the small
 /// fixed arrays and none of the upload code).
 pub const MESH_SLOTS: usize = if cfg!(feature = "meshes") { MAX_MESHES } else { BUILTIN_MESH_COUNT };
 
+/// The [`MeshLibrary`] is full: a game may register at most
+/// [`MAX_CUSTOM_MESHES`] custom meshes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MeshLimitError;
+
+impl std::fmt::Display for MeshLimitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "mesh library full: at most {MAX_CUSTOM_MESHES} custom meshes ({MAX_MESHES} slots less {BUILTIN_MESH_COUNT} built-ins); merge meshes or draw repeated shapes as models"
+        )
+    }
+}
+
+impl std::error::Error for MeshLimitError {}
+
 /// Custom meshes: spline roads and walls (`spline::sweep`), generated or
-/// imported meshes. A world resource; ids follow the built-ins. The renderer
-/// uploads them (feature `meshes`) when the revision changes, so build them
-/// once and draw them with plain [`crate::MeshInstance`]s every frame.
+/// imported meshes, streamed chunk LODs. A world resource; ids follow the
+/// built-ins. The renderer uploads them (feature `meshes`) when the revision
+/// changes, and only the slots that changed ([`MeshStore`]), so adding,
+/// replacing or removing one mesh costs that mesh's bytes, not the library's.
+///
+/// A slot is live or free. [`MeshLibrary::remove`] frees a slot; the next
+/// [`MeshLibrary::try_add`] reuses the lowest free slot, so a game that
+/// streams meshes in and out never runs out of ids while fewer than
+/// [`MAX_CUSTOM_MESHES`] are live. Ids are stable: nothing moves a live mesh.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MeshLibrary {
+    /// Every slot ever used; a free slot holds an empty mesh.
     meshes: Vec<Mesh>,
+    alive: Vec<bool>,
+    /// The library revision at which each slot last changed.
+    slot_rev: Vec<u64>,
     revision: u64,
 }
 
 impl MeshLibrary {
-    /// Add a mesh; `None` when [`MAX_MESHES`] are in use.
+    /// Add a mesh; `None` when [`MAX_CUSTOM_MESHES`] (248) custom meshes are
+    /// in use. Use [`MeshLibrary::try_add`] for a message that says so.
     pub fn add(&mut self, m: Mesh) -> Option<MeshId> {
-        if BUILTIN_MESH_COUNT + self.meshes.len() >= MAX_MESHES {
-            return None;
-        }
-        self.meshes.push(m);
-        self.revision += 1;
-        Some(MeshId((BUILTIN_MESH_COUNT + self.meshes.len() - 1) as u16))
+        self.try_add(m).ok()
     }
 
-    /// Replace a custom mesh (false for a built-in or unknown id).
+    /// [`MeshLibrary::add`] with the reason when the library is full. Takes
+    /// the lowest free slot (one freed by [`MeshLibrary::remove`]), else the
+    /// next new one.
+    pub fn try_add(&mut self, m: Mesh) -> Result<MeshId, MeshLimitError> {
+        let slot = match self.alive.iter().position(|a| !a) {
+            Some(i) => i,
+            None if self.meshes.len() < MAX_CUSTOM_MESHES => {
+                self.meshes.push(Mesh::default());
+                self.alive.push(false);
+                self.slot_rev.push(0);
+                self.meshes.len() - 1
+            }
+            None => return Err(MeshLimitError),
+        };
+        self.revision += 1;
+        self.meshes[slot] = m;
+        self.alive[slot] = true;
+        self.slot_rev[slot] = self.revision;
+        Ok(MeshId((BUILTIN_MESH_COUNT + slot) as u16))
+    }
+
+    fn live_slot(&self, id: MeshId) -> Option<usize> {
+        let i = usize::from(id.0).checked_sub(BUILTIN_MESH_COUNT)?;
+        self.alive.get(i).copied().unwrap_or(false).then_some(i)
+    }
+
+    /// Replace a custom mesh (false for a built-in, unknown or removed id).
     pub fn replace(&mut self, id: MeshId, m: Mesh) -> bool {
-        let Some(slot) = usize::from(id.0).checked_sub(BUILTIN_MESH_COUNT).and_then(|i| self.meshes.get_mut(i)) else {
+        let Some(i) = self.live_slot(id) else {
             return false;
         };
-        *slot = m;
         self.revision += 1;
+        self.meshes[i] = m;
+        self.slot_rev[i] = self.revision;
         true
     }
 
-    /// A custom mesh by id.
-    pub fn get(&self, id: MeshId) -> Option<&Mesh> {
-        usize::from(id.0).checked_sub(BUILTIN_MESH_COUNT).and_then(|i| self.meshes.get(i))
+    /// Remove a custom mesh and free its slot and GPU range (false for a
+    /// built-in, unknown or already removed id). Instances that still draw
+    /// it draw nothing until the slot is reused.
+    pub fn remove(&mut self, id: MeshId) -> bool {
+        let Some(i) = self.live_slot(id) else {
+            return false;
+        };
+        self.revision += 1;
+        self.meshes[i] = Mesh::default();
+        self.alive[i] = false;
+        self.slot_rev[i] = self.revision;
+        true
     }
 
-    /// Custom meshes in id order (the first is `MeshId(BUILTIN_MESH_COUNT)`).
+    /// A live custom mesh by id.
+    pub fn get(&self, id: MeshId) -> Option<&Mesh> {
+        self.live_slot(id).map(|i| &self.meshes[i])
+    }
+
+    /// Custom mesh slots in id order (the first is
+    /// `MeshId(BUILTIN_MESH_COUNT)`). A removed mesh's slot holds an empty
+    /// mesh until it is reused; see [`MeshLibrary::is_live`].
     pub fn meshes(&self) -> &[Mesh] {
         &self.meshes
     }
 
-    /// Changes on every add or replace.
+    /// Is `id` a custom mesh that is added and not removed?
+    pub fn is_live(&self, id: MeshId) -> bool {
+        self.live_slot(id).is_some()
+    }
+
+    /// Custom meshes added and not removed.
+    pub fn live_count(&self) -> usize {
+        self.alive.iter().filter(|a| **a).count()
+    }
+
+    /// Changes on every add, replace or remove.
     pub fn revision(&self) -> u64 {
         self.revision
+    }
+
+    /// The library revision at which custom slot `slot` (0 is
+    /// `MeshId(BUILTIN_MESH_COUNT)`) last changed (0: never used). A
+    /// consumer that keeps the value it last saw per slot finds exactly the
+    /// slots to update.
+    pub fn slot_revision(&self, slot: usize) -> u64 {
+        self.slot_rev.get(slot).copied().unwrap_or(0)
     }
 }
 

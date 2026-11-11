@@ -243,12 +243,19 @@ fn models_cast_their_own_shadow_without_a_shadow_map() {
     assert!(marshal.iter().zip(&whole).all(|(a, b)| a.vertices == b.vertices), "a bake spread over frames wrote other bytes");
     println!("proof-figure: the bake takes {ms:.1} ms in one go, or {frames} frames of at most {slowest:.1} ms (this build's opt level)");
     assert!((10..=200).contains(&frames), "{frames} frames: FRAME_UNITS no longer splits the marshal's bake into about a second of frames");
-    // Lazy hands the baked parts back once, the frame it finishes.
+    // Lazy hands the baked parts back once, the frame it finishes (with the
+    // viewer's `sun-exact`: the coarse cones, then each frame of the fade to
+    // the exact ones, the last time the bake's; tests/sun_exact_chunks.rs).
     let mut lazy = sun::Lazy::new(whole.clone());
     let mut back = None;
-    for _ in 0..1000 {
+    for _ in 0..100_000 {
         if let Some(p) = lazy.advance(sun::FRAME_UNITS) {
             back = Some(p);
+            #[cfg(not(feature = "sun-exact"))]
+            break;
+        }
+        #[cfg(feature = "sun-exact")]
+        if lazy.settled() {
             break;
         }
     }
@@ -650,11 +657,197 @@ fn baked_sun_draws_no_smear_on_any_model() {
                 let r = smear::report(&drawn, smear::norm(*l));
                 println!("{name}{at}, {sun_name}: {r}");
                 assert!(r.smeared <= 0.01, "{name}{at}, {sun_name}: {:.1}% of the sunlit area is big triangles the shadow map lights whole but the baked cone draws part dark (a smear)", r.smeared * 100.0);
-                assert!((r.exact_lit - r.baked_lit).abs() <= 0.06, "{name}{at}, {sun_name}: lit {:.1}% with a shadow map, {:.1}% baked", r.exact_lit * 100.0, r.baked_lit * 100.0);
+                if (r.exact_lit - r.baked_lit).abs() > 0.06 {
+                    // Name the parts that differ most, so the failure says where
+                    // to look (char-head.glb's hair layers, 2026-10-26).
+                    let mut by_part: Vec<(f32, String)> = (0..drawn.len())
+                        .map(|i| {
+                            let p = smear::report_of(&drawn, smear::norm(*l), |k| k == i);
+                            let node = g.nodes.get(drawn[i].source[0]).map_or("?", |n| n.name.as_str());
+                            ((p.exact_lit - p.baked_lit).abs(), format!("part {i} node '{node}' {:.1}% with a shadow map, {:.1}% baked", p.exact_lit * 100.0, p.baked_lit * 100.0))
+                        })
+                        .collect();
+                    by_part.sort_by(|a, b| b.0.total_cmp(&a.0));
+                    let worst: Vec<String> = by_part.into_iter().take(3).map(|p| p.1).collect();
+                    panic!("{name}{at}, {sun_name}: lit {:.1}% with a shadow map, {:.1}% baked (allowed 6 points); most apart: {}. A part baked lit that the shadow map shades lies under something the bake misses; baked dark where the map lights it, the bake sees an occluder the map's bias skips", r.exact_lit * 100.0, r.baked_lit * 100.0, worst.join("; "));
+                }
             }
         }
     }
     assert!(checked >= 3, "only {checked} models checked: the files moved?");
+}
+
+/// Found by the material catalogue's P10b proof (2026-10-25): eight balls of
+/// radius 0.5 m in a 9.68 m row, 24 cm apart, read 9.1% darker baked than
+/// with a shadow map on Lite and Low (balls 0 to 6 about 11% each; the last
+/// one, with no neighbour on the sun's side, 0.1%), though each ball alone,
+/// or any two side by side, read 100% lit. Cause: the bake laid its 64 cells
+/// over the model's longest side, so a long row got 15 cm cells, and a ray
+/// starts two cells (30 cm) off its surface: a ball's rays towards its
+/// neighbour started inside the neighbour and read as blocked. A long model's
+/// cells are now laid over twice its width (sun.rs, `Grid::empty`), so the
+/// row's are 3 cm. The row, along each axis and from one ball to eight, must
+/// read the shadow map's lit share within the 6 points the any-model check
+/// allows, as a whole and ball by ball, under every shipped sun.
+#[cfg(feature = "models")]
+#[test]
+fn close_parts_of_a_long_model_do_not_shade_each_other() {
+    use evani_render::model::{Part, VERTEX_BYTES, sun};
+    // p10b.mjs's ball: a uv sphere, 20 rings by 32 segments, as one part
+    // whose node puts it at `c`.
+    fn ball(c: [f32; 3]) -> Part {
+        let (rings, segs, r) = (20u32, 32u32, 0.5f32);
+        let (mut pos, mut nrm, mut indices) = (Vec::new(), Vec::new(), Vec::new());
+        for i in 0..=rings {
+            let th = core::f32::consts::PI * i as f32 / rings as f32;
+            for j in 0..=segs {
+                let ph = 2.0 * core::f32::consts::PI * j as f32 / segs as f32;
+                let n = [th.sin() * ph.cos(), th.cos(), th.sin() * ph.sin()];
+                pos.push(n.map(|x| x * r));
+                nrm.push(n);
+            }
+        }
+        for i in 0..rings {
+            for j in 0..segs {
+                let a = i * (segs + 1) + j;
+                let b = a + segs + 1;
+                indices.extend([a, a + 1, b, a + 1, b + 1, b]);
+            }
+        }
+        let lo = [-r; 3];
+        let mut vertices = vec![0u8; pos.len() * VERTEX_BYTES];
+        for ((p, n), v) in pos.iter().zip(&nrm).zip(vertices.as_chunks_mut::<VERTEX_BYTES>().0.iter_mut()) {
+            for k in 0..3 {
+                let q = ((p[k] - lo[k]) / (2.0 * r) * 65535.0).round() as u16;
+                v[k * 2..k * 2 + 2].copy_from_slice(&q.to_le_bytes());
+                v[8 + k] = (n[k] * 127.0).round() as i8 as u8;
+            }
+        }
+        let node = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, c[0], c[1], c[2], 1.0];
+        Part { vertices, indices, node, pos_scale: [2.0 * r; 3], pos_offset: lo, uv: [0.0; 4], material: 0, tangents: false, source: [0; 3], lod: evani_render::model::SHARED, tags: 0, #[cfg(feature = "skinning")] skin: Vec::new() }
+    }
+    let (mut worst, mut fails) = (0.0f32, Vec::new());
+    for (axis, along) in [(0, "x"), (2, "z"), (1, "y")] {
+        for count in [1usize, 2, 3, 4, 5, 8] {
+            let mut parts: Vec<Part> = (0..count)
+                .map(|k| {
+                    let mut c = [0.0, 0.5, 0.0];
+                    c[axis] += (k as f32 - (count - 1) as f32 / 2.0) * 1.24;
+                    ball(c)
+                })
+                .collect();
+            sun::bake(&mut parts);
+            for (name, l) in SUNS {
+                let l = smear::norm(l);
+                let r = smear::report(&parts, l);
+                println!("{count} balls along {along}, {name}: {r}");
+                worst = worst.max((r.exact_lit - r.baked_lit).abs());
+                if (r.exact_lit - r.baked_lit).abs() > 0.06 {
+                    fails.push(format!("{count} balls 24 cm apart along {along}, {name}: lit {:.1}% with a shadow map, {:.1}% baked", r.exact_lit * 100.0, r.baked_lit * 100.0));
+                }
+                for k in 0..count {
+                    let b = smear::report_of(&parts, l, |i| i == k);
+                    if (b.exact_lit - b.baked_lit).abs() > 0.06 {
+                        fails.push(format!("ball {k} of {count} along {along}, {name}: lit {:.1}% with a shadow map, {:.1}% baked", b.exact_lit * 100.0, b.baked_lit * 100.0));
+                    }
+                }
+            }
+        }
+    }
+    println!("rows of balls 24 cm apart: the lit share is at most {:.1} points off the shadow map's", worst * 100.0);
+    assert!(fails.is_empty(), "close balls in a long row shade each other on Lite and Low:\n{}", fails.join("\n"));
+}
+
+/// Found by the material viewer's bust (char-head.glb, 2026-10-26): its hair
+/// is layers laid 2 to 8 mm over each other (scalp, base cap, inner and outer
+/// locks), and Lite and Low drew the covered layers sunlit where the shadow
+/// map shades them: the head read 50.0% lit baked and 35.3% with a shadow map
+/// (the inner hair 80.3% against 52.7%, the base cap 18.3% against 0). Cause:
+/// the depth maps start a vertex's rays `START` cells (two, 9 mm on that
+/// head) off its surface to clear its own cells, so a layer nearer than that
+/// lay behind the start and shaded nothing, where a shadow map's bias is about
+/// a hundredth of the model (0.64 cells, plus 0.32 along the light). Each
+/// direction now also maps the other surfaces' points (sun.rs, `Other`). A
+/// sphere under a cap 1.2, 1.6 and 3 cells over it (in the gap, and past
+/// it), as two parts or one mesh, must read the shadow map's lit share
+/// within the 6 points the any-model check allows; and under a cap 0.3 cells
+/// over it, inside the bias, which the shadow map skips, it must not be
+/// darkened. (Near 0.8 cells the shadow map itself flips with the sun's
+/// angle: no case there.)
+#[cfg(feature = "models")]
+#[test]
+fn a_layer_close_over_a_surface_shades_it() {
+    use evani_render::model::{Part, SHARED, VERTEX_BYTES, sun};
+    // A sphere of radius `r` from the top down to polar angle `top`: positions,
+    // outward normals, indices.
+    fn shell(r: f32, top: f32, rings: u32, segs: u32) -> (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<u32>) {
+        let (mut pos, mut nrm, mut idx) = (Vec::new(), Vec::new(), Vec::new());
+        for i in 0..=rings {
+            let th = top * i as f32 / rings as f32;
+            for j in 0..=segs {
+                let ph = 2.0 * core::f32::consts::PI * j as f32 / segs as f32;
+                let n = [th.sin() * ph.cos(), th.cos(), th.sin() * ph.sin()];
+                pos.push(n.map(|x| x * r));
+                nrm.push(n);
+            }
+        }
+        for i in 0..rings {
+            for j in 0..segs {
+                let a = i * (segs + 1) + j;
+                let b = a + segs + 1;
+                idx.extend([a, a + 1, b, a + 1, b + 1, b]);
+            }
+        }
+        (pos, nrm, idx)
+    }
+    fn part((pos, nrm, indices): (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<u32>)) -> Part {
+        let lo = [0, 1, 2].map(|k| pos.iter().map(|p| p[k]).fold(f32::MAX, f32::min));
+        let ext = [0, 1, 2].map(|k| pos.iter().map(|p| p[k]).fold(f32::MIN, f32::max) - lo[k]);
+        let mut vertices = vec![0u8; pos.len() * VERTEX_BYTES];
+        for ((p, n), v) in pos.iter().zip(&nrm).zip(vertices.as_chunks_mut::<VERTEX_BYTES>().0.iter_mut()) {
+            for k in 0..3 {
+                let q = if ext[k] > 0.0 { ((p[k] - lo[k]) / ext[k] * 65535.0).round() as u16 } else { 0 };
+                v[k * 2..k * 2 + 2].copy_from_slice(&q.to_le_bytes());
+                v[8 + k] = (n[k] * 127.0).round() as i8 as u8;
+            }
+        }
+        let node = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        Part { vertices, indices, node, pos_scale: ext, pos_offset: lo, uv: [0.0; 4], material: 0, tangents: false, source: [0; 3], lod: SHARED, tags: 0, #[cfg(feature = "skinning")] skin: Vec::new() }
+    }
+    let r = 0.1f32;
+    let mut fails = Vec::new();
+    for cells in [0.3f32, 1.2, 1.6, 3.0] {
+        // The cap's gap is `cells` of the bake's 64 over the model's width.
+        let gap = 2.0 * r * cells / (64.0 - 2.0 * cells);
+        let inner = shell(r, core::f32::consts::PI, 24, 48);
+        let cap = shell(r + gap, 1.9, 24, 48);
+        let mut apart = vec![part(inner.clone()), part(cap.clone())];
+        sun::bake(&mut apart);
+        let n = inner.0.len() as u32;
+        let one = part((
+            inner.0.iter().chain(&cap.0).copied().collect(),
+            inner.1.iter().chain(&cap.1).copied().collect(),
+            inner.2.iter().copied().chain(cap.2.iter().map(|i| i + n)).collect(),
+        ));
+        let mut one = vec![one];
+        sun::bake(&mut one);
+        for (name, l) in &SUNS[..2] {
+            let l = smear::norm(*l);
+            let under = smear::report_of(&apart, l, |i| i == 0);
+            println!("sphere under a cap {cells} cells over it, {name}: {under}");
+            if cells < 0.64 {
+                assert!(under.exact_lit > 0.9, "the shadow map's bias no longer skips a cap {cells} cells over the sphere ({:.1}% lit): the test proves nothing", under.exact_lit * 100.0);
+            } else {
+                assert!(under.exact_lit < 0.6, "the cap {cells} cells over the sphere lights {:.1}% of it: the test proves nothing", under.exact_lit * 100.0);
+            }
+            for (what, rep) in [("the sphere (two parts)", under), ("sphere and cap (two parts)", smear::report(&apart, l)), ("sphere and cap (one mesh)", smear::report(&one, l))] {
+                if (rep.exact_lit - rep.baked_lit).abs() > 0.06 {
+                    fails.push(format!("{what}, cap {cells} cells over, {name}: lit {:.1}% with a shadow map, {:.1}% baked", rep.exact_lit * 100.0, rep.baked_lit * 100.0));
+                }
+            }
+        }
+    }
+    assert!(fails.is_empty(), "a layer close over a surface does not shade it on Lite and Low:\n{}", fails.join("\n"));
 }
 
 /// Found by the quality gate (S3-6, 2026-10-17): kart_fixture's converted
@@ -734,6 +927,86 @@ fn bake_is_stable_under_position_quantisation() {
     }
 }
 
+/// Found by the material viewer's critic, round 4 (2026-10-27): on Low the
+/// shader ball showed torn dark patches on the band under its cap, along its
+/// cup's rim and on its foot, where Medium and up (shadow map) draw it lit.
+/// Measured against exact casts, nine in ten wrongly dark corners had their
+/// blocker within 2 cells of the ray's start: the depth maps held whole grid
+/// cells (centres up to 0.9 cell off the surface), and a ray starting 2 cells
+/// off its surface started among the cup rim's cells. With the viewer's `sun-exact` (sun.rs module notes), under
+/// each of its light presets, the hero models as each tier draws them (the
+/// full file and its Low twin) read at most 6 points darker than the cast,
+/// and the ball draws dark at most 3.5% of what the cast lights: without the
+/// feature it drew 4.1 to 7.1% (its Low twin 4.1% studio, 6.8% sunset), with
+/// it 1.0 to 2.9%. The bust is held to the 4% its cone shape gives (2.1 to
+/// 3.6% with the feature; the depth maps were not its trouble).
+///
+/// Then (the owner's call, 2026-10-27: Low reads as Ultra does) against a
+/// cast from the viewer's Ultra shadow map's own start, 6 cm along the normal
+/// and 1.6 cm along the light: the thin jagged shade under the ball's cap and
+/// on its foot, which the 1% cast also shades, is lit on Ultra. The exact
+/// casts now start there, and a ray a close layer shuts is cast again too:
+/// against Ultra the ball drew 1.5 to 6.3% dark (4.0% studio on its Low
+/// twin), the bust 8.6 to 16.1%; now 0.3 to 1.5% and 0.1 to 1.0%. What is
+/// left on the ball is the edge of the bowl's own shadow on the foot, a
+/// few cm off on the coarse foot (dark and light either side): relief Low
+/// may lose. With `EVANI_SUN_PICTURES=<dir>` it writes what it compared
+/// (red: baked dark where the cast lights; blue: the other way; `-ultra`
+/// against Ultra's start).
+#[cfg(all(feature = "models", feature = "sun-exact"))]
+#[test]
+fn close_surfaces_do_not_tear_the_baked_sun() {
+    use evani_render::model::{SHARED, prepare, sun};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/material-view/assets/models");
+    // kits/evani-kit-material-view/data/lights.json: elevation, azimuth.
+    let dir = |el: f32, az: f32| {
+        let (el, az) = (el.to_radians(), az.to_radians());
+        [el.cos() * az.sin(), el.sin(), el.cos() * az.cos()]
+    };
+    let suns = [("studio", dir(42.0, 38.0)), ("overcast", dir(68.0, 20.0)), ("sunset", dir(7.0, 250.0)), ("night lamp", dir(32.0, 140.0))];
+    let pictures = std::env::var_os("EVANI_SUN_PICTURES").map(std::path::PathBuf::from);
+    // The viewer's Ultra shadow map starts its lookup this far off the
+    // surface (model units: the viewer draws these models at scale 1): its
+    // normal offset, and its depth bias along the light (shadow.rs).
+    let ultra = [evani_render::shadow::NORMAL_OFFSET, evani_render::shadow::BIAS * 2.0 * evani_render::shadow::DEPTH];
+    let mut failed = Vec::new();
+    // The ball, whose creases tore; the bust, held to what its cone shape
+    // gives (the depth maps were not its trouble). Last: how much of what
+    // Ultra lights the bake may draw dark.
+    for (f, allowed, ultra_allowed) in [("layer-coat.low.glb", 0.035, 0.02), ("layer-coat.glb", 0.035, 0.02), ("char-head.low.glb", 0.04, 0.015), ("char-head.glb", 0.04, 0.015)] {
+        let g = evani_gltf::Gltf::from_glb(&std::fs::read(root.join(f)).unwrap()).unwrap();
+        let mut parts = prepare(&g).unwrap().parts;
+        sun::bake(&mut parts);
+        // The level drawn closest (LOD 0) with the shared parts.
+        let drawn: Vec<_> = parts.iter().filter(|p| p.lod == SHARED || p.lod == 0).cloned().collect();
+        for (sun_name, l) in &suns {
+            let r = smear::report(&drawn, *l);
+            let u = smear::report_with(&drawn, *l, |_| true, Some(ultra));
+            println!("{f}, {sun_name}: {r}\n    against Ultra's offset: {u}");
+            if let Some(dir) = &pictures {
+                let name = sun_name.replace(' ', "-");
+                smear::picture(&drawn, *l, smear::norm([0.0, 0.35, 1.0]), None, &dir.join(format!("{f}-{name}.ppm")));
+                smear::picture(&drawn, *l, smear::norm([0.0, 0.35, 1.0]), Some(ultra), &dir.join(format!("{f}-{name}-ultra.ppm")));
+            }
+            if r.false_dark > allowed {
+                failed.push(format!("{f}, {sun_name}: the bake draws {:.1}% of the sunlit area dark where the shadow map lights it (allowed {:.1}%): {r}", r.false_dark * 100.0, allowed * 100.0));
+            }
+            // Darker than the reference is the defect; lighter is the viewer's
+            // own map (its 6 cm normal offset lights more than this cast's
+            // 1% of the model).
+            if r.baked_lit < r.exact_lit - 0.06 {
+                failed.push(format!("{f}, {sun_name}: lit {:.1}% with a shadow map, {:.1}% baked (at most 6 points darker)", r.exact_lit * 100.0, r.baked_lit * 100.0));
+            }
+            // Low reads as Ultra does (the owner's call, 2026-10-27): no
+            // shade where Ultra's map, its offset off the surface, has none.
+            if u.false_dark > ultra_allowed {
+                failed.push(format!("{f}, {sun_name}: the bake draws {:.1}% of what Ultra lights dark (allowed {:.1}%): {u}", u.false_dark * 100.0, ultra_allowed * 100.0));
+            }
+        }
+    }
+    assert!(failed.is_empty(), "{}", failed.join("\n"));
+}
+
 /// The baked cone over whole triangles, as the GPU draws it, against exact
 /// shadow casts at the same points.
 #[cfg(feature = "models")]
@@ -794,6 +1067,116 @@ mod smear {
     /// normal when the cone has length 0, plus the threshold, interpolated
     /// linearly, then normalised).
     pub fn report(parts: &[Part], l: [f32; 3]) -> Report {
+        report_of(parts, l, |_| true)
+    }
+
+    /// A picture of the model seen along `view` (towards the eye), each
+    /// sample shaded by its baked sun (dark 60 to lit 240 grey), red where
+    /// the bake draws dark what the exact cast lights, blue the other way,
+    /// near black where the face turns from the sun. Written as a PPM.
+    #[cfg(feature = "sun-exact")]
+    pub fn picture(parts: &[Part], l: [f32; 3], view: [f32; 3], bias: Option<[f32; 2]>, path: &std::path::Path) {
+        let spaces: Vec<_> = parts.iter().map(sun::model_space).collect();
+        let tris: Vec<[[f32; 3]; 3]> = parts
+            .iter()
+            .zip(&spaces)
+            .flat_map(|(p, s)| p.indices.as_chunks::<3>().0.iter().map(move |t| [s.0[t[0] as usize], s.0[t[1] as usize], s.0[t[2] as usize]]))
+            .collect();
+        let (lo, hi) = tris.iter().flatten().fold(([f32::MAX; 3], [f32::MIN; 3]), |(l, h), p| ([0, 1, 2].map(|k| l[k].min(p[k])), [0, 1, 2].map(|k| h[k].max(p[k]))));
+        let size = (0..3).map(|k| hi[k] - lo[k]).fold(0.0f32, f32::max);
+        let mid = [0, 1, 2].map(|k| 0.5 * (lo[k] + hi[k]));
+        let hit = super::Caster::new(&tris, l);
+        let sub = |a: [f32; 3], b: [f32; 3]| [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+        let x = |a: [f32; 3], b: [f32; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        let right = norm(x([0.0, 1.0, 0.0], view));
+        let up = x(view, right);
+        const W: usize = 700;
+        let scale = (W as f32 - 40.0) / size;
+        let mut img = vec![[0u8; 3]; W * W];
+        let mut zb = vec![f32::MIN; W * W];
+        for (p, (pos, nrm)) in parts.iter().zip(&spaces) {
+            let m = p.node;
+            let c = [[m[0], m[1], m[2]], [m[4], m[5], m[6]], [m[8], m[9], m[10]]];
+            let x12 = x(c[1], c[2]);
+            let s = if dot(c[0], x12) < 0.0 { -1.0 } else { 1.0 };
+            let cof = [x12, x(c[2], c[0]), x(c[0], c[1])];
+            let verts = p.vertices.as_chunks::<VERTEX_BYTES>().0;
+            let out = |i: usize| -> [f32; 4] {
+                let v = &verts[i];
+                let cv = [v[6], v[7], v[11]].map(|b| f32::from(b as i8) / 127.0);
+                let cl = dot(cv, cv).sqrt();
+                let local_n = [0, 1, 2].map(|k| f32::from(v[8 + k] as i8) / 127.0);
+                let cd = if cl < 0.01 { local_n } else { cv };
+                let w = [0, 1, 2].map(|r| (cof[0][r] * cd[0] + cof[1][r] * cd[1] + cof[2][r] * cd[2]) * s);
+                [w[0], w[1], w[2], 2.0 * cl - 1.0]
+            };
+            for t in p.indices.as_chunks::<3>().0 {
+                let ix = t.map(|i| i as usize);
+                let [a, b, cc] = ix.map(|i| pos[i]);
+                let o = ix.map(out);
+                let edge = [dot(sub(b, a), sub(b, a)), dot(sub(cc, b), sub(cc, b)), dot(sub(a, cc), sub(a, cc))].into_iter().fold(0.0f32, f32::max).sqrt();
+                let n = ((edge * scale / 1.5).ceil() as usize).clamp(1, 96);
+                for i in 0..n {
+                    for j in 0..n - i {
+                        for (bu, bv) in [((i as f32 + 1.0 / 3.0) / n as f32, (j as f32 + 1.0 / 3.0) / n as f32), ((i as f32 + 2.0 / 3.0) / n as f32, (j as f32 + 2.0 / 3.0) / n as f32)] {
+                            if bu + bv > 1.0 {
+                                continue;
+                            }
+                            let bw = [1.0 - bu - bv, bu, bv];
+                            let q = [0, 1, 2].map(|k| a[k] * bw[0] + b[k] * bw[1] + cc[k] * bw[2]);
+                            let pn = norm([0, 1, 2].map(|k| nrm[ix[0]][k] * bw[0] + nrm[ix[1]][k] * bw[1] + nrm[ix[2]][k] * bw[2]));
+                            if dot(pn, view) <= 0.0 {
+                                continue;
+                            }
+                            let r = sub(q, mid);
+                            let (px, py, z) = (W as f32 * 0.5 + dot(r, right) * scale, W as f32 * 0.5 - dot(r, up) * scale, dot(r, view));
+                            let (px, py) = (px as isize, py as isize);
+                            if px < 0 || py < 0 || px >= W as isize || py >= W as isize {
+                                continue;
+                            }
+                            let k = py as usize * W + px as usize;
+                            if z <= zb[k] {
+                                continue;
+                            }
+                            zb[k] = z;
+                            img[k] = if dot(pn, l) <= 0.05 {
+                                [25, 25, 30]
+                            } else {
+                                let sv = [0, 1, 2, 3].map(|k| o[0][k] * bw[0] + o[1][k] * bw[1] + o[2][k] * bw[2]);
+                                let baked = cone(dot(norm([sv[0], sv[1], sv[2]]), l), sv[3]);
+                                let [bn, bd] = bias.unwrap_or([size * 0.01, size * 0.005]);
+                                let from = [0, 1, 2].map(|k| q[k] + pn[k] * bn + l[k] * bd);
+                                let open = !hit.blocked(from);
+                                let g = (60.0 + 180.0 * baked) as u8;
+                                if open && baked < 0.5 {
+                                    [230, 40, 40]
+                                } else if !open && baked >= 0.5 {
+                                    [40, 90, 240]
+                                } else {
+                                    [g, g, g]
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+        }
+        let mut bytes = format!("P6\n{W} {W}\n255\n").into_bytes();
+        bytes.extend(img.iter().flatten());
+        std::fs::write(path, bytes).unwrap();
+    }
+
+    /// [`report`] over the parts `measured` picks (by index) only, cast
+    /// against every part: what one part of a model shows.
+    pub fn report_of(parts: &[Part], l: [f32; 3], measured: impl Fn(usize) -> bool) -> Report {
+        report_with(parts, l, measured, None)
+    }
+
+    /// [`report_of`] with the reference cast's start `bias` off the surface
+    /// (`[along the normal, along the light]`, model units); `None` is 1%
+    /// and 0.5% of the model.
+    pub fn report_with(parts: &[Part], l: [f32; 3], measured: impl Fn(usize) -> bool, bias: Option<[f32; 2]>) -> Report {
         let spaces: Vec<_> = parts.iter().map(sun::model_space).collect();
         let tris: Vec<[[f32; 3]; 3]> = parts
             .iter()
@@ -807,7 +1190,7 @@ mod smear {
         let x = |a: [f32; 3], b: [f32; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
         let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         let (mut total, mut exact_lit, mut baked_lit, mut wrong, mut false_dark, mut smeared) = (0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64);
-        for (p, (pos, nrm)) in parts.iter().zip(&spaces) {
+        for (p, (pos, nrm)) in parts.iter().zip(&spaces).enumerate().filter(|(i, _)| measured(*i)).map(|(_, x)| x) {
             let m = p.node;
             let c = [[m[0], m[1], m[2]], [m[4], m[5], m[6]], [m[8], m[9], m[10]]];
             let x12 = x(c[1], c[2]);
@@ -860,7 +1243,8 @@ mod smear {
                             facing += 1;
                             let sv = [0, 1, 2, 3].map(|k| o[0][k] * bw[0] + o[1][k] * bw[1] + o[2][k] * bw[2]);
                             let baked = cone(dot(norm([sv[0], sv[1], sv[2]]), l), sv[3]) > 0.5;
-                            let from = [0, 1, 2].map(|k| p[k] + pn[k] * size * 0.01 + l[k] * size * 0.005);
+                            let [bn, bd] = bias.unwrap_or([size * 0.01, size * 0.005]);
+                            let from = [0, 1, 2].map(|k| p[k] + pn[k] * bn + l[k] * bd);
                             let open = !hit.blocked(from);
                             total += w;
                             exact_lit += w * f64::from(u8::from(open));

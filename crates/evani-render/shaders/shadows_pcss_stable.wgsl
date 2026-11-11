@@ -85,17 +85,28 @@ fn shadow_filter(m: mat4x4<f32>, s: vec4<f32>, x0: f32, xs: f32, n: vec3<f32>) -
     var blockers = 0.0;
     var count = 0.0;
     let search = prm.y * texel;
+    // Each search tap weighs its four texels bilinearly (procedural realism
+    // round 9: a tap read one whole texel, so the blocker average, and with
+    // it the filter radius, jumped a texel at a time; near a contact, where
+    // the radius is smallest, the shadow showed a staircase of texel steps).
     for (var i = 0; i < taps; i = i + 1) {
-        let t = clamp(floor(shadow_uv(s.xy + pcss_tap(i, taps, 0.0) * search, x0, xs) * dims), lo, hi);
-        let d = textureLoad(shadow_map, vec2<i32>(t), 0);
-        let at = (t + vec2<f32>(0.5)) / dims;
-        let zr = s.z + dot(g, vec2<f32>(at.x / xs - x0, at.y) - s.xy) - margin;
-        if (d < zr) {
-            blockers = blockers + (zr - d);
-            count = count + 1.0;
+        let tf = shadow_uv(s.xy + pcss_tap(i, taps, 0.0) * search, x0, xs) * dims - vec2<f32>(0.5);
+        let tb = floor(tf);
+        let fr = tf - tb;
+        for (var k = 0; k < 4; k = k + 1) {
+            let o = vec2<f32>(f32(k & 1), f32(k >> 1u));
+            let t = clamp(tb + o, lo, hi);
+            let wk = mix(1.0 - fr.x, fr.x, o.x) * mix(1.0 - fr.y, fr.y, o.y);
+            let d = textureLoad(shadow_map, vec2<i32>(t), 0);
+            let at = (t + vec2<f32>(0.5)) / dims;
+            let zr = s.z + dot(g, vec2<f32>(at.x / xs - x0, at.y) - s.xy) - margin;
+            if (d < zr) {
+                blockers = blockers + wk * (zr - d);
+                count = count + wk;
+            }
         }
     }
-    if (count < 0.5) {
+    if (count < 0.02) {
         return 1.0;
     }
     let penumbra_m = (blockers / count) * m_per_z * prm.x;

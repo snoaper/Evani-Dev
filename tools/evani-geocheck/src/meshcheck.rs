@@ -33,6 +33,33 @@ pub struct MeshReport {
     pub inside_out: bool,
     /// Pairs of triangles that cut through each other (not neighbours).
     pub self_intersections: Vec<(usize, usize)>,
+    /// Where each kind of problem is, in the mesh's own space: the corners
+    /// of the triangles and edges listed above (at most [`MAX_LISTED`] of
+    /// each), so a report can frame the spot instead of the whole mesh.
+    pub at: Spots,
+}
+
+/// The mesh-space points of each problem kind ([`MeshReport::at`]).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Spots {
+    pub degenerate: Vec<V3>,
+    pub duplicates: Vec<V3>,
+    pub non_manifold: Vec<V3>,
+    pub flipped: Vec<V3>,
+    pub inverted: Vec<V3>,
+    pub self_intersections: Vec<V3>,
+}
+
+/// How far (m) from a problem's first point the others still count as the
+/// same spot: a crop frames one place, not every place the problem occurs.
+pub const SPOT_RADIUS: f64 = 0.03;
+
+/// The box round `pts[0]` holding every point within [`SPOT_RADIUS`] of it.
+pub fn spot_box(pts: &[V3]) -> Option<(V3, V3)> {
+    let first = *pts.first()?;
+    let near: Vec<V3> = pts.iter().copied().filter(|p| dist(*p, first) <= SPOT_RADIUS).collect();
+    let b = Aabb::from_points(&near);
+    Some((b.min, b.max))
 }
 
 pub const MAX_LISTED: usize = 64;
@@ -64,6 +91,39 @@ impl MeshReport {
         }
         if !self.self_intersections.is_empty() {
             p.push(format!("{} self-intersecting triangle pairs", self.self_intersections.len()));
+        }
+        p
+    }
+
+    /// Where each of [`Self::problems`] is (same order): a box in the
+    /// mesh's own space round its first listed spot, `None` when the
+    /// problem has no one place (an inside-out mesh).
+    pub fn problem_spots(&self) -> Vec<Option<(V3, V3)>> {
+        let mut p = Vec::new();
+        if !self.degenerate.is_empty() {
+            p.push(spot_box(&self.at.degenerate));
+        }
+        if !self.duplicates.is_empty() {
+            p.push(spot_box(&self.at.duplicates));
+        }
+        if self.open_edges > 0 && !self.open_intended {
+            let pts: Vec<V3> = self.open_edge_list.iter().flat_map(|e| [e.0, e.1]).collect();
+            p.push(spot_box(&pts));
+        }
+        if self.non_manifold_edges > 0 {
+            p.push(spot_box(&self.at.non_manifold));
+        }
+        if self.flipped_edges > 0 {
+            p.push(spot_box(&self.at.flipped));
+        }
+        if !self.inverted.is_empty() {
+            p.push(spot_box(&self.at.inverted));
+        }
+        if self.inside_out {
+            p.push(None);
+        }
+        if !self.self_intersections.is_empty() {
+            p.push(spot_box(&self.at.self_intersections));
         }
         p
     }
@@ -108,13 +168,21 @@ pub fn validate(m: &Mesh, intended_open: bool) -> MeshReport {
         let n = cross(sub(b, a), sub(c, a));
         if len(n) < 1e-12 || k[0] == k[1] || k[1] == k[2] || k[0] == k[2] {
             r.degenerate.push(i);
+            if r.at.degenerate.len() < MAX_LISTED * 3 {
+                r.at.degenerate.extend([a, b, c]);
+            }
             continue;
         }
         volume += dot(a, cross(b, c));
         let mut sorted = k;
         sorted.sort();
         match seen.get(&sorted) {
-            Some(&j) => r.duplicates.push((j, i)),
+            Some(&j) => {
+                r.duplicates.push((j, i));
+                if r.at.duplicates.len() < MAX_LISTED * 3 {
+                    r.at.duplicates.extend([a, b, c]);
+                }
+            }
             None => {
                 seen.insert(sorted, i);
             }
@@ -122,6 +190,9 @@ pub fn validate(m: &Mesh, intended_open: bool) -> MeshReport {
         let vn = add(add(nrm[t[0]], nrm[t[1]]), nrm[t[2]]);
         if len(vn) > 1e-9 && dot(vn, n) < 0.0 {
             r.inverted.push(i);
+            if r.at.inverted.len() < MAX_LISTED * 3 {
+                r.at.inverted.extend([a, b, c]);
+            }
         }
         for (x, y) in [(k[0], k[1]), (k[1], k[2]), (k[2], k[0])] {
             *directed.entry((x, y)).or_default() += 1;
@@ -138,21 +209,36 @@ pub fn validate(m: &Mesh, intended_open: bool) -> MeshReport {
         }
     }
     let unkey = |k: Key| [k[0] as f64 * 1e-5, k[1] as f64 * 1e-5, k[2] as f64 * 1e-5];
+    // Every edge of each kind, sorted by position so the listed ones (and
+    // the first spot, the one a crop frames) are the same on every run:
+    // the hash map's order is not.
+    let (mut open, mut nonman, mut flipped) = (Vec::new(), Vec::new(), Vec::new());
     for (&(lo, hi), &(f, b)) in &undirected {
         let total = f + b;
         if total == 1 {
-            r.open_edges += 1;
-            if r.open_edge_list.len() < MAX_LISTED {
-                r.open_edge_list.push((unkey(lo), unkey(hi)));
-            }
+            open.push((lo, hi));
         } else if total > 2 {
-            r.non_manifold_edges += 1;
+            nonman.push((lo, hi));
         } else if f == 2 || b == 2 {
-            r.flipped_edges += 1;
+            flipped.push((lo, hi));
         }
     }
+    for list in [&mut open, &mut nonman, &mut flipped] {
+        list.sort_unstable();
+    }
+    r.open_edges = open.len();
+    r.non_manifold_edges = nonman.len();
+    r.flipped_edges = flipped.len();
+    r.open_edge_list = open.iter().take(MAX_LISTED).map(|&(lo, hi)| (unkey(lo), unkey(hi))).collect();
+    r.at.non_manifold = nonman.iter().take(MAX_LISTED).flat_map(|&(lo, hi)| [unkey(lo), unkey(hi)]).collect();
+    r.at.flipped = flipped.iter().take(MAX_LISTED).flat_map(|&(lo, hi)| [unkey(lo), unkey(hi)]).collect();
     r.inside_out = r.open_edges == 0 && r.non_manifold_edges == 0 && r.triangles >= 4 && volume < -1e-12;
     r.self_intersections = self_intersections(&pos, &tris, &keys);
+    for &(i, j) in &r.self_intersections {
+        for t in [tris[i], tris[j]] {
+            r.at.self_intersections.extend([pos[t[0]], pos[t[1]], pos[t[2]]]);
+        }
+    }
     r
 }
 
@@ -277,6 +363,31 @@ mod tests {
         assert_eq!(plane.open_edges, 4);
         assert!(plane.is_clean(), "a plane's border is intended");
         assert!(!validate(&mesh::plane(), false).is_clean(), "unless the mesh should be closed");
+    }
+
+    /// Each problem comes with a box round its own spot, in step with
+    /// `problems()`: a cube missing one triangle frames that hole, not the
+    /// whole cube (critic round 2 of material-view: every crop was the same
+    /// distant frame).
+    #[test]
+    fn problems_carry_their_spot() {
+        let mut m = mesh::cube();
+        let gone: Vec<u32> = m.indices.drain(0..3).collect();
+        let r = validate(&m, false);
+        let (p, spots) = (r.problems(), r.problem_spots());
+        assert_eq!(p.len(), spots.len());
+        let (lo, hi) = spots[0].expect("the hole has a place");
+        // A spot (within SPOT_RADIUS of the first open edge), at a corner of
+        // the missing triangle, not the 1 m cube.
+        assert!((0..3).all(|k| hi[k] - lo[k] <= 2.0 * SPOT_RADIUS + 1e-6), "{lo:?}..{hi:?}");
+        let inside = |i: &u32| {
+            let v = m.vertices[*i as usize];
+            let q = [f64::from(v[0]), f64::from(v[1]), f64::from(v[2])];
+            (0..3).all(|k| q[k] >= lo[k] - 1e-6 && q[k] <= hi[k] + 1e-6)
+        };
+        assert!(gone.iter().any(inside), "{lo:?}..{hi:?}");
+        // Stable: the same mesh frames the same spot every run.
+        assert_eq!(validate(&m, false).problem_spots(), spots);
     }
 
     #[test]

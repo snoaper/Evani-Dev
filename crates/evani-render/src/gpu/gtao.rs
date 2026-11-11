@@ -111,8 +111,27 @@ fn lin_at(p: vec2<i32>, mip: i32) -> f32 {
     let dims = vec2<i32>(textureDimensions(lin, mip));
     return textureLoad(lin, clamp(p >> vec2<u32>(u32(mip)), vec2<i32>(0), dims - 1), mip).r;
 }
+// The depth at pixel position p (AO pixels, not rounded) from mip `mip`,
+// filtered bilinearly (procedural realism round 9: the horizon search read
+// the coarse mips a whole texel at a time, so near a contact, where its
+// steps reach mips 3 and 4, the occlusion changed in 8 and 16 px blocks: the
+// stepped shadow edges round objects on a floor).
+fn lin_bl(p: vec2<f32>, mip: i32) -> f32 {
+    if (mip == 0) {
+        return lin_at(vec2<i32>(floor(p)), 0);
+    }
+    let dims = vec2<i32>(textureDimensions(lin, mip));
+    let q = p / f32(1u << u32(mip)) - vec2<f32>(0.5);
+    let b = vec2<i32>(floor(q));
+    let f = q - floor(q);
+    let a = textureLoad(lin, clamp(b, vec2<i32>(0), dims - 1), mip).r;
+    let c = textureLoad(lin, clamp(b + vec2<i32>(1, 0), vec2<i32>(0), dims - 1), mip).r;
+    let d = textureLoad(lin, clamp(b + vec2<i32>(0, 1), vec2<i32>(0), dims - 1), mip).r;
+    let e = textureLoad(lin, clamp(b + vec2<i32>(1, 1), vec2<i32>(0), dims - 1), mip).r;
+    return mix(mix(a, c, f.x), mix(d, e, f.x), f.y);
+}
 fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.982918 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+    let q = vec2<u32>(max(p, vec2<f32>(0.0))) & vec2<u32>(1u); return f32((q.x * 2u + q.y * 3u) & 3u) * 0.25 + 0.125;
 }
 @fragment
 fn ao_fs(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
@@ -144,7 +163,7 @@ fn ao_fs(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
     let fall_add = radius * (1.0 - g.cam.w) / fr + 1.0;
     let min_s = 1.3 / screen_r;
     let noise_slice = ign(frag.xy);
-    let noise_step = ign(frag.xy + vec2<f32>(5.588238));
+    let noise_step = ign(frag.yx + vec2<f32>(1.0, 0.0));
     let slices = u32(g.q.x);
     let steps = u32(g.q.y);
     var vis = 0.0;
@@ -170,8 +189,8 @@ fn ao_fs(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
             let ro = round(o);
             let s0 = frag.xy + ro;
             let s1 = frag.xy - ro;
-            let d0 = view_pos(s0, lin_at(clamp(vec2<i32>(floor(s0)), lo, hi), mip)) - pos;
-            let d1 = view_pos(s1, lin_at(clamp(vec2<i32>(floor(s1)), lo, hi), mip)) - pos;
+            let d0 = view_pos(s0, lin_bl(clamp(s0, vec2<f32>(lo), vec2<f32>(hi)), mip)) - pos;
+            let d1 = view_pos(s1, lin_bl(clamp(s1, vec2<f32>(lo), vec2<f32>(hi)), mip)) - pos;
             let l0 = length(d0);
             let l1 = length(d1);
             let w0 = clamp(l0 * fall_mul + fall_add, 0.0, 1.0);
@@ -492,3 +511,4 @@ impl Gtao {
         draws
     }
 }
+

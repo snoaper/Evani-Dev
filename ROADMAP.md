@@ -6,6 +6,10 @@ Statuses: `todo` · `in progress` · `review` · `done` · `blocked` (see CORE_R
 
 Human fix rounds: each kit's Notes count the rounds of fixes Chris's own review sent back (`fix <id>: ...`), after the critic passed it. The goal is 0 to 1 per kit; more means the target pack, the automatic checks or the critic missed something, and the lesson goes into docs/KIT_PROCESS.md, the genre playbook or the look README (KIT_PROCESS step 10).
 
+Research note: outside libraries for physics, navigation, terrain, voxels, noise, materials, effects and animation (e.g. for `rigid` kits) are assessed in [docs/research/engine-libraries-2026-11.md](docs/research/engine-libraries-2026-11.md); nothing there is approved or built.
+
+Implementation plan: every item of that note and of the Ultra-Water and procedural research, sequenced as one-at-a-time jobs with parity tests and budgets, is in [docs/research/implementation-plan-2026-11.md](docs/research/implementation-plan-2026-11.md).
+
 ## Phase A: prove the engine (six very different kits)
 
 | # | Kit | ID | Rank | Physics | First look | Status | Notes |
@@ -157,3 +161,11 @@ Kits that exist to test the engine and the review process, not to ship a genre. 
 | # | Kit | ID | Rank | Physics | First look | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | 000 | Test kit: engine sandbox | `example` | - | simple | `basic` | review | Demo `apps/sandbox`: a grid of spinning cubes and spheres with bloom and a vignette, no win or lose state. Used for Stage 1 gate check 5 (a complete review card) and as the smallest real kit. Not in catalog/genres.json, so no genre playbook. |
+
+## Tool apps (not games)
+
+Apps built on the engine that have no kit gameplay (nothing to win or lose, no game objects). Each says `kind = "tool"` in its evani.toml, which skips only the review's ECS entity count; every other check holds (DECISIONS.md, "Tool apps"). A tool's row must be in this table, its kit may not be a genre in catalog/genres.json, and it has no physics, no net and no gameplay crates (`evani_guide::appkind`). `next kit` never takes these rows.
+
+| # | Kit | ID | Rank | Physics | First look | Status | Notes |
+|---|---|---|---|---|---|---|---|
+| 200 | Material viewer | `material-view` | - | none | `stylizedpbr` | review | Demo `apps/material-view`: the material catalogue's showcase (the art styles row, the shader ball, cushion, head, ground, pool and lamp corner scenes; every recipe and condition layer with live sliders, compare split, light presets and world rooms). A playground with free roam. Batches 1 and 2 of the catalogue, critic round 1 fixes on the recipe and viewer sides (DECISIONS.md, 2026-10-24 and 2026-10-25); round 2 packet made, not yet scored. Not on main yet. |

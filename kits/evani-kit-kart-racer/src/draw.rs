@@ -167,6 +167,9 @@ pub struct DrawState {
     /// built for (rebuilt in place when a shape tunable changes).
     box_meshes: Option<(MeshId, MeshId)>,
     box_shape: Option<crate::itembox::BoxShape>,
+    /// Library ids of the candy karts' meshes ([`crate::kartmesh`]),
+    /// registered once after the item box's.
+    kart_meshes: Option<crate::candy::KartMeshes>,
     /// The road mesh's kept rings ([`crate::roadmarks::mesh_rings`]), set
     /// with the statics, and each item box's disc seat for the boxes where
     /// they are now (worked out again when a box moves).
@@ -180,6 +183,8 @@ pub struct DrawState {
     /// Smoothed camera heading and anchor height per player.
     cam_yaw: [f32; 2],
     cam_y: [f32; 2],
+    /// The anchor's glide over pose steps per player.
+    glide: [crate::chasecam::Glide; 2],
     /// How far the eye is lifted over its resting height to see over rivals.
     lift: [f32; 2],
     kick: [f32; 2],
@@ -187,6 +192,8 @@ pub struct DrawState {
     sounds: Option<Sounds>,
     /// The engines, surface beds and the rivals' engines (looping voices).
     voices: crate::voices::Voices,
+    /// The title and race themes and the jingles (see `music.rs`).
+    pub(crate) music: crate::music::Music,
     /// Seconds to the next incoming-item cue, per player.
     warn: [f32; 2],
     /// Last written speed-line drive values.
@@ -1147,13 +1154,32 @@ impl<'a> RivalDraw<'a> {
     }
 }
 
-/// One kart and its driver from bevelled boxes and cylinders, in cartoon
-/// proportions (big rear tyres, low tub, oversized helmet). The wheels roll
-/// with distance and the front pair steers; the body rolls out of a drift
-/// and with steering, pitches up on a boost, stretches on a hop and squashes
-/// on landing; the driver leans into the turn.
-pub fn draw_kart(k: &crate::kart::Kart, colours: ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, mats: &[Mat; 16], rw: &mut RenderWorld) {
-    draw_kart_parts(k, colours, pos, vyaw, max_speed, KartParts::ALL, mats, rw);
+/// How a candy kart is drawn this frame: the candy meshes' ids, full or low
+/// detail, and the render clock (idle bobs and flutter only).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KartArt<'a> {
+    pub meshes: &'a crate::candy::KartMeshes,
+    pub full: bool,
+    pub time: f32,
+}
+
+/// One kart and its racer as its candy design ([`crate::candy`]): the
+/// wheels roll with distance and the front pair steers; the body rolls out
+/// of a drift and with steering, pitches up on a boost, stretches on a hop
+/// and squashes on landing, and shudders a little at a standstill; the
+/// racer leans and looks into the turn, hands on the wheel.
+#[allow(clippy::too_many_arguments)]
+pub fn draw_kart(k: &crate::kart::Kart, colours: ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, mats: &[Mat; 16], art: KartArt<'_>, rw: &mut RenderWorld) {
+    draw_kart_parts(k, colours, pos, vyaw, max_speed, KartParts::ALL, mats, art, rw);
+}
+
+/// The kart as it was drawn before the candy designs (34 instances of the
+/// built-in meshes: bevelled boxes and cylinders in cartoon proportions,
+/// big rear tyres, low tub, oversized helmet). The game no longer draws it;
+/// the model bench (`tools/model-bench-ref`, `tests/model_bench`) measures
+/// it as its reference kart.
+pub fn draw_kart_classic(k: &crate::kart::Kart, colours: ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, mats: &[Mat; 16], rw: &mut RenderWorld) {
+    classic_parts(k, colours, pos, vyaw, max_speed, KartParts::ALL, mats, rw);
 }
 
 /// Which groups of primitives [`draw_kart_parts`] draws. A rival built from a
@@ -1200,7 +1226,14 @@ pub(crate) fn kart_pose(k: &crate::kart::Kart, vyaw: f32, max_speed: f32) -> ([f
 
 /// [`draw_kart`] for the groups `parts` names.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn draw_kart_parts(k: &crate::kart::Kart, (col, suit): ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, parts: KartParts, mats: &[Mat; 16], rw: &mut RenderWorld) {
+pub(crate) fn draw_kart_parts(k: &crate::kart::Kart, colours: ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, parts: KartParts, mats: &[Mat; 16], art: KartArt<'_>, rw: &mut RenderWorld) {
+    let mut p = crate::candy::Paint { rw, mats, ids: art.meshes, full: art.full, time: art.time };
+    crate::candy::kart(&mut p, k, colours, pos, vyaw, max_speed, parts);
+}
+
+/// [`draw_kart_classic`] for the groups `parts` names.
+#[allow(clippy::too_many_arguments)]
+fn classic_parts(k: &crate::kart::Kart, (col, suit): ([f32; 3], Option<[f32; 3]>), pos: [f32; 3], vyaw: f32, max_speed: f32, parts: KartParts, mats: &[Mat; 16], rw: &mut RenderWorld) {
     let body = mats[role::KART_BODY];
     let dark = mats[role::WHEEL];
     let white = mats[role::KERB_WHITE];
@@ -1341,9 +1374,51 @@ impl BoxSeat {
 /// Without a shadow map (`shadows` false) it casts a dark disc on the road
 /// below it, on its `seat` when there is one (flat under the box if not).
 /// Before the meshes are registered it is a plain bevelled cube.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] #[cfg_attr(not(feature = "live"), allow(dead_code))]
 pub(crate) fn draw_item_box(b: &crate::items::ItemBox, i: usize, look: &ItemBoxLook, seat: Option<&BoxSeat>, mats: &[Mat; 16], time: f32, shadows: bool, rw: &mut RenderWorld) {
-    let grow = if b.hidden > 0.0 { (1.0 - b.hidden / look.pop_s.max(0.01)).clamp(0.0, 1.0) } else { 1.0 };
+    draw_item_box_sized(b, i, box_grow(b, look), look, seat, mats, time, shadows, rw);
+}
+
+/// How far box `b` has grown back after a pick-up (0 gone, 1 whole): it
+/// grows in over the last [`ItemBoxLook::pop_s`] of its respawn countdown.
+pub(crate) fn box_grow(b: &crate::items::ItemBox, look: &ItemBoxLook) -> f32 {
+    if b.hidden > 0.0 { (1.0 - b.hidden / look.pop_s.max(0.01)).clamp(0.0, 1.0) } else { 1.0 }
+}
+
+/// How far past the pick-up reach a kart must be before a returning box
+/// grows back at its full rate (m).
+pub const BOX_CLEAR_M: f32 = 1.0;
+
+/// How much of box `b` may show with `karts` round it (0 none, 1 all), so a
+/// box never stands inside a driver. Drawing only: the pick-up rules are
+/// `race.rs`'s (`collect_boxes`), and this uses the same reach
+/// (`kart_radius` + 0.9 m across, within 2 m up or down).
+/// - A kart inside the reach of a whole box takes it on the next tick
+///   (a returning box only becomes collectable the tick after its countdown
+///   ends), so the box is already hidden: it vanishes as the kart arrives.
+/// - A returning box (countdown still running) stays hidden while a kart is
+///   inside the reach and grows back as the nearest one drives clear, so a
+///   kart that crosses the spot while the box comes back never has it grow
+///   round its head.
+pub(crate) fn box_clearance(b: &crate::items::ItemBox, karts: &[crate::kart::Kart], t: &Tune) -> f32 {
+    let reach = t.kart_radius + 0.9;
+    let near = karts
+        .iter()
+        .filter(|k| (k.pos[1] + 0.5 - b.pos[1]).abs() <= 2.0)
+        .map(|k| ((k.pos[0] - b.pos[0]).powi(2) + (k.pos[2] - b.pos[2]).powi(2)).sqrt())
+        .fold(f32::INFINITY, f32::min);
+    if near <= reach {
+        0.0
+    } else if b.hidden > 0.0 {
+        ((near - reach) / BOX_CLEAR_M).clamp(0.0, 1.0)
+    } else {
+        1.0
+    }
+}
+
+/// [`draw_item_box`] grown to `grow` (0 to 1) instead of by its countdown.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn draw_item_box_sized(b: &crate::items::ItemBox, i: usize, grow: f32, look: &ItemBoxLook, seat: Option<&BoxSeat>, mats: &[Mat; 16], time: f32, shadows: bool, rw: &mut RenderWorld) {
     if grow <= 0.0 {
         return;
     }
@@ -1459,6 +1534,7 @@ fn draw_dynamic(
     time: f32,
     (chase, lean, shadows, budget): (bool, bool, bool, u32),
     fade: &[f32; crate::race::MAX_KARTS],
+    (kart_meshes, eyes): (&crate::candy::KartMeshes, &[[f32; 3]]),
     mut rivals: Option<&mut RivalDraw<'_>>,
     rw: &mut RenderWorld,
 ) {
@@ -1468,12 +1544,13 @@ fn draw_dynamic(
     // The podium scene shows only itself (no karts, boxes or blobs).
     if stage == crate::finale::Stage::Podium {
         start_lights(race, mats, lean, rw);
-        crate::finale::draw(race, &site, mats, budget, time, shadows, rw);
+        crate::finale::draw(race, &site, mats, kart_meshes, budget, time, shadows, rw);
         return;
     }
     push_blobs(race, alpha, rw);
     for (i, b) in race.boxes.iter().enumerate() {
-        draw_item_box(b, i, look, seats.get(i).copied().flatten().as_ref(), mats, time, shadows, rw);
+        let grow = box_grow(b, look) * box_clearance(b, &race.karts, t);
+        draw_item_box_sized(b, i, grow, look, seats.get(i).copied().flatten().as_ref(), mats, time, shadows, rw);
     }
     // Karts. Everything drawn for a kart takes its fade (instance alpha:
     // the forward shader's screen-door dither).
@@ -1489,7 +1566,8 @@ fn draw_dynamic(
         // (`rivals.rs`); until then, and for the players, the primitive kart.
         let f = fade.get(ki).copied().unwrap_or(1.0);
         let from_parts = rivals.as_mut().and_then(|r| r.kart(&RivalKart { k, spec, pos, vyaw, max_speed: t.max_speed, fade: f }));
-        draw_kart_parts(k, (spec.color, spec.suit), pos, vyaw, t.max_speed, from_parts.unwrap_or(KartParts::ALL), mats, rw);
+        let art = KartArt { meshes: kart_meshes, full: kart_detail(lean, k.player.is_some(), pos, eyes), time };
+        draw_kart_parts(k, (spec.color, spec.suit), pos, vyaw, t.max_speed, from_parts.unwrap_or(KartParts::ALL), mats, art, rw);
         if k.boost > 0.0 {
             let fl = 1.0 + 0.3 * (time * 40.0 + k.spec as f32).sin();
             if lean {
@@ -1567,7 +1645,22 @@ fn draw_dynamic(
         draw_blast(b, mats, time, lean, rw);
     }
     start_lights(race, mats, lean, rw);
-    crate::finale::draw(race, &site, mats, budget, time, shadows, rw);
+    crate::finale::draw(race, &site, mats, kart_meshes, budget, time, shadows, rw);
+}
+
+/// Karts nearer a camera than this draw their candy design in full detail
+/// (sprinkles, sugar, stripes, highlights, faces); further off, the low
+/// detail, which reads the same at that size.
+pub const KART_DETAIL_M: f32 = 25.0;
+
+/// Whether a kart at `pos` draws in full detail: on a small-budget tier
+/// (`lean`) only the players' own karts do; otherwise every kart within
+/// [`KART_DETAIL_M`] of a camera eye (`eyes`; none: the title orbit, all).
+pub fn kart_detail(lean: bool, player: bool, pos: [f32; 3], eyes: &[[f32; 3]]) -> bool {
+    if lean {
+        return player;
+    }
+    eyes.is_empty() || eyes.iter().any(|e| (e[0] - pos[0]).powi(2) + (e[1] - pos[1]).powi(2) + (e[2] - pos[2]).powi(2) < KART_DETAIL_M * KART_DETAIL_M)
 }
 
 
@@ -1914,6 +2007,7 @@ fn play_events(race: &mut RaceView, sounds: &Sounds, mixer: &mut AudioMixer) {
             d < 60.0
         })
     };
+    let music_off = mixer.volume(Some(evani_core::audio::Bus::Music)) < 0.01;
     for e in events {
         let (sfx, gain) = match e {
             RaceEvent::Countdown(_) => (Sfx::Beep, 0.6),
@@ -1930,7 +2024,9 @@ fn play_events(race: &mut RaceView, sounds: &Sounds, mixer: &mut AudioMixer) {
             RaceEvent::Wall(i, _) if human(i) => (Sfx::Wall, 0.5),
             RaceEvent::Blast(p) if near_human(p) => (Sfx::Blast, 0.7),
             RaceEvent::Lap(i, _) if human(i) => (Sfx::Lap, 0.55),
-            RaceEvent::Finish(i, place) if human(i) => (if place <= 3 { Sfx::Win } else { Sfx::Lose }, 0.6),
+            // The music plays the win or placed jingle; with the music
+            // turned off the short effect still marks the line.
+            RaceEvent::Finish(i, place) if human(i) && music_off => (if place <= 3 { Sfx::Win } else { Sfx::Lose }, 0.6),
             _ => continue,
         };
         sounds.play(mixer, sfx, gain);
@@ -1942,9 +2038,9 @@ pub fn draw_system(world: &mut World) {
     let Some(kit) = world.try_res::<KartKit>().map(|k| *k) else {
         return;
     };
-    let (alpha, frame_dt, time) = {
+    let (alpha, frame_dt, time, fixed_dt) = {
         let tm = world.res::<Time>();
-        (tm.alpha, tm.frame_dt.clamp(0.0, 0.1), tm.render_seconds())
+        (tm.alpha, tm.frame_dt.clamp(0.0, 0.1), tm.render_seconds(), tm.fixed_dt.max(1e-4))
     };
     let time = world.res::<crate::race::Race>().moment_time.map_or(time, f64::from);
     let tf = (time % 3600.0) as f32;
@@ -2058,6 +2154,17 @@ pub fn draw_system(world: &mut World) {
             st.box_shape = Some(look.shape);
         }
         look.meshes = st.box_meshes;
+        // The candy karts' meshes, once (they never change). A mesh the
+        // library has no room for draws as its built-in stand-in.
+        if st.kart_meshes.is_none()
+            && let Some(mut lib) = world.try_res_mut::<MeshLibrary>()
+        {
+            let mut ids = [None; crate::kartmesh::COUNT];
+            for (slot, m) in ids.iter_mut().zip(crate::kartmesh::build()) {
+                *slot = lib.add(m);
+            }
+            st.kart_meshes = Some(crate::candy::KartMeshes::new(ids));
+        }
         if let Some(&disc) = st.track_ids.get(crate::trackmesh::COUNT + crate::propmesh::DISC) {
             look.disc = disc;
         }
@@ -2071,6 +2178,10 @@ pub fn draw_system(world: &mut World) {
     if st.sounds.is_none() {
         let mut mixer = world.res_mut::<AudioMixer>();
         st.sounds = Some(Sounds::register(&mut mixer));
+    } else {
+        // The music after the effects, one theme or jingle a frame.
+        let mut mixer = world.res_mut::<AudioMixer>();
+        st.music.register_next(&mut mixer);
     }
     let Some(mats) = st.mats else {
         return;
@@ -2105,6 +2216,7 @@ pub fn draw_system(world: &mut World) {
         } else {
             st.voices.update(&mut mixer, &sounds, &race, &t);
         }
+        st.music.update(&mut mixer, &race, frame_dt, muted);
         let racing = race.phase == Phase::Racing && !race.paused && !muted;
         let hud = world.res::<RaceHud>();
         for p in 0..2 {
@@ -2134,7 +2246,11 @@ pub fn draw_system(world: &mut World) {
             continue;
         };
         let k = &race.karts[i];
-        let pos = lerp3(k.prev_pos, k.pos, alpha);
+        // The anchor glides over steps in the kart's drawn pose that are not
+        // its own motion (online corrections and catch-up ticks; see
+        // [`crate::chasecam::Glide`]).
+        let vel: [f32; 3] = core::array::from_fn(|i| (k.pos[i] - k.prev_pos[i]) / fixed_dt);
+        let pos = st.glide[p].follow(lerp3(k.prev_pos, k.pos, alpha), vel, frame_dt, snap);
         let yaw = k.prev_yaw + crate::kart::wrap_angle(k.yaw - k.prev_yaw) * alpha;
         // The camera smooths its heading and the anchor's height, never the
         // kart's position: the kart stays fixed low in the centre of the
@@ -2262,8 +2378,9 @@ pub fn draw_system(world: &mut World) {
             let seats: Vec<Option<BoxSeat>> = race.boxes.iter().map(|b| BoxSeat::new(&race.track, &st.road_ring, b.pos)).collect();
             st.box_seats = seats;
         }
+        let kart_meshes = st.kart_meshes.unwrap_or_default();
         #[cfg(feature = "live")]
-        let frame = focus.as_ref().and_then(|f| crate::focus::draw(f, &race, &t, &look, &st.box_seats, &mats, alpha, tf, st.shadows, &mut rw));
+        let frame = focus.as_ref().and_then(|f| crate::focus::draw(f, &race, &t, &look, &st.box_seats, &mats, &kart_meshes, alpha, tf, st.shadows, &mut rw));
         #[cfg(feature = "live")]
         if let Some(fr) = frame
             && let Some(mut fs) = world.try_res_mut::<evani_core::focus::FocusState>()
@@ -2290,7 +2407,10 @@ pub fn draw_system(world: &mut World) {
         } else {
             st.fade = if chase && !podium { kart_fades(&race, &poses, &views, t.kart_radius, alpha) } else { [1.0; crate::race::MAX_KARTS] };
             let mut rivals = RivalDraw::acquire(world, rival_parts, t.rival_model_scale);
-            draw_dynamic(&race, &t, &look, &st.box_seats, &mats, alpha, tf, (chase, st.lean, st.shadows, st.budget), &st.fade, rivals.as_mut(), &mut rw);
+            // Where the karts are seen from: the chase cameras, else the
+            // one camera (title orbit, finish), for their detail.
+            let eyes: Vec<[f32; 3]> = if chase && !podium { (0..race.players.min(2)).map(|p| poses[p].eye).collect() } else { vec![rw.camera.eye] };
+            draw_dynamic(&race, &t, &look, &st.box_seats, &mats, alpha, tf, (chase, st.lean, st.shadows, st.budget), &st.fade, (&kart_meshes, &eyes), rivals.as_mut(), &mut rw);
         }
         // The ground shadow discs (Low's stand-ins for the shadow map, and the
         // item boxes') follow the look's shadow tint, like the shadows the
@@ -3142,6 +3262,37 @@ mod tests {
         assert_eq!(rw.meshes.iter().map(|m| m.mesh).collect::<Vec<_>>(), [MeshId(40), MeshId(41)]);
         assert_eq!(rw.meshes[1].material, mats[ITEM_BOX_DECOR_ROLE].index);
         assert_eq!(rw.meshes[1].color[..3], look.paint);
+    }
+
+    /// A box never stands inside a kart: one inside the pick-up reach is
+    /// hidden (it is taken on the next tick), and one coming back stays hidden
+    /// while a kart is in its reach, then grows back as the kart drives clear.
+    /// Karts well clear (or far above) leave every box as it was.
+    #[test]
+    fn item_boxes_never_grow_inside_a_kart() {
+        let t = Tune::default();
+        let look = ItemBoxLook::default();
+        let reach = t.kart_radius + 0.9;
+        // Karts sit on the road, 1 m under the box's pick-up point.
+        let kart_at = |x: f32, y: f32| crate::kart::Kart::new(0, None, [x, y, 0.0], 0.0);
+        let whole = crate::items::ItemBox { pos: [0.0, 1.0, 0.0], hidden: 0.0 };
+        let back = crate::items::ItemBox { hidden: look.pop_s * 0.5, ..whole };
+        let shown = |b: &crate::items::ItemBox, karts: &[crate::kart::Kart]| box_grow(b, &look) * box_clearance(b, karts, &t);
+        assert_eq!(shown(&whole, &[]), 1.0);
+        assert_eq!(shown(&back, &[]), 0.5);
+        assert_eq!(shown(&whole, &[kart_at(reach - 0.05, 0.0)]), 0.0);
+        assert_eq!(shown(&whole, &[kart_at(reach + 0.05, 0.0)]), 1.0);
+        assert_eq!(shown(&back, &[kart_at(0.3, 0.0)]), 0.0);
+        assert_eq!(shown(&back, &[kart_at(reach + BOX_CLEAR_M + 0.1, 0.0)]), 0.5);
+        let half = shown(&back, &[kart_at(reach + 0.5 * BOX_CLEAR_M, 0.0), kart_at(30.0, 0.0)]);
+        assert!((half - 0.25).abs() < 1e-4, "{half}");
+        // A kart far over the box (out of the pick-up's 2 m height) leaves it.
+        assert_eq!(shown(&whole, &[kart_at(0.0, 5.0)]), 1.0);
+        // Hidden boxes draw nothing.
+        let mats = resolve_materials(&LookData::default());
+        let mut rw = RenderWorld::default();
+        draw_item_box_sized(&whole, 0, 0.0, &look, None, &mats, 0.0, false, &mut rw);
+        assert!(rw.meshes.is_empty() && rw.decals.is_empty());
     }
 
     /// Low (100k triangles): the twelve boxes with their "?" and rivets still

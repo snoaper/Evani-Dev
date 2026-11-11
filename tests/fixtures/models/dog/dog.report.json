@@ -1,0 +1,563 @@
+{
+  "converter": "evani-convert 0.1.0",
+  "evani_model_input": false,
+  "format": 1,
+  "gate": null,
+  "id": "dog",
+  "inputs": [
+    {
+      "bytes": 1258636,
+      "file": "<project>/.evani/tmp/dog_v2/dog.glb",
+      "role": "input",
+      "sha256": "1c9093da630e2f24a9473ee347f7fd9353f4c447dfeaf2a2c779cc8a43487011"
+    }
+  ],
+  "look": null,
+  "look_match": null,
+  "manifest": "dog.manifest.json",
+  "master": {
+    "bytes": 1258636,
+    "file": "dog.master.glb",
+    "levels": [
+      {
+        "draw_calls": 3,
+        "node": "(whole file)",
+        "triangles": 27792
+      }
+    ]
+  },
+  "meshcheck": [
+    {
+      "file": "dog.master.glb",
+      "meshcheck": {
+        "components": 6,
+        "issues": {
+          "degenerate": 8,
+          "duplicate": 4,
+          "non_manifold_edge": 8,
+          "self_intersection": 1210
+        },
+        "self_intersections_checked": true,
+        "triangles": 27792,
+        "vertices": 13900
+      },
+      "what": "master"
+    },
+    {
+      "file": "dog.low.glb",
+      "meshcheck": {
+        "components": 6,
+        "issues": {
+          "degenerate": 6,
+          "non_manifold_edge": 2,
+          "non_manifold_vertex": 2,
+          "self_intersection": 232
+        },
+        "self_intersections_checked": true,
+        "triangles": 6947,
+        "vertices": 3486
+      },
+      "what": "low level 0"
+    },
+    {
+      "file": "dog.medium.glb",
+      "meshcheck": {
+        "components": 6,
+        "issues": {
+          "degenerate": 6,
+          "self_intersection": 363
+        },
+        "self_intersections_checked": true,
+        "triangles": 13896,
+        "vertices": 6958
+      },
+      "what": "medium level 0"
+    },
+    {
+      "file": "dog.high.glb",
+      "meshcheck": {
+        "components": 6,
+        "issues": {
+          "self_intersection": 433
+        },
+        "self_intersections_checked": true,
+        "triangles": 20843,
+        "vertices": 10435
+      },
+      "what": "high level 0"
+    },
+    {
+      "file": "dog.ultra.glb",
+      "meshcheck": {
+        "components": 6,
+        "issues": {
+          "degenerate": 4,
+          "self_intersection": 777
+        },
+        "self_intersections_checked": true,
+        "triangles": 27792,
+        "vertices": 13906
+      },
+      "what": "ultra level 0"
+    }
+  ],
+  "min_distance_m": null,
+  "notes": [
+    "studio tags: `_EVANI_PART` and `_EVANI_COAT` kept on 3 primitive(s) in every tier (parked in COLOR_0/COLOR_1 through gltfpack; in the tier files `_EVANI_PART` is unorm8 x4, the region index in its first channel)",
+    "one level of detail per tier: the model is animated (skins, animations, cameras and extension data such as lights point at indices across the file, which the merge does not remap, and baked clips name each tier file's nodes once; LOD chains for skinned and animated models are not built yet)"
+  ],
+  "package": {
+    "brotli": 489023,
+    "cap": 10485760,
+    "files": 5,
+    "gzip": 524863,
+    "over_cap": false,
+    "raw": 654058
+  },
+  "read_back": {
+    "problems": [],
+    "reader": "evani-gltf"
+  },
+  "tiers": [
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 150,
+        "max_triangles": 100000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 57478,
+        "gzip": 61361,
+        "raw": 79852
+      },
+      "clips": {
+        "block_bytes": 12576,
+        "bound_m": 0.001,
+        "clips": [
+          {
+            "bytes": 4363,
+            "constant": 0,
+            "frames": 151,
+            "keys": 581,
+            "name": "idle",
+            "rest": 128,
+            "rot_bits": 48,
+            "tracks": 40,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.0006216347777869544
+          },
+          {
+            "bytes": 8196,
+            "constant": 0,
+            "frames": 36,
+            "keys": 1126,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "ear.L.001",
+            "worst_shell_error_m": 0.0009989294210585797
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 79852,
+        "bc7_device": 79852
+      },
+      "draw_calls": 3,
+      "file": "dog.low.glb",
+      "files": [
+        {
+          "brotli": 57478,
+          "file": "dog.low.glb",
+          "gzip": 61361,
+          "raw": 79852
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.02,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 0.25,
+          "triangles": 6947
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 1.25,
+        "height": 1080.0,
+        "height_from": "bench reference 1080",
+        "pixels": 1012.5,
+        "render_scale": 0.75
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 100663296,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 1024,
+        "floor": 64,
+        "fraction": 1.0,
+        "screen_px": 1012.5,
+        "size": 1024
+      },
+      "tier": "low",
+      "triangles": 6947
+    },
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 300,
+        "max_triangles": 400000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 92719,
+        "gzip": 100345,
+        "raw": 127828
+      },
+      "clips": {
+        "block_bytes": 16477,
+        "bound_m": 0.0005,
+        "clips": [
+          {
+            "bytes": 5805,
+            "constant": 0,
+            "frames": 151,
+            "keys": 787,
+            "name": "idle",
+            "rest": 128,
+            "rot_bits": 48,
+            "tracks": 40,
+            "within": true,
+            "worst_node": "f_hoof.L",
+            "worst_shell_error_m": 0.0003567627701392187
+          },
+          {
+            "bytes": 10653,
+            "constant": 0,
+            "frames": 36,
+            "keys": 1477,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "f_hoof.L",
+            "worst_shell_error_m": 0.00020174687108458043
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 127828,
+        "bc7_device": 127828
+      },
+      "draw_calls": 3,
+      "file": "dog.medium.glb",
+      "files": [
+        {
+          "brotli": 92719,
+          "file": "dog.medium.glb",
+          "gzip": 100345,
+          "raw": 127828
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.01,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 0.5,
+          "triangles": 13896
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 1.5,
+        "height": 1080.0,
+        "height_from": "bench reference 1080",
+        "pixels": 1620.0,
+        "render_scale": 1.0
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 201326592,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 2048,
+        "floor": 128,
+        "fraction": 1.0,
+        "screen_px": 1620.0,
+        "size": 2048
+      },
+      "tier": "medium",
+      "triangles": 13896
+    },
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 800,
+        "max_triangles": 2000000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 152038,
+        "gzip": 163401,
+        "raw": 199092
+      },
+      "clips": {
+        "block_bytes": 17742,
+        "bound_m": 0.0003,
+        "clips": [
+          {
+            "bytes": 7329,
+            "constant": 0,
+            "frames": 151,
+            "keys": 1003,
+            "name": "idle",
+            "rest": 126,
+            "rot_bits": 48,
+            "tracks": 42,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.00022719220923589844
+          },
+          {
+            "bytes": 10394,
+            "constant": 0,
+            "frames": 36,
+            "keys": 1440,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "f_hoof.R",
+            "worst_shell_error_m": 0.00028400522486025795
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 199092,
+        "bc7_device": 199092
+      },
+      "draw_calls": 3,
+      "file": "dog.high.glb",
+      "files": [
+        {
+          "brotli": 152038,
+          "file": "dog.high.glb",
+          "gzip": 163401,
+          "raw": 199092
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.005,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 0.75,
+          "triangles": 20843
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 2.0,
+        "height": 1080.0,
+        "height_from": "bench reference 1080",
+        "pixels": 2160.0,
+        "render_scale": 1.0
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 536870912,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 4096,
+        "floor": 256,
+        "fraction": 1.0,
+        "screen_px": 2160.0,
+        "size": 4096
+      },
+      "tier": "high",
+      "triangles": 20843
+    },
+    {
+      "budget": {
+        "draw_calls_over": false,
+        "max_draw_calls": 2500,
+        "max_triangles": 6000000,
+        "triangles_over": false
+      },
+      "bytes": {
+        "brotli": 186550,
+        "gzip": 199486,
+        "raw": 246424
+      },
+      "clips": {
+        "block_bytes": 19964,
+        "bound_m": 0.0002,
+        "clips": [
+          {
+            "bytes": 8979,
+            "constant": 0,
+            "frames": 151,
+            "keys": 1237,
+            "name": "idle",
+            "rest": 124,
+            "rot_bits": 48,
+            "tracks": 44,
+            "within": true,
+            "worst_node": "f_hoof.L",
+            "worst_shell_error_m": 0.00014068731401187365
+          },
+          {
+            "bytes": 10968,
+            "constant": 0,
+            "frames": 36,
+            "keys": 1522,
+            "name": "walk",
+            "rest": 121,
+            "rot_bits": 48,
+            "tracks": 47,
+            "within": true,
+            "worst_node": "f_hoof.L",
+            "worst_shell_error_m": 0.00016246569174331235
+          }
+        ],
+        "notes": []
+      },
+      "download": {
+        "astc_device": 246424,
+        "bc7_device": 246424
+      },
+      "draw_calls": 3,
+      "file": "dog.ultra.glb",
+      "files": [
+        {
+          "brotli": 186550,
+          "file": "dog.ultra.glb",
+          "gzip": 199486,
+          "raw": 246424
+        }
+      ],
+      "images": [],
+      "lods": [
+        {
+          "draw_calls": 3,
+          "error": 0.0,
+          "min_screen": 0.2,
+          "node": "(whole file)",
+          "ratio": 1.0,
+          "triangles": 27792
+        }
+      ],
+      "note": null,
+      "screen": {
+        "dpr_cap": 1.0,
+        "height": 1440.0,
+        "height_from": "target_resolution",
+        "pixels": 1440.0,
+        "render_scale": 1.0
+      },
+      "texture_memory": {
+        "astc": 0,
+        "bc7": 0,
+        "budget": 1610612736,
+        "over": false
+      },
+      "texture_size": {
+        "cap": 2048,
+        "floor": 128,
+        "fraction": 1.0,
+        "screen_px": 1440.0,
+        "size": 2048
+      },
+      "tier": "ultra",
+      "triangles": 27792
+    }
+  ],
+  "tools": [
+    {
+      "name": "gltfpack",
+      "version": "1.3"
+    },
+    {
+      "name": "ktx",
+      "version": "4.4.2"
+    },
+    {
+      "name": "gltf-transform",
+      "version": "4.5.1"
+    }
+  ],
+  "validator": [
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "dog.low.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    },
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "dog.medium.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    },
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "dog.high.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    },
+    {
+      "error_lines": [],
+      "errors": 0,
+      "file": "dog.ultra.glb",
+      "geometry": {
+        "checked": true,
+        "error_lines": [],
+        "errors": 0,
+        "warnings": 2
+      },
+      "warnings": 2
+    }
+  ]
+}

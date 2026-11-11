@@ -56,10 +56,10 @@ impl ModelGpu {
         pipes: &Pipelines,
         tris: &mut u32,
     ) -> u32 {
-        let (false, Some(pipe)) = (self.vm_runs.is_empty(), pipes.model(false)) else {
+        #[cfg(not(feature = "material-split"))] let (false, Some(pipe)) = (self.vm_runs.is_empty(), pipes.model(false)) else {
             return 0;
-        };
-        rp.set_pipeline(pipe);
+        }; #[cfg(feature = "material-split")] if self.vm_runs.is_empty() { return 0; } #[cfg(feature = "material-split")] let mut cur: Option<&wgpu::RenderPipeline> = None;
+        #[cfg(not(feature = "material-split"))] rp.set_pipeline(pipe);
         rp.set_vertex_buffer(1, self.instances.slice(..));
         rp.set_bind_group(0, frame_bg, &[off]);
         let mut draws = 0;
@@ -73,7 +73,7 @@ impl ModelGpu {
             let Some(mat) = gm.materials.get(p.part.material) else {
                 continue;
             };
-            rp.set_bind_group(1, mat, &[]);
+            #[cfg(feature = "material-split")] { let (code, kind) = self.recipes.split_of(r.model, p.part.material); let Some(pipe) = pipes.model_for(false, code, kind) else { continue; }; if !cur.is_some_and(|c| core::ptr::eq(c, pipe)) { rp.set_pipeline(pipe); cur = Some(pipe); } } rp.set_bind_group(1, mat, &[]);
             rp.set_vertex_buffer(0, p.vb.slice(..));
             rp.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
             rp.draw_indexed(0..p.count, 0, r.first..r.first + r.count);

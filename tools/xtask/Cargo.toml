@@ -19,6 +19,13 @@ sha2 = { version = "=0.10.9", default-features = false }
 # old `kern` table), and the atlas PNG re-encoded at high compression.
 ttf-parser = { version = "=0.25.1", default-features = false, features = ["std", "opentype-layout"] }
 png = { version = "=0.18.1", default-features = false }
+# `cargo xtask commons export`: round and reference pictures re-encoded as small
+# JPEGs for an Evani.commons package (pure Rust, no dependencies; dev tool only).
+jpeg-encoder = { version = "=0.7.1", default-features = false, features = ["std"] }
+# `commons export --locked-sha256`: decode Evani.app's locked JPEG reference to
+# prove it is the same picture the round was scored against (pure Rust, no
+# dependencies without its rayon default; dev tool only).
+jpeg-decoder = { version = "=0.3.2", default-features = false }
 # `cargo xtask bench`: the tier list and the shared result type and table.
 evani-core.workspace = true
 evani-bench = { path = "../../apps/bench" }
@@ -26,6 +33,13 @@ serde_json.workspace = true
 # `init-ai`, `doctor`, `check`, `new-game`, `ai-eval`: the AI guidance and the
 # check gate (docs/AI_GUIDANCE.md); also the shared evani.toml crate check.
 evani-guide = { path = "../evani-guide" }
+# `style-bake`: the studio's geometry stage at build time (WP3); dev tool
+# crates, never in a game.
+evani-studio.workspace = true
+evani-style-geo.workspace = true
+# `doctor --requirements` and `engine-pack`: the build requirements checker
+# (std only; also shipped prebuilt in the engine pack).
+evani-reqcheck = { path = "../evani-reqcheck" }
 
 [lints]
 workspace = true

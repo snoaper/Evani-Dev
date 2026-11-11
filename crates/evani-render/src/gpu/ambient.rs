@@ -55,7 +55,7 @@ struct Ambient {
 
 /// The sky: tint by height (already scaled to render.ambient), and the sun
 /// glow.
-#[cfg(feature = "ibl")]
+#[cfg(all(feature = "ibl", not(feature = "studio-sky")))]
 const SKY_WGSL: &str = r"
 fn amb_sky(d: vec3<f32>) -> vec3<f32> {
     let up = clamp(d.y, -1.0, 1.0);
@@ -66,6 +66,18 @@ fn amb_glow(d: vec3<f32>) -> vec3<f32> {
     return amb.sun_color.rgb * pow(max(dot(d, amb.sun.xyz), 0.0), 32.0);
 }
 ";
+
+/// The sky with the studio blended in (feature `studio-sky`): the panels
+/// of `crate::ambient::studio` (generated from its table, so the SH9 and
+/// this agree), scaled per channel by the sh words' w (rgb) and blended by
+/// `render.sky.studio` (sh[3].w).
+#[cfg(feature = "studio-sky")]
+fn sky_wgsl() -> String {
+    format!(
+        "{}fn amb_sky(d: vec3<f32>) -> vec3<f32> {{\n    let up = clamp(d.y, -1.0, 1.0);\n    let k = sqrt(abs(up));\n    let sky = select(mix(amb.horizon.rgb, amb.ground.rgb, k), mix(amb.horizon.rgb, amb.zenith.rgb, k), up >= 0.0);\n    let st = amb_studio_raw(d) * vec3<f32>(amb.sh[0].w, amb.sh[1].w, amb.sh[2].w);\n    return mix(sky, st, clamp(amb.sh[3].w, 0.0, 1.0));\n}}\nfn amb_glow(d: vec3<f32>) -> vec3<f32> {{\n    return amb.sun_color.rgb * pow(max(dot(d, amb.sun.xyz), 0.0), 32.0);\n}}\n",
+        crate::ambient::studio::wgsl()
+    )
+}
 
 /// Forward module tail: bindings shared by both features.
 const FORWARD_HEAD: &str = r"
@@ -214,8 +226,10 @@ pub fn patch(mut sp: Spliced) -> Spliced {
         for part in [AMBIENT_WGSL, FORWARD_HEAD, AO_WGSL, IBL_WGSL] {
             sp.source.push_str(part);
         }
-        #[cfg(feature = "ibl")]
+        #[cfg(all(feature = "ibl", not(feature = "studio-sky")))]
         sp.source.push_str(SKY_WGSL);
+        #[cfg(feature = "studio-sky")]
+        sp.source.push_str(&sky_wgsl());
     }
     sp
 }
@@ -442,7 +456,10 @@ fn cube_view(tex: &wgpu::Texture) -> wgpu::TextureView {
 #[cfg(feature = "ibl")]
 impl Cube {
     fn new(device: &wgpu::Device, buf: &wgpu::Buffer) -> Self {
+        #[cfg(not(feature = "studio-sky"))]
         let source = format!("{AMBIENT_WGSL}\n@group(0) @binding(0) var<uniform> amb: Ambient;\n{SKY_WGSL}{CUBE_WGSL}");
+        #[cfg(feature = "studio-sky")]
+        let source = format!("{AMBIENT_WGSL}\n@group(0) @binding(0) var<uniform> amb: Ambient;\n{}{CUBE_WGSL}", sky_wgsl());
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("evani.sky_cube"),
             source: wgpu::ShaderSource::Wgsl(source.into()),

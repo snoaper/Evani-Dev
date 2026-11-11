@@ -1,0 +1,2 @@
+# Made by `cargo xtask convert-textures ../../layers.json --out assets`.
+/assets/

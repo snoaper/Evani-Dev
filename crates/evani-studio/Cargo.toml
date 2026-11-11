@@ -1,0 +1,25 @@
+[package]
+name = "evani-studio"
+description = "Evani.Dev Asset & Style Studio contracts: the selection record (asset, style, material), the asset catalogue, materials' belongs_on, the style split (geometry, surface, screen pass), compatibility, auto-match, cache keys and the geometry interface (dev tool data, never in a game)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Pure data and pure functions: no GPU, no browser API, no engine crate, so
+# the checker (`cargo xtask check`, a seconds-to-build hook) can read the
+# catalogues through it and the tests run in seconds. Only the material-view
+# tool app reaches it (its `material-studio` feature); no game lists it.
+[features]
+default = []
+# Embed catalog/assets/assets.json (the viewer's page; dev data like the
+# material catalogue, never in a ship build).
+data = []
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

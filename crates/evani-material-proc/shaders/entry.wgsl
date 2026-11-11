@@ -1,6 +1,6 @@
 // ---- entry ---------------------------------------------------------------------
 
-// `$SKY_CALL` becomes `mp_sky(n)` with feature `sky`, else `vec3<f32>(1.0)`
+// `$SKY_CALL` becomes `mp_sky_rgba(n)` with feature `sky`, else `vec4<f32>(1.0)`
 // (MP_SKY is then the no-slot number, so the branch never runs).
 fn kit_material(p: vec3<f32>, n: vec3<f32>, material: u32) -> vec4<f32> {
     // Before any branch: derivatives need uniform control flow.
@@ -9,7 +9,7 @@ fn kit_material(p: vec3<f32>, n: vec3<f32>, material: u32) -> vec4<f32> {
         return vec4<f32>(1.0);
     }
     if (material == MP_SKY) {
-        return vec4<f32>($SKY_CALL, 1.0);
+        return $SKY_CALL;
     }
     if (material == MP_DECAL) {
         return mp_decal(p, n, fw);

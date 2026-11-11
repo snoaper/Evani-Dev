@@ -1,0 +1,18 @@
+[package]
+name = "evani-construct"
+description = "Evani.Model construct: exact pieces (boards, timbers, ropes, solids of revolution) built along curves and surfaces with seeded variation, per render tier. Build and convert time only, never in a game download."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Dependency rule (docs/MODELGEN_PLAN.md 3.1, DECISIONS.md "Evani.Model
+# construct"): std plus serde_json, which is already pinned in the workspace
+# and needed by the formula helpers moved here from evani-model (`expr`) and
+# the JSON recipe loader. No GPU, no browser API: WebAssembly-clean.
+[dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

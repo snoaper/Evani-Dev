@@ -1,0 +1,10 @@
+{
+  "oak": "timber.oak",
+  "steel": "metal.steel.brushed",
+  "lacquer": "finish.lacquer.red",
+  "granite": "rock.granite.grey",
+  "horse": "horse.coat.bay",
+  "saddle": "leather.saddle_tan",
+  "ruby": "gem.ruby",
+  "velvet": "cloth.velvet.red"
+}

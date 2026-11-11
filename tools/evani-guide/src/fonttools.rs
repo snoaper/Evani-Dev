@@ -32,7 +32,7 @@ pub const DIR: &str = "msdf-atlas-gen-1.4";
 pub const EXE: &str = "msdf-atlas-gen/msdf-atlas-gen.exe";
 
 pub fn exe_path(root: &Path) -> PathBuf {
-    root.join(BIN_DIR).join(DIR).join(EXE)
+    crate::extools::bin_dir(root).join(DIR).join(EXE)
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -44,7 +44,7 @@ fn sha256_file(p: &Path) -> Result<String, String> {
 }
 
 fn read_record(root: &Path) -> Value {
-    std::fs::read_to_string(root.join(BIN_DIR).join(RECORD))
+    std::fs::read_to_string(crate::extools::bin_dir(root).join(RECORD))
         .ok()
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or_else(|| json!({}))
@@ -101,10 +101,10 @@ pub fn install(root: &Path) -> Result<bool, String> {
     if !cfg!(all(windows, target_arch = "x86_64")) {
         return Err(format!(
             "{NAME}: no pinned download for this platform yet (only Windows x64); build {NAME} {VERSION} yourself into {}",
-            root.join(BIN_DIR).join(DIR).display()
+            crate::extools::bin_dir(root).join(DIR).display()
         ));
     }
-    let bin = root.join(BIN_DIR);
+    let bin = crate::extools::bin_dir(root);
     let dl = bin.join("downloads");
     std::fs::create_dir_all(&dl).map_err(|e| e.to_string())?;
     let file = dl.join("msdf-atlas-gen-1.4-win64.zip");

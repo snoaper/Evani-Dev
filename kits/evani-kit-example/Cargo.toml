@@ -14,9 +14,17 @@ evani-core.workspace = true
 # scene is 3D, so the kit turns on the renderer's 3D path (`forward`).
 evani-render = { workspace = true, features = ["forward"] }
 
+[features]
+# The game-pass example (src/game_pass_demo.rs): noise volume, afterglow with
+# history, heat haze and a HUD ring as game passes. Off in every game's
+# download; dev runs turn it on to see the passes (docs/GAME_PASSES.md).
+game-pass-demo = ["evani-render/game-passes"]
+
 [dev-dependencies]
 # The review_dump test writes review.json.
 serde_json.workspace = true
+# The game-pass example's tests compile every pass's WGSL (game_pass::check).
+evani-render = { workspace = true, features = ["forward", "game-passes-check"] }
 
 [lints]
 workspace = true

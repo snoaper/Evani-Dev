@@ -398,3 +398,52 @@ fn live_edits_and_dry_run_bake_work_over_the_compiled_tier_table() {
         Tiers::from_builtin_json().unwrap().presets().iter().find(|t| t.id == active)
     );
 }
+
+/// The trails effect's params and life curves bake into the look and come
+/// back in a game built without live.
+#[test]
+fn the_trails_curves_and_params_bake_and_come_back() {
+    let app = |live: bool, extra: Option<BakedModule>| {
+        let mut a = App::new("sandbox")
+            .with_kit(evani_kit_example::ExampleKitPlugin)
+            .with_look(evani_look_basic::BasicLook)
+            .with_module(evani_render::RenderModule::new())
+            .with_module(evani_fx::FxModule::new().with_effect(evani_fx::trails::Trails));
+        if live {
+            a = a.with_module(LiveModule::new());
+        }
+        if let Some(m) = extra {
+            a = a.with_module(m);
+        }
+        a.run_headless(2, 16.0);
+        a
+    };
+    let curve = "fx.trails.width_curve";
+    let mut a = app(true, None);
+    send(&mut a, 1, "curve.set", json!({ "curves": { curve: [[0.0, 1.0], [0.5, 0.25], [1.0, 0.0]] } }));
+    send(&mut a, 2, "param.set", json!({ "values": { "fx.trails.width": 2.5 } }));
+    let res = send(&mut a, 3, "bake.export", json!({ "title": "Trails" }));
+    let bundle = &res["bundle"];
+    let c = bundle["curves"].as_array().unwrap().iter().find(|c| c["name"] == curve).unwrap_or_else(|| panic!("{bundle}"));
+    assert_eq!(c["target"], "look");
+    let pm = bundle["params"].as_array().unwrap().iter().find(|p| p["name"] == "fx.trails.width").unwrap_or_else(|| panic!("{bundle}"));
+    assert_eq!(pm["bake"], "look");
+    let root = repo_root();
+    let p = plan(bundle, |rel| std::fs::read_to_string(root.join(rel)).ok(), "2026-11-03 12:00").unwrap();
+    let want = format!("looks/evani-look-basic/curves/{curve}.json");
+    assert!(p.files.iter().any(|f| f.path == want), "{want}");
+    let dir = std::env::temp_dir().join(format!("evani-bake-trails-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_plan(&p, &dir);
+    let shipped = app(false, Some(BakedModule { files: vec![baked_from(&dir.join("looks/evani-look-basic"))] }));
+    let w = &shipped.world;
+    assert!(w.try_res::<crate::LiveSession>().is_none());
+    assert_eq!(param(w, "fx.trails.width"), json!(2.5));
+    let tuned = a.world.res::<Formulas>();
+    let got = w.res::<Formulas>();
+    let body = |f: &Formulas| f.body(f.id(curve).unwrap()).cloned();
+    assert_eq!(body(&got), body(&tuned));
+    assert!(body(&got) != got.default_body(got.id(curve).unwrap()).cloned(), "the tuned curve, not the default");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+

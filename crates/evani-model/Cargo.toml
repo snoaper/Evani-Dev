@@ -11,6 +11,9 @@ publish.workspace = true
 # serde and serde_json only (D2). The GPU feature (wgpu with native backends,
 # D1) arrives in M2; M1 is the deterministic CPU path.
 [dependencies]
+# The construct back end and the shared deterministic maths (vec, dmath, rng,
+# expr) it holds (docs/MODELGEN_PLAN.md 3.1); serde_json only, already pinned.
+evani-construct.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

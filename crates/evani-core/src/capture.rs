@@ -171,6 +171,21 @@ impl CaptureQueue {
         !self.pending.is_empty()
     }
 
+    /// The pose the next rendered frame is drawn from, if not the game's
+    /// camera: the first queued `Path` request's pose, else
+    /// `camera_override` (the rule the renderer applies when it takes the
+    /// requests). A pass that plans from the camera before the frame is drawn
+    /// reads this: material-view's water and glass, planned from the game's
+    /// camera, drew away from their props in debug views from behind
+    /// (critic round 7).
+    pub fn view_pose(&self) -> Option<CameraPose> {
+        let path = self.pending.iter().find_map(|r| match &r.view {
+            CaptureView::Path { path, sim_time } => Some(path.pose(*sim_time)),
+            CaptureView::Current => None,
+        });
+        path.or(self.camera_override)
+    }
+
     /// Renderer: take every queued request.
     pub fn take_pending(&mut self) -> Vec<CaptureRequest> {
         self.pending.drain(..).collect()

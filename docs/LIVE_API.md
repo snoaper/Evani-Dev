@@ -12,6 +12,12 @@ Updated 2026-10-14 (stage 6, capture, bench and A/B) to match what is built. Eve
 section 6 is implemented, including `capture.frame`, `bench.run` and `compare.ab` (6.14–6.16);
 nothing answers `planned: true` any more.
 
+### Changes (2026-11-11, motion trace)
+
+- New commands `motion.trace`, `motion.read`, `motion.stop` (6.32): where a chosen probe (the
+  camera target or eye, a mesh instance, a sprite) was drawn on every frame, for the smoothness
+  harness (docs/SMOOTHNESS.md). Read-only, live builds only, protocol unchanged (`evani-live/1`).
+
 ### Changes (2026-10-16, held page shots)
 
 Additive. `capture.frame` takes `hold_after` (6.14): the clock stays held on the captured frame
@@ -872,7 +878,10 @@ Names below are the `cmd` value. "Mutating" commands return the change result (5
 Naming: parameter names are dotted, owner first: `fx.bloom.intensity`, `fx.vignette.radius`,
 `look.basic.exposure`, `kit.example.spin_speed`, `tier.medium.render_scale`,
 `aq.target_ms` (adaptive quality), `budget.*`, `live.revert.*`. Slots, curves and effects use
-short names (`tonemap`, `lod.distance`, `bloom`).
+short names (`tonemap`, `lod.distance`, `bloom`). A game pass (evani-render `game-passes`,
+docs/GAME_PASSES.md) registers its tunables as `kit.<id>.<pass>.<name>` plus a bool
+`kit.<id>.<pass>.on` (`look.<id>.…` for a look's passes); they are ordinary params, marked `gpu`,
+so `schema.get`, `param.set`, `sweep.run`, `compare.ab` and bakes take them like any other.
 
 ### 6.1 `schema.get`
 
@@ -1115,6 +1124,29 @@ The effects module resets effect switches to the new tier's defaults on the fram
 switch. The page folds those resets into the same transaction (explicit switches in the same
 batch win), so undoing the tier change restores the switches exactly; undo, redo and auto-revert
 re-assert the history's switch values after a tier move the same way.
+
+**A switch never stops the frames (ov1, 2026-11-02).** What a switch still has to do runs in
+the background while the previous tier's state keeps drawing:
+
+- *Model files.* A tier's own `.glb` files are read over frames (a step at a time: the JSON, one
+  meshopt view, one primitive), at most about 4 ms a frame; until a file is ready its handle keeps
+  drawing the previous tier's file. The Lite and Low sun bake's setup is spread too, and the bake
+  takes about 4 ms a frame on any device (`model::sun::BAKE_MS`, measured as it runs; never more
+  than `FRAME_UNITS`), so a slow device or a dev build bakes over more frames instead of heavier
+  ones.
+- *Pipelines.* Once nothing a draw asked for is waiting, each drawn pipeline's other sample count
+  (1x for Lite and Low, 4x for Medium and up) is built in the background queue, so switching
+  between them builds none on the frame. These "twins" are not in `data-evani-preparing`.
+- *A model rebuilt on a cone tier* (`replace_glb`) keeps drawing its previous copy until the new
+  copy's cones are in.
+
+**tier-settle.** Capture builds write `<html data-evani-tier-settled="<tier>">` once the active
+tier has fully applied (its render size and sample count in use, and no drawn model, handle file,
+upload or pipeline build of it still under way, three quiet frames in a row), and
+`data-evani-tier-settled=""` plus `data-evani-settling="<tier>"` while not;
+`data-evani-warming="n"` counts the twins still building. `tools/live-check/capture.mjs` waits
+for tier-settle before every capture and its tier-switch check reports `settled_after_ms` per
+switch (`reverted` when the live watch put the tier back, 6.24). Ship builds write none of these.
 
 ### 6.12 `telemetry.subscribe`
 
@@ -1995,6 +2027,38 @@ applied, as it does for any run of changes: for a `together` commit that is its 
 `edit.stage`, `edit.commit` and `edit.resolve` answer `busy` while a bench, compare or sweep run
 is measuring, like any change. The headless proof is `tools/live-check/edit-txn.mjs`.
 
+### 6.32 `motion.trace` / `motion.read` / `motion.stop` (the motion trace)
+
+Where one chosen thing was drawn on every frame, for the smoothness harness (`cargo xtask
+smoothness`, docs/SMOOTHNESS.md). Not mutating (no note). A frame system (`live.motion`, at the end
+of `Stage::Frame`, after every kit has drawn) records the probe from that frame's `RenderWorld`
+into a preallocated buffer: the page time (`performance.now()` of the frame), the frame number,
+the world position and its projection on the canvas through the main camera (CSS px).
+
+```json
+{ "cmd": "motion.trace", "params": { "probe": { "kind": "mesh", "material": 3 }, "capacity": 36000 } }
+→ { "on": true, "probe": "mesh", "capacity": 36000 }
+```
+
+`probe.kind`: `camera_target` (default), `camera_eye`, `mesh` (`mesh` id and/or `material`
+index, optional `near` `[x, y, z]`; the matching instance nearest the camera target or `near`),
+`sprite` (`cell` and/or `layer`, `index` default 0; screen position only). `capacity` 1 to
+216000 frames (default 36000, ten minutes at 60 fps); a new `motion.trace` starts afresh.
+Errors: `invalid_value` (unknown kind, a mesh probe with neither field, a bad capacity),
+`unavailable` (no renderer).
+
+```json
+{ "cmd": "motion.read", "params": { "since": 0, "max": 4000 } }
+→ { "on": true, "probe": "mesh", "from": 0, "next": 4000, "total": 9120, "dropped": 0, "missing": 0,
+    "columns": ["t_ms", "frame", "x", "y", "z", "sx", "sy"],
+    "samples": [[15123.4, 912, 10.5, 0.5, -3.25, 640.0, 360.0], ...] }
+```
+
+At most 4000 rows a read; page with `since: next` until `next == total`. `null` where unknown (a
+sprite has no world position; a point behind the camera has no screen position; a probe not drawn
+that frame has neither and counts in `missing`). Frames past `capacity` are not kept (`dropped`).
+`motion.stop` stops recording and keeps the samples readable: `{ "on": false, "total", "dropped" }`.
+
 ## 7. In-page API: `window.evani.live`
 
 Present only in builds with the `live` module (never in a shipped game).
@@ -2234,6 +2298,42 @@ subsecond. `cargo xtask build <game> --ship` and `size-report` fail if the wasm 
 `subsecond`, `hotpatch`, `evani-code-toast` or `__evani_code`. Measured 2026-10-14: the shipped
 kart racer and sandbox are the same size as before this feature (byte-identical wasm length).
 
+### 10.5 A game outside the engine folder (`--app-dir`): rebuild on change
+
+```
+cargo xtask live --app-dir ../my-game/app [--port P]     # or: cargo xtask dev --app-dir ../my-game/app
+evani-live-bridge serve --root <engine> --app-dir <abs path to the app folder>   # what the above runs
+```
+
+`serve --app-dir` builds the game with Trunk in the game's own workspace and serves it (the build
+folder, session file and sizes live under the game's workspace, never the engine's tab session).
+Live code swapping (10.4) and page hot-replace are in-tree only, so such a game used to be built
+once, at start. Now (`tools/evani-live-bridge/src/rebuild.rs`):
+
+- **Watch.** Once a second (`POLL`) the bridge takes the newest modification time of everything
+  the build reads: the game's workspace (its app, kit and any crate in it, skipping `target`,
+  `dist`, `node_modules` and dot folders; keep logs out of it) and the engine's `crates`, `kits`, `looks` and manifests.
+  No file-watcher dependency and nothing runs while nothing changes.
+- **Debounce.** A change starts a build only after the newest time has held still for one whole
+  poll, so a save-all, a formatter or a `git checkout` is one build, about 1 to 2 s after the last
+  write. The comparison is against the newest time seen *before* the build began, so a file saved
+  while a build runs makes the next build happen too. One build at a time.
+- **Reload.** While it builds `/` is the holding page and `/live/status` `phase` is
+  `building`. When it finishes the open page gets `code_reload` (the page reloads into the new
+  build, the `code.reload` `/ctl` event fires) and `phase` is `idle`; a build that fails leaves
+  `phase: "error"` (and `error`) with the compiler's tail, tells the tab, and is not retried until the next edit.
+- **Page reload.** A request for `/` (a browser reload) first checks the sources against the
+  build, with no settle wait, and rebuilds a stale one before serving: the next reload always
+  gets the current build, even inside the debounce.
+- The first build may be followed by one quick rebuild: cargo can rewrite the game's `Cargo.lock`
+  while it builds. The log says `rebuilding (<file> changed)` for each build, so a file that keeps
+  changing shows up by name.
+- `--no-build` serves what is there and watches nothing. `--hot` / `--no-hot` change nothing for
+  such a game (Trunk is the only builder). In-tree games (`--game`) are untouched.
+
+`/live/status` `code` is `{"mode":"trunk","reason":"live code swapping is not available for
+--app-dir yet…"}` for these games, as before.
+
 ---
 
 ## 11. MCP server
@@ -2297,6 +2397,7 @@ model.
 | `focus_set` | `focus.set` | Show one asset on its own on a slow turntable camera (game paused, its animation playing, its tunables first in `schema_get`), or move the turntable. No note. |
 | `focus_clear` | `focus.clear` | Leave asset focus: back to the full game, which carries on where it paused. |
 | `debug_geometry` | `debug.geometry` | The geometry debug view: list overlaps, floating objects and z-fighting with fixes; `on` paints them red, yellow and cyan with a magenta sky; `focus` frames one. |
+| `param_set` `material.nature.water.foam_debug` 1 | `param.set` | The field sea's foam view (dev builds only; the param and its shader code don't exist in ship builds): the water in grey, its foam painted by cause, red new from an event now (a crest breaking, the shore), blue carried from a break a moment ago, white fading, yellow foam with no cause (there should be none; `tools/nature/sea-foam-view.mjs` counts it in pictures). 0 turns it off. |
 | `bench_run` | `bench.run` | Run the fixed camera path for N seconds at a tier; returns timing stats, pass/fail against the tier's limits and captures. |
 | `compare_ab` | `compare.ab` | Compare two states on the same camera path and sim time: A (default the current state) against B (a snapshot, or changes to try such as `{"values":{"fx.bloom.enabled":false}}`). Returns both screenshots, a per-pixel difference, frame and per-pass GPU timing for each and the delta. B is reverted afterwards unless keep is true (then it needs a note). |
 | `sweep_run` | `sweep.run` | Try a list of values for one parameter (or a grid of a few) on the fixed camera path and get one compact table back: per row the values, median work/CPU/GPU ms and per-pass GPU ms, and the look-check measures. Row 0 is the current state. Nothing is kept; apply the chosen values afterwards with one param_set or batch. Thumbnails, if asked, are written to files and returned as paths. |

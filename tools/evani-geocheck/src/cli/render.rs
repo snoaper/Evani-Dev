@@ -61,6 +61,13 @@ pub struct Setup<'a> {
     /// The game's still-world switch (a bool param): on, it holds the sim and
     /// draws only static objects. Set for the whole render phase.
     pub still_param: Option<&'a str>,
+    /// Plan steps run first (a game with several scenes opens the one these
+    /// views look at: the material viewer's `capture.frame {moment}`).
+    pub pre_steps: Vec<Value>,
+    /// The report's tags and thresholds as `debug.geometry` takes them
+    /// (`{"tags": [...], "thresholds": {...}}`), so the debug views judge as
+    /// the report does.
+    pub debug_config: Value,
 }
 
 /// The sim clock every gap, flicker and debug shot holds (s), so
@@ -78,6 +85,16 @@ const CROPS_PER_VIEW: usize = 3;
 
 fn pose_json(p: &CameraPose) -> Value {
     json!({ "eye": p.eye, "target": p.target, "up": p.up, "fov_y_deg": p.fov_y_deg })
+}
+
+/// The capture plan: the tier, the steps, and `settle` (capture.mjs waits,
+/// up to 5 minutes, until the page's frames run steadily before the first
+/// step). Without it the first scene's capture lands while the page is still
+/// building its pipelines: on a busy PC that stalls past 2 minutes, the
+/// page is reloaded (which builds them all again) and the scene is lost
+/// (round 4 of material-view: the styles scene, first in line, in three runs).
+pub(crate) fn plan_json(tier: Option<&str>, steps: &[Value]) -> Value {
+    json!({ "tier": tier, "settle": true, "steps": steps })
 }
 
 pub(crate) fn shot_step(name: &str, save: &str, pose: &CameraPose, extra: Value, note: &str) -> Value {
@@ -105,13 +122,23 @@ pub(crate) fn still_step(param: &str, on: bool) -> Value {
 /// The plan step that switches the live geometry debug view on (it answers
 /// once the page has analysed the scene, which takes a while) or off. While
 /// it is on the analysis is not repeated (`every_s` at its longest).
-fn debug_step(on: bool) -> Value {
+pub(crate) fn debug_step(on: bool, config: &Value) -> Value {
     let (name, note) = if on {
         ("debug-on", "Geometry check: switch the geometry debug view on for the debug and highlight shots")
     } else {
         ("debug-off", "Geometry check done: switch the geometry debug view off")
     };
-    let params = if on { json!({ "on": true, "sky": true, "every_s": 30.0 }) } else { json!({ "on": false }) };
+    let params = if on {
+        let mut p = json!({ "on": true, "sky": true, "every_s": 30.0 });
+        for k in ["tags", "thresholds"] {
+            if let Some(v) = config.get(k) {
+                p[k] = v.clone();
+            }
+        }
+        p
+    } else {
+        json!({ "on": false })
+    };
     json!({ "name": name, "cmd": "debug.geometry", "params": params, "note": note, "timeout_ms": 180000 })
 }
 
@@ -161,13 +188,29 @@ pub fn pick_highlights(issues: &[Issue], n: usize) -> Vec<usize> {
     out
 }
 
+/// The box a highlight frames: the issue's own box with a margin, 0.25 m
+/// round a point issue. A small box (a spot on a mesh) gets a margin of
+/// about its own size, so its crop is a close-up of the spot rather than
+/// the whole object (critic round 2 of material-view).
 fn issue_box(i: &Issue) -> Aabb {
-    i.aabb.unwrap_or(Aabb { min: i.at, max: i.at }).grow(0.25)
+    match i.aabb {
+        Some(b) => {
+            let e = b.extent();
+            b.grow((0.6 * e[0].max(e[1]).max(e[2])).clamp(0.03, 0.25))
+        }
+        None => Aabb { min: i.at, max: i.at }.grow(0.25),
+    }
 }
+
+/// How much of a highlight shot's height the issue's box fills.
+const HIGHLIGHT_FILL: f64 = 0.6;
+/// The smallest crop (pixels) cut round a highlighted box: enough of the
+/// surroundings to tell what the spot is and check its tag reason.
+const MIN_CROP: [u32; 2] = [640, 400];
 
 fn highlight_pose(i: &Issue) -> CameraPose {
     let b = issue_box(i);
-    let c = Camera::framing(&b, [1.0, 0.8, 1.0], 50.0, 16.0 / 9.0);
+    let c = Camera::close_up(&b, [1.0, 0.8, 1.0], 50.0, 16.0 / 9.0, HIGHLIGHT_FILL);
     let f = |v: V3| v.map(|x| x as f32);
     CameraPose {
         eye: f(c.eye),
@@ -293,7 +336,7 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
     }
 
     // ---- the plan
-    let mut steps: Vec<Value> = Vec::new();
+    let mut steps: Vec<Value> = s.pre_steps.clone();
     let world = stat.bounds;
     let c = world.center();
     let up_pose = CameraPose {
@@ -330,7 +373,7 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
     // a big world), so it is switched on once for all the debug and highlight
     // shots and switched off after them, not per shot. The analysis is the
     // same from any camera and the world is held still.
-    steps.push(debug_step(true));
+    steps.push(debug_step(true, &s.debug_config));
     for v in &s.debug_views {
         steps.push(shot_step(
             &format!("debug-{}", v.name),
@@ -355,11 +398,11 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
         ));
         hl.push((i, name, pose));
     }
-    steps.push(debug_step(false));
+    steps.push(debug_step(false, &s.debug_config));
     if let Some(p) = s.still_param {
         steps.push(still_step(p, false));
     }
-    let plan = json!({ "tier": s.tier, "steps": steps });
+    let plan = plan_json(s.tier.as_deref(), &steps);
     let plan_path = raw.join("plan.json");
     std::fs::write(&plan_path, serde_json::to_string_pretty(&plan).map_err(|e| e.to_string())?)
         .map_err(|e| format!("write plan: {e}"))?;
@@ -482,7 +525,7 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
             is.fix = "Close the hole: build roads, walls and verges as one continuous spline mesh (evani_render::spline::sweep) instead of separate slabs, extend the ground under the edges, or overlap the pieces that meet there.".into();
             if k < CROPS_PER_VIEW {
                 let file = format!("gap-{}-{}.png", v.name, k + 1);
-                write_png(&crops.join(&file), &a.crop_outlined(rect, 24, rgb8(Check::Gap.color())))?;
+                write_png(&crops.join(&file), &a.crop_outlined_min(rect, 24, MIN_CROP, rgb8(Check::Gap.color())))?;
                 is.crop = Some(format!("crops/{file}"));
             }
             report.issues.push(is);
@@ -520,7 +563,7 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
             is.fix = "Two surfaces fight for the same depth: lift paint and decals with the decal pass (RenderWorld::draw_decal), remove the hidden face, or separate the surfaces by a few centimetres.".into();
             if k < CROPS_PER_VIEW {
                 let file = format!("flicker-{}-{}.png", v.name, k + 1);
-                write_png(&crops.join(&file), &a.crop_outlined(bl.rect, 24, rgb8(Check::ZFight.color())))?;
+                write_png(&crops.join(&file), &a.crop_outlined_min(bl.rect, 24, MIN_CROP, rgb8(Check::ZFight.color())))?;
                 is.crop = Some(format!("crops/{file}"));
             }
             report.issues.push(is);
@@ -558,7 +601,7 @@ pub fn run(s: &Setup, stat: &Scene, report: &mut Report) -> Result<(), String> {
         let cam = Camera::from_pose(pose, f64::from(img.w) / f64::from(img.h.max(1)));
         let rect = cam.project_box(img.w, img.h, &issue_box(is)).unwrap_or([0, 0, img.w, img.h]);
         let file = format!("{name}.png");
-        write_png(&crops.join(&file), &img.crop_outlined(rect, 24, rgb8(is.check.color())))?;
+        write_png(&crops.join(&file), &img.crop_outlined_min(rect, 24, MIN_CROP, rgb8(is.check.color())))?;
         is.crop = Some(format!("crops/{file}"));
         is.pixels = Some(rect);
         done += 1;
@@ -581,6 +624,18 @@ pub fn out_dir(root: &Path, app: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Guard (round 4 of material-view: the first scene was lost while the
+    /// page still built its pipelines): the plan always waits for steady
+    /// frames before its first step, and keeps the tier and steps.
+    #[test]
+    fn the_plan_settles_before_its_first_step() {
+        let p = plan_json(Some("ultra"), &[json!({ "name": "a" })]);
+        assert_eq!(p["settle"], json!(true));
+        assert_eq!(p["tier"], json!("ultra"));
+        assert_eq!(p["steps"][0]["name"], json!("a"));
+        assert_eq!(plan_json(None, &[])["settle"], json!(true));
+    }
 
     #[test]
     fn motion_mask_grows_changes() {

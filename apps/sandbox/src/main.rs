@@ -10,7 +10,7 @@
 mod panel; #[cfg(feature = "text-proof")] mod textpanel; #[cfg(feature = "ui")] mod hudpanel; #[cfg(feature = "relief")] mod proof_relief;
 #[cfg(feature = "models")] // proof-model:line (new-game drops it)
 mod proof_model; #[cfg(feature = "skin-proof")] mod proof_skin; // proof-model:line
-mod scene; #[cfg(feature = "pseudo3d-proof")] mod proof_road; #[cfg(all(test, feature = "importance"))] mod importance_tests; #[cfg(feature = "collide-proof")] mod proof_collide; #[cfg(feature = "combat-proof")] mod proof_combat; #[cfg(feature = "render-limits-before")] mod proof_limits; #[cfg(feature = "material-proof")] mod proof_material; #[cfg(feature = "destruct-proof")] mod proof_destruct; #[cfg(feature = "layers-before")] mod proof_layers; #[cfg(feature = "char-proof")] mod proof_character; #[cfg(feature = "nature-proof")] mod proof_nature; #[cfg(feature = "playmat-proof")] mod proof_playmat;
+mod scene; #[cfg(feature = "pseudo3d-proof")] mod proof_road; #[cfg(all(test, feature = "importance"))] mod importance_tests; #[cfg(feature = "collide-proof")] mod proof_collide; #[cfg(feature = "combat-proof")] mod proof_combat; #[cfg(feature = "render-limits-before")] mod proof_limits; #[cfg(feature = "material-proof")] mod proof_material; #[cfg(feature = "destruct-proof")] mod proof_destruct; #[cfg(feature = "layers-before")] mod proof_layers; #[cfg(feature = "char-proof")] mod proof_character; #[cfg(feature = "nature-proof")] mod proof_nature; #[cfg(feature = "playmat-proof")] mod proof_playmat; #[cfg(feature = "recipes-proof")] mod proof_recipes; #[cfg(feature = "recipes-proof")] mod proof_b2; #[cfg(feature = "recipes-family-proof")] mod proof_p10a; #[cfg(feature = "trails-proof")] mod proof_trails;
 
 use evani_core::App;
 use evani_kit_example::ExampleKitPlugin;
@@ -21,7 +21,7 @@ use evani_render::RenderModule;
 pub fn build_app() -> App {
     // Render first: fx adds its passes to the render graph render inserts.
     #[allow(unused_mut)]
-    let mut app = App::new("sandbox").with_module(RenderModule::new()); #[cfg(all(feature = "collide-proof", not(any(feature = "physics-simple", feature = "physics-rigid"))))] { app = app.with_module(evani_physics::PhysicsModule::new()); } #[cfg(all(feature = "combat-proof", not(any(feature = "collide-proof", feature = "physics-simple", feature = "physics-rigid"))))] { app = app.with_module(evani_physics::PhysicsModule::new()); } #[cfg(feature = "combat-proof")] { app = app.with_module(evani_combat::CombatModule::new()); } #[cfg(feature = "nature-proof")] { app = app.with_module(evani_material_nature::NatureModule::new()); }
+    let mut app = App::new("sandbox").with_module(RenderModule::new()); #[cfg(all(feature = "collide-proof", not(any(feature = "physics-simple", feature = "physics-rigid"))))] { app = app.with_module(evani_physics::PhysicsModule::new()); } #[cfg(all(feature = "combat-proof", not(any(feature = "collide-proof", feature = "physics-simple", feature = "physics-rigid"))))] { app = app.with_module(evani_physics::PhysicsModule::new()); } #[cfg(feature = "combat-proof")] { app = app.with_module(evani_combat::CombatModule::new()); } #[cfg(any(feature = "nature-proof", feature = "recipes-nature-proof"))] { app = app.with_module(evani_material_nature::NatureModule::new()); }
     #[cfg(feature = "fx")]
     {
         app = app.with_module(evani_fx::FxModule::compiled());
@@ -55,7 +55,7 @@ pub fn build_app() -> App {
     {
         game.resource(proof_model::ProofModel::default());
         game.system(proof_model::system());
-    } #[cfg(feature = "relief")] { game.resource(proof_relief::ProofRelief::default()); game.system(proof_relief::system()); } #[cfg(feature = "skin-proof")] { game.resource(proof_skin::ProofSkin::default()); game.system(proof_skin::system()); } #[cfg(feature = "render-limits-before")] game.system(proof_limits::system()); #[cfg(feature = "material-proof")] proof_material::install(&mut game); #[cfg(feature = "layers-before")] game.system(proof_layers::system()); #[cfg(feature = "char-proof")] { game.resource(proof_character::ProofCharacter::default()); game.system(proof_character::system()); } #[cfg(feature = "nature-proof")] proof_nature::install(&mut game); #[cfg(feature = "playmat-proof")] proof_playmat::install(&mut game);
+    } #[cfg(feature = "relief")] { game.resource(proof_relief::ProofRelief::default()); game.system(proof_relief::system()); } #[cfg(feature = "skin-proof")] { game.resource(proof_skin::ProofSkin::default()); game.system(proof_skin::system()); } #[cfg(feature = "render-limits-before")] game.system(proof_limits::system()); #[cfg(feature = "material-proof")] proof_material::install(&mut game); #[cfg(feature = "layers-before")] game.system(proof_layers::system()); #[cfg(feature = "char-proof")] { game.resource(proof_character::ProofCharacter::default()); game.system(proof_character::system()); } #[cfg(feature = "nature-proof")] proof_nature::install(&mut game); #[cfg(feature = "playmat-proof")] proof_playmat::install(&mut game); #[cfg(feature = "recipes-proof")] { game.resource(proof_recipes::ProofRecipes::default()); game.system(proof_recipes::system()); } #[cfg(feature = "trails-proof")] proof_trails::install(&mut game);
     // proof-model:end
     // Live's bench.run / compare.ab / capture.frame fly the scene's own path.
     #[cfg(feature = "live")]
@@ -176,5 +176,13 @@ mod tests {
             .to_string();
         assert!(text.contains("render"), "{text}");
         assert!(text.contains("panel"), "{text}");
+    }
+
+    /// A tier change rebuilds no shader (docs/KIT_PROCESS.md item 30).
+    #[test]
+    fn tier_switches_rebuild_no_shader() {
+        let mut app = build_app();
+        app.start();
+        evani_core::tier_switch::tier_switch_test(&mut app, 3).unwrap();
     }
 }

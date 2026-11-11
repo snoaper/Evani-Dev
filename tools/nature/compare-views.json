@@ -1,0 +1,124 @@
+{
+  "about": "Shared views for the ocean comparison rig (tools/nature/compare.mjs). One camera, sun and sea state per view; compare.mjs renders Ultra-Water (three.js, run locally from E:\\ref\\ultra-water) and our spectral sea from the same numbers. World frame: y up; headings in degrees with 0 = +x and 90 = +z (our convention; compare.mjs converts the sun to Ultra-Water's azimuth, 90 - heading). camera.eye in metres, camera.yaw_deg the heading looked along, camera.pitch_deg negative looks down, camera.fov_deg vertical. Ultra-Water sits the camera far out at sea (away from its island) for open-water views; a view with a 'shore' block is placed on its coast (see compare.mjs). 'ours.preset' is the Ocean item's preset in catalog/procedural/procedural.json (its base first), 'ours.set' overrides material.nature.* values; 'ultra_water.*' are values on window.app objects of the Ultra-Water page (waves: ocean.params, sky: sky.params, water: the Water panel's values, post: post.params).",
+  "size": [1600, 900],
+  "moments": [40, 77, 118, 151, 190, 226, 263, 297],
+  "views": [
+    {
+      "id": "open-deck",
+      "title": "Open sea from a 9 m deck",
+      "sea_state": "Beaufort 5 (9 m/s wind, 120 km fetch, 0.7 swell): both engines' default sea",
+      "camera": { "eye": [0, 9, 0], "yaw_deg": -70, "pitch_deg": -1.7, "fov_deg": 50 },
+      "sun": { "elevation_deg": 14, "azimuth_deg": -115 },
+      "ours": {
+        "preset": "open",
+        "bed": "deep",
+        "set": { "material.nature.water.wind_speed": 9, "material.nature.water.fetch": 120, "material.nature.water.sea_swell": 0.7, "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "waves": { "windSpeed": 9, "fetchKm": 120, "swellScale": 0.7, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.45 },
+        "sky": { "cloudCoverage": 0.3, "turbidity": 2 }
+      }
+    },
+    {
+      "id": "low-trough",
+      "title": "Low 1.5 m eye in the troughs (rough sea)",
+      "sea_state": "Beaufort 7 (15 m/s wind, 250 km fetch, 0.9 swell)",
+      "camera": { "eye": [0, 1.5, 0], "yaw_deg": -90, "pitch_deg": 0.4, "fov_deg": 55 },
+      "sun": { "elevation_deg": 12, "azimuth_deg": -80 },
+      "ours": {
+        "preset": "rough",
+        "bed": "deep",
+        "set": { "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "waves": { "windSpeed": 15, "fetchKm": 250, "swellScale": 0.9, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.95 },
+        "sky": { "cloudCoverage": 0.7, "turbidity": 6 }
+      }
+    },
+    {
+      "id": "sunset",
+      "title": "Sunset, into the sun from 5 m",
+      "sea_state": "Beaufort 5 (9 m/s, 120 km fetch, 0.7 swell)",
+      "camera": { "eye": [0, 5, 0], "yaw_deg": -115, "pitch_deg": -1.0, "fov_deg": 50 },
+      "sun": { "elevation_deg": 3.5, "azimuth_deg": -115 },
+      "ours": {
+        "preset": "open",
+        "bed": "deep",
+        "sun_col": [3.0, 1.9, 1.0],
+        "set": { "material.nature.water.wind_speed": 9, "material.nature.water.fetch": 120, "material.nature.water.sea_swell": 0.7, "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345, "material.nature.sky.horizon": [0.85, 0.62, 0.42], "material.nature.sky.zenith": [0.22, 0.30, 0.52] }
+      },
+      "ultra_water": {
+        "waves": { "windSpeed": 9, "fetchKm": 120, "swellScale": 0.7, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.45 },
+        "sky": { "cloudCoverage": 0.38, "turbidity": 2 }
+      }
+    },
+    {
+      "id": "aerial",
+      "title": "Aerial, 60 m up looking 30 degrees down",
+      "sea_state": "Beaufort 5 (9 m/s, 120 km fetch, 0.7 swell)",
+      "camera": { "eye": [0, 60, 0], "yaw_deg": -60, "pitch_deg": -30, "fov_deg": 50 },
+      "sun": { "elevation_deg": 30, "azimuth_deg": -115 },
+      "ours": {
+        "preset": "open",
+        "bed": "deep",
+        "set": { "material.nature.water.wind_speed": 9, "material.nature.water.fetch": 120, "material.nature.water.sea_swell": 0.7, "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "waves": { "windSpeed": 9, "fetchKm": 120, "swellScale": 0.7, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.45 },
+        "sky": { "cloudCoverage": 0.3, "turbidity": 2 }
+      }
+    },
+    {
+      "id": "shore",
+      "title": "Shoreline, beach breakers from 3.2 m",
+      "sea_state": "Beaufort 4 (7 m/s, 60 km fetch, 0.6 swell) onto a beach",
+      "camera": { "eye": [-20, 3.2, 35], "yaw_deg": -33.5, "pitch_deg": -2.0, "fov_deg": 55 },
+      "shore": { "land_heading_deg": 0, "waterline": [70, 0] },
+      "sun": { "elevation_deg": 22, "azimuth_deg": -140 },
+      "ours": {
+        "preset": "beach",
+        "bed": "sand",
+        "set": { "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "coast_bearing_deg": -6,
+        "waves": { "windSpeed": 7, "fetchKm": 60, "swellScale": 0.6, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.45 },
+        "sky": { "cloudCoverage": 0.3, "turbidity": 2 }
+      }
+    },
+    {
+      "id": "rough",
+      "title": "Rough sea (Beaufort 7) from a 9 m deck",
+      "sea_state": "Beaufort 7 (15 m/s wind, 250 km fetch, 0.9 swell)",
+      "camera": { "eye": [0, 9, 0], "yaw_deg": -70, "pitch_deg": -1.7, "fov_deg": 50 },
+      "sun": { "elevation_deg": 17, "azimuth_deg": -115 },
+      "ours": {
+        "preset": "rough",
+        "bed": "deep",
+        "set": { "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "waves": { "windSpeed": 15, "fetchKm": 250, "swellScale": 0.9, "waveScale": 1, "windDirection": 20, "swellDirection": -15, "choppiness": 0.95 },
+        "sky": { "cloudCoverage": 0.7, "turbidity": 6 }
+      }
+    },
+    {
+      "id": "storm",
+      "title": "Storm (Beaufort 10) from a 9 m deck",
+      "sea_state": "Beaufort 10 (25 m/s wind, 700 km fetch, 1.2 swell, wave height x1.4)",
+      "camera": { "eye": [0, 9, 0], "yaw_deg": -70, "pitch_deg": -1.7, "fov_deg": 50 },
+      "sun": { "elevation_deg": 17, "azimuth_deg": -115 },
+      "ours": {
+        "preset": "storm",
+        "bed": "deep",
+        "set": { "material.nature.water.wind_speed": 25, "material.nature.water.wind_direction": 20, "material.nature.water.sea_swell_direction": 345 }
+      },
+      "ultra_water": {
+        "note": "the foam values are the storm-like panel values the earlier storm rounds used against the hosted demo",
+        "waves": { "windSpeed": 25, "fetchKm": 700, "swellScale": 1.2, "waveScale": 1.4, "windDirection": 20, "swellDirection": -15, "choppiness": 1.0 },
+        "sky": { "cloudCoverage": 0.85, "turbidity": 6 },
+        "water": { "foamScale": 2.76, "foamRecovery": 1.4, "sssPeak": 2.76, "sssView": 0.168 }
+      }
+    }
+  ]
+}

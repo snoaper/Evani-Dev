@@ -1,6 +1,7 @@
 //! The game's light DOM UI: title screen, one HUD per local player (top and
 //! bottom halves in split-screen), pause menu, settings (quality tier,
-//! effect toggles, volume, stats overlay, key rebinding) and results.
+//! effect toggles, volume, music and effects volume, stats overlay, key
+//! rebinding) and results.
 //!
 //! The markup and styles live in `index.html`; this module fills it in and
 //! shows one screen at a time. Buttons carry `data-cmd` and inputs
@@ -11,7 +12,8 @@
 //! [`RaceHud`]; the UI never touches the simulation directly.
 //!
 //! Saved (SaveData): `render.tier` (the renderer reads it at start),
-//! `kart.volume`, `kart.overlay` and `kart.bindings` (bindings JSON).
+//! `kart.volume`, `kart.music`, `kart.sfx`, `kart.overlay` and
+//! `kart.bindings` (bindings JSON).
 
 // Natively there is no DOM, so the parts only the browser half (and the
 // tests) call look unused there.
@@ -20,7 +22,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use evani_core::audio::AudioMixer;
+use evani_core::audio::{AudioMixer, Bus};
 use evani_core::ecs::World;
 use evani_core::effects::{BudgetStatus, EffectsStatus};
 use evani_core::input::{Binding, Input};
@@ -35,6 +37,8 @@ use evani_kit_kart_racer::hud_layout::{HudLayout, HudLayoutParams};
 use evani_kit_kart_racer::race::{Phase, Race, Request};
 
 pub const KEY_VOLUME: &str = "kart.volume";
+pub const KEY_MUSIC: &str = "kart.music";
+pub const KEY_SFX: &str = "kart.sfx";
 pub const KEY_OVERLAY: &str = "kart.overlay";
 pub const KEY_BINDINGS: &str = "kart.bindings";
 
@@ -51,6 +55,10 @@ pub enum UiCmd {
     Effect(String, bool),
     /// Master volume 0..1.
     Volume(f32),
+    /// Music volume 0..1 (0 = music off).
+    Music(f32),
+    /// Effects volume 0..1 (engines, items, beeps).
+    Sfx(f32),
     Overlay(bool),
     /// Wait for a key for this action (`p1_steer` waits for two).
     Bind(String),
@@ -83,6 +91,8 @@ impl UiCmd {
         Some(match set {
             "tier" => UiCmd::Tier(value.to_string()),
             "volume" => UiCmd::Volume((value.parse::<f32>().ok()? / 100.0).clamp(0.0, 1.0)),
+            "music" => UiCmd::Music((value.parse::<f32>().ok()? / 100.0).clamp(0.0, 1.0)),
+            "sfx" => UiCmd::Sfx((value.parse::<f32>().ok()? / 100.0).clamp(0.0, 1.0)),
             "overlay" => UiCmd::Overlay(checked),
             _ => UiCmd::Effect(set.strip_prefix("fx:")?.to_string(), checked),
         })
@@ -547,6 +557,14 @@ impl GameUi {
                 world.res_mut::<AudioMixer>().set_volume(None, v);
                 Self::save(world, KEY_VOLUME, &evani_core::num::fixed(v, 2).to_string());
             }
+            UiCmd::Music(v) => {
+                world.res_mut::<AudioMixer>().set_volume(Some(Bus::Music), v);
+                Self::save(world, KEY_MUSIC, &evani_core::num::fixed(v, 2).to_string());
+            }
+            UiCmd::Sfx(v) => {
+                world.res_mut::<AudioMixer>().set_volume(Some(Bus::Effects), v);
+                Self::save(world, KEY_SFX, &evani_core::num::fixed(v, 2).to_string());
+            }
             UiCmd::Overlay(on) => {
                 match self.overlay_before_capture.as_mut() {
                     Some(was) => *was = on,
@@ -625,6 +643,11 @@ impl GameUi {
         }
         if let Some(v) = Self::load(world, KEY_VOLUME).and_then(|s| s.parse::<f32>().ok()) {
             world.res_mut::<AudioMixer>().set_volume(None, v.clamp(0.0, 1.0));
+        }
+        for (key, bus) in [(KEY_MUSIC, Bus::Music), (KEY_SFX, Bus::Effects)] {
+            if let Some(v) = Self::load(world, key).and_then(|s| s.parse::<f32>().ok()) {
+                world.res_mut::<AudioMixer>().set_volume(Some(bus), v.clamp(0.0, 1.0));
+            }
         }
         // The stats overlay is a developer view: off unless switched on.
         world.res_mut::<Overlay>().enabled = Self::load(world, KEY_OVERLAY).as_deref() == Some("1");
@@ -746,7 +769,7 @@ pub fn hud_layout(world: &World) -> HudLayout {
 
 #[cfg(target_arch = "wasm32")]
 mod dom {
-    use evani_core::audio::AudioMixer;
+    use evani_core::audio::{AudioMixer, Bus};
     use evani_core::ecs::World;
     use evani_core::input::Input;
     use evani_core::overlay::Overlay;
@@ -941,7 +964,7 @@ mod dom {
                         return;
                     };
                     // The slider reports on input; everything else on change.
-                    let slider = set == "volume";
+                    let slider = matches!(set.as_str(), "volume" | "music" | "sfx");
                     if (e.type_() == "input") != slider {
                         return;
                     }
@@ -1197,10 +1220,11 @@ mod dom {
                 effect_label(name)
             );
         }
-        let vol = evani_core::num::fixed((world.res::<AudioMixer>().volume(None) * 100.0).round(), 0);
+        let pct = |bus| evani_core::num::fixed((world.res::<AudioMixer>().volume(bus) * 100.0).round(), 0);
+        let (vol, music, sfx) = (pct(None), pct(Some(Bus::Music)), pct(Some(Bus::Effects)));
         let _ = write!(
             s,
-            "<h3>Sound</h3><label>Volume <input type=\"range\" min=\"0\" max=\"100\" value=\"{vol}\" data-set=\"volume\"></label>"
+            "<h3>Sound</h3><label>Volume <input type=\"range\" min=\"0\" max=\"100\" value=\"{vol}\" data-set=\"volume\"></label>             <label>Music <input type=\"range\" min=\"0\" max=\"100\" value=\"{music}\" data-set=\"music\"></label>             <label>Effects <input type=\"range\" min=\"0\" max=\"100\" value=\"{sfx}\" data-set=\"sfx\"></label>"
         );
         let ov = if world.res::<Overlay>().enabled { " checked" } else { "" };
         let _ = write!(s, "<label><input type=\"checkbox\" data-set=\"overlay\"{ov}>Show speed stats</label>");
@@ -1260,6 +1284,8 @@ mod tests {
         assert_eq!(UiCmd::from_click("bind:p1_drift"), Some(UiCmd::Bind("p1_drift".into())));
         assert_eq!(UiCmd::from_click("nope"), None);
         assert_eq!(UiCmd::from_change("volume", "40", false), Some(UiCmd::Volume(0.4)));
+        assert_eq!(UiCmd::from_change("music", "0", false), Some(UiCmd::Music(0.0)));
+        assert_eq!(UiCmd::from_change("sfx", "150", false), Some(UiCmd::Sfx(1.0)));
         assert_eq!(UiCmd::from_change("fx:bloom", "on", true), Some(UiCmd::Effect("bloom".into(), true)));
         assert_eq!(UiCmd::from_change("tier", "low", false), Some(UiCmd::Tier("low".into())));
         assert_eq!(UiCmd::from_change("what", "", false), None);
@@ -1574,6 +1600,17 @@ mod tests {
         assert_eq!(save.load_raw(SAVED_TIER_KEY).unwrap().as_deref(), Some("low"));
         assert_eq!(save.load_raw(KEY_VOLUME).unwrap().as_deref(), Some("0.25"));
         drop(save);
+        // Music and effects have their own sliders, saved the same way.
+        ui.push(UiCmd::Music(0.0));
+        ui.push(UiCmd::Sfx(0.6));
+        tick(&mut app, &mut ui, 1);
+        assert_eq!(app.world.res::<AudioMixer>().volume(Some(Bus::Music)), 0.0);
+        assert!((app.world.res::<AudioMixer>().volume(Some(Bus::Effects)) - 0.6).abs() < 1e-6);
+        {
+            let save = app.world.res::<SaveData>();
+            assert_eq!(save.load_raw(KEY_MUSIC).unwrap().as_deref(), Some("0.00"));
+            assert_eq!(save.load_raw(KEY_SFX).unwrap().as_deref(), Some("0.60"));
+        }
         let fx = GameUi::effects(&app.world);
         assert_eq!(fx.iter().any(|(n, ..)| n == "outline"), cfg!(feature = "outline"));
         #[cfg(feature = "speedlines")]

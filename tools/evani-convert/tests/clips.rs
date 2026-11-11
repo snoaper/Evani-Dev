@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 
-use evani_convert::clips::{Baked, bake};
+use evani_convert::clips::{BakeOptions, Baked, bake, bake_with};
 use evani_convert::{Options, convert, fixture, glb::Doc, tools::Tools};
 use evani_gltf::Gltf;
 use evani_guide::clipblock::{self, ROTATION, SCALE, TRANSLATION};
@@ -235,4 +235,87 @@ fn animated_model_converts_with_clips() {
     let md = std::fs::read_to_string(dir.join("rig.report.md")).unwrap();
     assert!(md.contains("## Animation clips") && md.contains("`idle`"), "{md}");
     let _: Value = serde_json::from_str(&std::fs::read_to_string(dir.join("rig.report.json")).unwrap()).unwrap();
+}
+
+fn master(animal: &str) -> Gltf {
+    Gltf::from_glb(&std::fs::read(root().join(format!("tests/fixtures/models/{animal}/{animal}.master.glb"))).unwrap()).unwrap()
+}
+
+/// Plan item R1: the early width probe changes only the time a bake takes,
+/// never its bytes, at bounds that hold and at one no width can hold.
+#[test]
+fn width_probe_keeps_the_s3_7_bytes() {
+    let probe = BakeOptions { chain: false, refine: 0, probe: true };
+    let g = rig();
+    for bound in [0.002, 0.0005, 0.0001, 0.000005] {
+        let (p, l) = (bake_with(&g, bound, &Some, probe).unwrap(), bake_with(&g, bound, &Some, BakeOptions::LEGACY).unwrap());
+        assert_eq!((&p.block, &p.clips, &p.notes), (&l.block, &l.clips, &l.notes), "rig at {bound} m");
+    }
+    let dog = master("dog");
+    let (p, l) = (bake_with(&dog, 0.001, &Some, probe).unwrap(), bake_with(&dog, 0.001, &Some, BakeOptions::LEGACY).unwrap());
+    assert_eq!((&p.block, &p.clips), (&l.block, &l.clips), "dog at 1 mm");
+    // The 32-bit width cannot hold 1 mm on the dog: the probe skips its 13 tries.
+    for (k, (pt, lt)) in p.tries.iter().zip(&l.tries).enumerate() {
+        assert!(pt < lt, "dog clip {k}: {pt} tries with the probe against {lt}");
+    }
+}
+
+/// Plan item R1 on a real rig (the dog master's idle and walk, at the low
+/// and high tiers' bounds): every clip stays within its bound, none grows,
+/// and together they are at least 10 % smaller than the S3-7 baker made them.
+#[test]
+fn hierarchy_tolerance_shrinks_real_clips() {
+    let dog = master("dog");
+    let (mut old_total, mut new_total) = (0, 0);
+    for bound in [0.001, 0.0003] {
+        let old = bake_with(&dog, bound, &Some, BakeOptions::LEGACY).unwrap();
+        let new = bake(&dog, bound, &Some).unwrap();
+        assert_eq!(old.clips.len(), new.clips.len());
+        for (k, (nt, ot)) in new.tries.iter().zip(&old.tries).enumerate() {
+            assert!(2 * nt <= 3 * ot, "{bound} m, clip {k}: {nt} tries against {ot} (S3-7)");
+        }
+        for (o, n) in old.clips.iter().zip(&new.clips) {
+            assert!(n.within && n.worst_shell_error_m <= bound, "{bound} m: {n:?}");
+            assert!(n.bytes <= o.bytes, "{bound} m: clip `{}` grew from {} to {} bytes", n.name, o.bytes, n.bytes);
+            old_total += o.bytes;
+            new_total += n.bytes;
+        }
+        // The block reads back with the game's decoder.
+        assert_eq!(evani_anim::Clips::decode(&new.block).unwrap().len(), new.clips.len());
+    }
+    assert!(new_total * 10 <= old_total * 9, "dog clips: {new_total} bytes against {old_total} (S3-7), under 10 % smaller");
+}
+
+/// Plan item R1's speed rule (the converter within 2x of the S3-7 baker per
+/// clip), counted in verified tries so it holds on any machine: the further
+/// search stops once a clip has had half as many tries again as the S3-7
+/// search, so no clip costs more than 1.5 times its S3-7 bakes.
+#[test]
+fn further_search_costs_at_most_half_the_s3_7_tries_again() {
+    let g = rig();
+    for bound in [0.002, 0.001, 0.0005, 0.0002, 0.000005] {
+        let (new, old) = (bake(&g, bound, &Some).unwrap(), bake_with(&g, bound, &Some, BakeOptions::LEGACY).unwrap());
+        for (k, (n, o)) in new.tries.iter().zip(&old.tries).enumerate() {
+            assert!(2 * n <= 3 * o, "rig at {bound} m, clip {k}: {n} tries against {o}");
+        }
+        if bound < 0.00001 {
+            // Over the bound at every width: the S3-7 search's own 26 tries.
+            assert_eq!((new.tries.clone(), &new.block), (old.tries.clone(), &old.block), "rig at {bound} m");
+        }
+        for (n, o) in new.clips.iter().zip(&old.clips) {
+            assert!(n.bytes <= o.bytes || !o.within, "rig at {bound} m: {n:?} against {o:?}");
+        }
+    }
+}
+
+/// A real rig's clips that no width can hold (the horse at Ultra's 0.2 mm,
+/// 48-bit rotations at the hoofs) come out exactly as the S3-7 baker made
+/// them: the same block, reports and notes, after the same 26 tries each.
+#[test]
+fn over_bound_real_clips_keep_the_s3_7_bake() {
+    let horse = master("horse");
+    let (new, old) = (bake(&horse, 0.0002, &Some).unwrap(), bake_with(&horse, 0.0002, &Some, BakeOptions::LEGACY).unwrap());
+    assert!(old.clips.iter().all(|c| !c.within), "{:?}", old.clips);
+    assert_eq!((&new.block, &new.clips, &new.notes, &new.tries), (&old.block, &old.clips, &old.notes, &old.tries));
+    assert!(old.tries.iter().all(|&t| t == 26), "{:?}", old.tries);
 }

@@ -43,6 +43,14 @@ pub struct ProcWorld {
     /// The sun direction, drift-time step and sky the sky records hold.
     #[cfg(feature = "sky")]
     sky_sent: Option<([f32; 3], i64, crate::sky::SkyParams)>,
+    /// The sun and moon discs (feature `sky-discs`; off by default: the
+    /// dome's own sun disc), their params and what the records hold.
+    #[cfg(feature = "sky-discs")]
+    pub discs: crate::discs::SkyDiscs,
+    #[cfg(feature = "sky-discs")]
+    discs_params: Option<crate::discs::DiscHandles>,
+    #[cfg(feature = "sky-discs")]
+    discs_sent: Option<(crate::discs::SkyDiscs, [f32; 3])>,
     /// Layers not drawn (bit `layer`), e.g. ceilings in an overview.
     pub hidden_layers: u32,
     /// Bake statistics: rays cast and texels baked.
@@ -69,9 +77,25 @@ impl ProcWorld {
             sky_params: None,
             #[cfg(feature = "sky")]
             sky_sent: None,
+            #[cfg(feature = "sky-discs")]
+            discs: crate::discs::SkyDiscs::default(),
+            #[cfg(feature = "sky-discs")]
+            discs_params: None,
+            #[cfg(feature = "sky-discs")]
+            discs_sent: None,
             hidden_layers: 0,
             rays: b.rays,
             texels: b.visible,
+        })
+    }
+
+    /// A world of no boxes: only the sky dome is drawn (feature `sky`, when
+    /// the look has a `sky` material), with the sky-only kit code.
+    pub fn sky_only() -> Result<Self, String> {
+        Self::new(Scene {
+            boxes: Vec::new(),
+            regions: Vec::new(),
+            default_region: None,
         })
     }
 
@@ -100,6 +124,10 @@ impl ProcWorld {
         #[cfg(feature = "sky")]
         {
             self.sky_params = Some(crate::sky::SkyHandles::register(reg, &self.sky)?);
+        }
+        #[cfg(feature = "sky-discs")]
+        {
+            self.discs_params = Some(crate::discs::DiscHandles::register(reg, &self.discs)?);
         }
         self.params_seen = None;
         Ok(())
@@ -182,6 +210,19 @@ fn light_direction(reg: Option<&ParamRegistry>) -> [f32; 3] {
         .unwrap_or([0.45, 0.8, 0.3])
 }
 
+/// The kit code for these `(world, decal, sky)` slots: with feature `sky`
+/// and a scene of no boxes (a game that wants only the dome), the sky part
+/// alone ([`crate::shader::sky_wgsl`]); otherwise the whole painter.
+pub fn code_for(scene: &Scene, slots: (u32, u32, u32)) -> String {
+    #[cfg(feature = "sky")]
+    if scene.boxes.is_empty() {
+        return crate::shader::sky_wgsl(slots.2);
+    }
+    #[cfg(not(feature = "sky"))]
+    let _ = scene;
+    wgsl(slots.0, slots.1, slots.2)
+}
+
 /// The system that paints and draws the world.
 pub fn system() -> SystemDesc {
     SystemDesc::new("material_proc.draw", Stage::Frame, draw_world)
@@ -228,18 +269,66 @@ fn sync_params(world: &World, pw: &mut ProcWorld, km: &mut KitMaterial, sky_on: 
             let t = ((step as f64 / sky::TIME_HZ) % 86_400.0) as f32;
             let recs = params.records(sun, t);
             pw.data[sky::RECORD..sky::RECORD + 4].copy_from_slice(&recs);
+            #[cfg(feature = "sky-horizon")]
+            for (i, r) in horizon_records(&params) {
+                if let Some(d) = pw.data.get_mut(i) {
+                    *d = r;
+                }
+            }
             if pw.data_sent {
                 let d = km.data_mut();
                 if d.len() >= sky::RECORD + 4 {
                     d[sky::RECORD..sky::RECORD + 4].copy_from_slice(&recs);
                 }
+                #[cfg(feature = "sky-horizon")]
+                for (i, r) in horizon_records(&params) {
+                    if let Some(x) = d.get_mut(i) {
+                        *x = r;
+                    }
+                }
             }
             pw.sky_sent = Some(now);
+        }
+        #[cfg(feature = "sky-discs")]
+        {
+            let discs = match (pw.discs_params.as_ref(), reg.as_ref()) {
+                (Some(h), Some(r)) => h.read(r),
+                _ => pw.discs,
+            };
+            pw.discs = discs;
+            let at = crate::layout::SKY_DISCS;
+            let n = crate::discs::RECORDS;
+            if pw.discs_sent != Some((discs, sun)) && pw.data.len() >= at + n {
+                let recs = discs.records(sun);
+                pw.data[at..at + n].copy_from_slice(&recs);
+                if pw.data_sent {
+                    let d = km.data_mut();
+                    if d.len() >= at + n {
+                        d[at..at + n].copy_from_slice(&recs);
+                    }
+                }
+                pw.discs_sent = Some((discs, sun));
+            }
         }
     }
     #[cfg(not(feature = "sky"))]
     let _ = sky_on;
     pw.params_seen = rev;
+}
+
+/// Feature `sky-horizon`: the header records it fills, with their index.
+#[cfg(feature = "sky-horizon")]
+fn horizon_records(params: &crate::sky::SkyParams) -> [(usize, [f32; 4]); 6] {
+    use crate::layout::{SKY_CLOUD_LIGHT, SKY_CLOUD_LOOK, SKY_CUMULUS, SKY_CUMULUS_LOOK, SKY_HORIZON, SKY_TONE};
+    let h = &params.horizon;
+    [
+        (SKY_HORIZON, h.record()),
+        (SKY_CLOUD_LOOK, h.look_record()),
+        (SKY_TONE, h.tone_record()),
+        (SKY_CLOUD_LIGHT, h.light_record()),
+        (SKY_CUMULUS, h.volume.record()),
+        (SKY_CUMULUS_LOOK, h.volume.look_record()),
+    ]
 }
 
 /// Install the code and data when needed, then draw every box.
@@ -256,7 +345,7 @@ pub fn draw_world(world: &mut World) {
     if let Some(mut km) = world.try_res_mut::<KitMaterial>() {
         let want = (ws, ds.map_or(NO_SLOT, |d| d.0), ss.map_or(NO_SLOT, |s| s.0));
         if pw.installed != Some(want) {
-            km.set_wgsl(wgsl(want.0, want.1, want.2));
+            km.set_wgsl(code_for(&pw.scene, want));
             pw.installed = Some(want);
         }
         sync_params(world, &mut pw, &mut km, ss.is_some());
@@ -269,7 +358,7 @@ pub fn draw_world(world: &mut World) {
         return;
     };
     #[cfg(feature = "sky")]
-    if let Some((slot, base)) = ss {
+    if let Some((slot, base)) = ss.filter(|_| pw.sky.visible) {
         // The dome round the eye: unlit, its colour from the view direction.
         let mut m = MeshInstance::new(MeshId::SPHERE, rw.camera.eye);
         m.scale = [2.0 * crate::sky::RADIUS; 3];

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Dev grass proof</title>
+  <!-- ?view=meadow|overview|lawn|mud|wheat|trample|close|low &wet=0..1 &grass=0 &walker=0 &q=0..4 &flat=1 -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #c9c3a4; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <link data-trunk rel="rust" data-bin="evani-grass-field" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+</body>
+</html>

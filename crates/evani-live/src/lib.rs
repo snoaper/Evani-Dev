@@ -27,6 +27,7 @@ pub mod focus;
 pub mod geometry;
 pub mod img;
 pub mod look;
+pub mod motion;
 pub mod page_patch;
 pub mod revert;
 pub mod session;
@@ -631,6 +632,13 @@ impl EngineModule for LiveModule {
         ctx.system(
             evani_core::ecs::SystemDesc::new("live.geometry", evani_core::ecs::Stage::Frame, geometry::frame)
                 .order(i32::MAX),
+        );
+        // The motion trace (`motion.*`, the smoothness harness): after every
+        // kit has drawn, before the geometry view and the compare view.
+        ctx.resource(motion::MotionTrace::default());
+        ctx.system(
+            evani_core::ecs::SystemDesc::new("live.motion", evani_core::ecs::Stage::Frame, motion::frame)
+                .order(i32::MAX - 2),
         );
         // Drop-to-convert's split view (`model.load`, LIVE_API.md 16): after
         // every kit has drawn, before the geometry view reads the draws.

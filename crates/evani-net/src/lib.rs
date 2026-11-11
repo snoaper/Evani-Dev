@@ -36,6 +36,8 @@ pub mod port;
 pub mod referee;
 pub mod server;
 pub mod session;
+#[cfg(feature = "sync")]
+pub mod sync;
 pub mod synctest;
 pub mod transport;
 pub mod types;
@@ -50,6 +52,11 @@ pub use session::LocalSession;
 pub use transport::{LinkConditions, Loopback, LoopbackEnd, LoopbackStats, Transport};
 pub use types::{LinkId, NetId, PeerId, Role, Tick, TickTime};
 pub use wire::{Reader, Wire, WireError, Writer};
+#[cfg(feature = "sync")]
+pub use sync::{
+    Angle, Correction, ErrorSmoother, InputHistory, Offset, Predictor, SnapshotBuffer, SyncConfig,
+    SyncSampled, SyncSim,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct NetParams {
@@ -64,6 +71,16 @@ pub struct NetParams {
     pub input_delay_ticks: I32Param,
     #[cfg(feature = "lockstep")]
     pub max_catchup_steps: I32Param,
+    /// The sync layer only (feature `sync`; it reads `interp_delay_ms` as
+    /// its least render delay).
+    #[cfg(feature = "sync")]
+    pub sync_smooth_rate: F32Param,
+    #[cfg(feature = "sync")]
+    pub sync_snap_threshold: F32Param,
+    #[cfg(feature = "sync")]
+    pub sync_extrapolate_max_ms: F32Param,
+    #[cfg(feature = "sync")]
+    pub sync_jitter_scale: F32Param,
 }
 
 #[derive(Debug, Default)]
@@ -155,6 +172,42 @@ impl EngineModule for NetModule {
                     .range(0.0, 240.0)
                     .unit("steps")
                     .describe("Lockstep play: most game steps one tick runs to catch up (prediction replay, a spectator's backlog); the rest waits for the next ticks. 0 is no cap; otherwise 2 to 240 (1 counts as 2). Lower it for a slow host.")
+                    .owner("net")
+                    .bake(BakeTarget::Kit),
+            )?,
+            #[cfg(feature = "sync")]
+            sync_smooth_rate: ctx.param_f32(
+                ParamDef::f32("net.sync.smooth_rate", sync::SMOOTH_RATE_DEFAULT)
+                    .range(0.0, 60.0)
+                    .unit("1/s")
+                    .describe("Sync layer: how fast a correction of the player's own entity (and of a remote one after extrapolating) is eased away; higher settles sooner, 0 shows corrections at once.")
+                    .owner("net")
+                    .bake(BakeTarget::Kit),
+            )?,
+            #[cfg(feature = "sync")]
+            sync_snap_threshold: ctx.param_f32(
+                ParamDef::f32("net.sync.snap_threshold", sync::SNAP_THRESHOLD_DEFAULT)
+                    .range(0.05, 50.0)
+                    .unit("m")
+                    .describe("Sync layer: a correction larger than this cuts at once (a respawn, a teleport) instead of being eased away.")
+                    .owner("net")
+                    .bake(BakeTarget::Kit),
+            )?,
+            #[cfg(feature = "sync")]
+            sync_extrapolate_max_ms: ctx.param_f32(
+                ParamDef::f32("net.sync.extrapolate_max_ms", (sync::EXTRAPOLATE_MAX_DEFAULT_S * 1000.0) as f32)
+                    .range(0.0, 1000.0)
+                    .unit("ms")
+                    .describe("Sync layer: when snapshots run out, how long remote objects keep moving along their last motion before they hold (0 holds at once).")
+                    .owner("net")
+                    .bake(BakeTarget::Kit),
+            )?,
+            #[cfg(feature = "sync")]
+            sync_jitter_scale: ctx.param_f32(
+                ParamDef::f32("net.sync.jitter_scale", sync::JITTER_SCALE_DEFAULT)
+                    .range(0.0, 8.0)
+                    .unit("x")
+                    .describe("Sync layer: how much measured network jitter is added to the remote objects' draw delay (net.interp_delay_ms is the least; 0 keeps the delay fixed).")
                     .owner("net")
                     .bake(BakeTarget::Kit),
             )?,

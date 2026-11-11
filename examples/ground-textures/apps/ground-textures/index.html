@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evani.Dev ground textures proof</title>
+  <!-- ?view=rock|field|paving|far &mode=before|after &tier=low|ultra -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #9fb4c8; overflow: hidden; }
+    #evani-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <link data-trunk rel="rust" data-bin="evani-ground-textures" data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue --low-memory-unused"
+        data-type="main">
+  <link data-trunk rel="copy-file" href="assets/kit-textures.json">
+  <link data-trunk rel="copy-dir" href="assets/ground">
+  <link data-trunk rel="copy-dir" href="assets/hero">
+</head>
+<body>
+  <canvas id="evani-canvas"></canvas>
+</body>
+</html>

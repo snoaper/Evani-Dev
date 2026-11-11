@@ -50,6 +50,8 @@ pub struct PointerLock {
     refused: bool,
     loss: Option<LockLoss>,
     revision: u64,
+    raw_mouse: bool,
+    raw_denied: bool,
 }
 
 impl PointerLock {
@@ -102,6 +104,30 @@ impl PointerLock {
         self.loss.take()
     }
 
+    /// Opt in (off by default) to a raw mouse: the page asks for the lock
+    /// with `unadjustedMovement: true`, so the operating system's pointer
+    /// acceleration and smoothing are left out of `mouse:dx` / `mouse:dy`.
+    /// Where the browser does not support that, or rejects it, the page takes
+    /// a plain lock instead ([`PointerLock::raw_denied`] says so) and the lock
+    /// works as before. Takes effect at the next lock request.
+    pub fn set_raw_mouse(&mut self, on: bool) {
+        self.raw_mouse = on;
+        if !on {
+            self.raw_denied = false;
+        }
+    }
+
+    /// The kit asked for a raw mouse ([`PointerLock::set_raw_mouse`]).
+    pub fn raw_mouse(&self) -> bool {
+        self.raw_mouse
+    }
+
+    /// The raw mouse was asked for but the browser could not give it, so the
+    /// lock fell back to the plain one.
+    pub fn raw_denied(&self) -> bool {
+        self.raw_denied
+    }
+
     /// Bumped on every change the page has to act on.
     pub fn revision(&self) -> u64 {
         self.revision
@@ -121,6 +147,12 @@ impl PointerLock {
             self.loss = None;
             self.bump();
         }
+    }
+
+    /// The browser could not give an unadjusted lock; the page took a plain
+    /// one instead.
+    pub fn on_raw_denied(&mut self) {
+        self.raw_denied = true;
     }
 
     /// The lock ended for `cause`. Anything but the kit's own release also
@@ -159,4 +191,40 @@ pub fn release(world: &World) {
 /// Whether the lock is held (false without a declared lock).
 pub fn locked(world: &World) -> bool {
     world.try_res::<PointerLock>().is_some_and(|p| p.is_locked())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_raw_mouse_is_off_by_default() {
+        let p = PointerLock::default();
+        assert!(!p.raw_mouse());
+        assert!(!p.raw_denied());
+    }
+
+    #[test]
+    fn a_raw_mouse_that_is_denied_leaves_a_plain_working_lock() {
+        let mut p = PointerLock::default();
+        p.set_raw_mouse(true);
+        p.request();
+        assert!(p.raw_mouse() && p.wanted());
+        p.on_raw_denied();
+        assert!(p.raw_denied(), "the kit can see the fallback");
+        p.on_locked();
+        assert!(p.is_locked() && !p.refused(), "the plain lock is held, not refused");
+        p.set_raw_mouse(false);
+        assert!(!p.raw_mouse() && !p.raw_denied());
+    }
+
+    #[test]
+    fn asking_for_the_lock_is_unchanged_with_the_option_off() {
+        let mut p = PointerLock::default();
+        let r0 = p.revision();
+        p.request();
+        assert_eq!(p.revision(), r0 + 1);
+        p.set_raw_mouse(true);
+        assert_eq!(p.revision(), r0 + 1, "choosing raw is not a lock change by itself");
+    }
 }

@@ -39,6 +39,9 @@ evani-look-toon.workspace = true
 # Layered materials: the KHR sheen / clear coat / anisotropy / iridescence
 # reader and the extras record the engine reads back (one source).
 evani-material-layers.workspace = true
+# `--materials` (P10b): fill a model's materials from the catalogue with the
+# row-to-glTF adapter (`gltf` = the catalogue reader and the writer; no engine).
+evani-material-recipes = { workspace = true, features = ["gltf"] }
 
 [dev-dependencies]
 # S3-8 cross-check: the game decoder reads the baked clips like the reference reader.

@@ -12,9 +12,10 @@
 //!   the lit fragment stage.
 //! * [`params`]: the live params (`material.eye.*`, `material.skin.*`,
 //!   `material.hair.*`, `material.character.quality`), the quality by tier
-//!   and the `char_params` slot body they write.
-//! * [`register`]: declares the slot, registers the params and keeps the
-//!   slot body in step with them and with the tier.
+//!   and the constants they write ([`params::CharLive`], read by the `char_params`
+//!   slot body from a uniform).
+//! * [`register`]: declares the slot with its data body, registers the params
+//!   and keeps the constants in step with them and with the tier.
 
 pub mod lut;
 pub mod params;

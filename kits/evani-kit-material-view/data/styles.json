@@ -1,0 +1,323 @@
+{
+  "library": "material_view.styles",
+  "version": 1,
+  "refs_url": "dev-refs/",
+  "refs_count": 5,
+  "styles": [
+    {
+      "id": "WK01", "num": 1, "name": "Bright Toon", "short": "Toon", "mood": "Glossy candy colours, chunky round shapes and a hard sparkle highlight", "refs": "WK01-bright-toon",
+      "status": "draft", "look": null,
+      "note": "The engine has its own toon look; the shapes here draw this viewer's version of it, and the material numbers are draft settings.",
+      "render": {"label": "Toon light bands with a hard highlight", "fidelity": "true", "bands": 3, "shadow": 0.5, "shadow_hue": [0.9,0.9,1.1], "highlight": 0.95},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.bands"]},
+      "materials": [
+        { "id": "red_plastic", "name": "Red plastic", "color": [0.80, 0.04, 0.03], "roughness": 0.25, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "grass_green", "name": "Grass green", "color": [0.12, 0.55, 0.06], "roughness": 0.70, "metallic": 0.0, "bump": 0.1, "glow": 0.0 },
+        { "id": "sky_blue", "name": "Sky blue", "color": [0.20, 0.50, 0.95], "roughness": 0.40, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "gold_coin", "name": "Gold coin", "color": [1.00, 0.70, 0.12], "roughness": 0.22, "metallic": 1.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK02", "num": 2, "name": "Soft Cosy", "short": "Cosy", "mood": "Pastel, rounded and softly lit, like a toy village at tea time", "refs": "WK02-soft-cosy",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Soft four-step toon light with warm shadows", "fidelity": "true", "bands": 4, "shadow": 0.6, "shadow_hue": [1.15,0.95,0.85]},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.bands"]},
+      "materials": [
+        { "id": "peach_plaster", "name": "Peach plaster", "color": [0.90, 0.55, 0.40], "roughness": 0.85, "metallic": 0.0, "bump": 0.15, "glow": 0.0 },
+        { "id": "mint_paint", "name": "Mint paint", "color": [0.45, 0.80, 0.62], "roughness": 0.60, "metallic": 0.0, "bump": 0.05, "glow": 0.0 },
+        { "id": "soft_wood", "name": "Soft wood", "color": [0.55, 0.32, 0.16], "roughness": 0.75, "metallic": 0.0, "bump": 0.25, "glow": 0.0 },
+        { "id": "cream_fabric", "name": "Cream fabric", "color": [0.88, 0.82, 0.68], "roughness": 0.92, "metallic": 0.0, "bump": 0.3, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK03", "num": 3, "name": "Cel-Shaded Adventure", "short": "Cel", "mood": "Two-tone light bands, wind-swept painted skies and bold silhouettes", "refs": "WK03-cel-shaded-adventure",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Two-tone cel light, blue shadows and ink outlines", "fidelity": "true", "bands": 2, "shadow": 0.5, "shadow_hue": [0.75,0.85,1.3], "outline": 0.035, "side_light": 75},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.bands", "surface.outline"]},
+      "materials": [
+        { "id": "field_grass", "name": "Field grass", "color": [0.22, 0.45, 0.10], "roughness": 0.85, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "worn_stone", "name": "Worn stone", "color": [0.42, 0.40, 0.36], "roughness": 0.90, "metallic": 0.0, "bump": 0.35, "glow": 0.0 },
+        { "id": "tunic_cloth", "name": "Traveller's cloth", "color": [0.10, 0.30, 0.55], "roughness": 0.88, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "ancient_bronze", "name": "Ancient bronze", "color": [0.55, 0.38, 0.18], "roughness": 0.45, "metallic": 0.9, "bump": 0.1, "glow": 0.0 },
+        { "id": "rune_light", "name": "Rune light", "color": [0.10, 0.70, 0.95], "roughness": 0.30, "metallic": 0.0, "bump": 0.0, "glow": 0.6 }
+      ]
+    },
+    {
+      "id": "WK04", "num": 4, "name": "Anime", "short": "Anime", "mood": "Clean ink lines, crisp shadow shapes and bright skin and hair tones", "refs": "WK04-anime",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Two-tone anime light, cool shadows, a hard shine and thin lines", "fidelity": "true", "bands": 2, "shadow": 0.62, "shadow_hue": [0.85,0.85,1.2], "highlight": 0.8, "outline": 0.02},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.bands", "surface.outline"]},
+      "materials": [
+        { "id": "pale_skin", "name": "Pale skin", "color": [0.95, 0.75, 0.65], "roughness": 0.60, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "white_cloth", "name": "White cloth", "color": [0.90, 0.90, 0.92], "roughness": 0.70, "metallic": 0.0, "bump": 0.05, "glow": 0.0 },
+        { "id": "hair_violet", "name": "Violet hair", "color": [0.35, 0.18, 0.55], "roughness": 0.35, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "gilt_trim", "name": "Gilt trim", "color": [0.95, 0.72, 0.30], "roughness": 0.30, "metallic": 1.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK05", "num": 5, "name": "Painterly 3D", "short": "Painterly", "mood": "Brush-textured surfaces, warm light and saturated hand-painted colour", "refs": "WK05-painterly-3d",
+      "status": "look", "look": "stylizedpbr",
+      "note": "These materials come live from the film look built into this viewer; the numbers here are only a fallback.",
+      "render": {"label": "The engine's own film look, built into this viewer", "fidelity": "true"},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": []},
+      "materials": [
+        { "id": "stone", "name": "Stone", "color": [0.38, 0.36, 0.33], "roughness": 0.90, "metallic": 0.0, "bump": 0.45, "glow": 0.0, "look_material": "stone" },
+        { "id": "metal", "name": "Metal", "color": [0.80, 0.78, 0.74], "roughness": 0.22, "metallic": 1.0, "bump": 0.0, "glow": 0.0, "look_material": "metal" },
+        { "id": "leather", "name": "Leather", "color": [0.30, 0.16, 0.08], "roughness": 0.55, "metallic": 0.0, "bump": 0.4, "glow": 0.0, "look_material": "leather" },
+        { "id": "fabric", "name": "Fabric", "color": [0.45, 0.12, 0.10], "roughness": 0.85, "metallic": 0.0, "bump": 0.8, "glow": 0.0, "look_material": "fabric" },
+        { "id": "grass", "name": "Grass", "color": [0.18, 0.40, 0.10], "roughness": 0.95, "metallic": 0.0, "bump": 1.0, "glow": 0.0, "look_material": "grass" }
+      ]
+    },
+    {
+      "id": "WK06", "num": 6, "name": "Minimal Low-Poly", "short": "Low-poly", "mood": "Flat-shaded facets, few colours and soft daylight", "refs": "WK06-minimal-low-poly",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Low-poly flat facets", "fidelity": "true", "cluster": 0.32, "facets": true},
+      "studio": {"geometry": {"kind": "lowpoly", "cluster": 0.32, "target_tris": 500, "facets": true}, "pass": {"kind": "none"}, "controls": ["geometry.detail"]},
+      "materials": [
+        { "id": "flat_orange", "name": "Flat orange", "color": [0.90, 0.35, 0.08], "roughness": 0.80, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "sand", "name": "Sand", "color": [0.80, 0.66, 0.42], "roughness": 0.95, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "pine_green", "name": "Pine green", "color": [0.08, 0.28, 0.16], "roughness": 0.90, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "car_paint", "name": "Car paint", "color": [0.85, 0.85, 0.82], "roughness": 0.30, "metallic": 0.2, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK07", "num": 7, "name": "Miniature Diorama", "short": "Diorama", "mood": "A tilt-shift tabletop world of felt, painted wood and tiny props", "refs": "WK07-diorama",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Soft toy-like light steps (no tilt-shift blur)", "fidelity": "approx", "bands": 4, "shadow": 0.62, "shadow_hue": [1.05,0.95,1], "mottle": 0.06},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "tiltshift", "focus": 0.5, "blur": 0.6}, "controls": ["surface.bands", "pass.blur"]},
+      "materials": [
+        { "id": "moss_felt", "name": "Moss felt", "color": [0.25, 0.48, 0.18], "roughness": 0.90, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "painted_stone", "name": "Painted stone", "color": [0.62, 0.60, 0.70], "roughness": 0.80, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "toy_wood", "name": "Toy wood", "color": [0.60, 0.38, 0.20], "roughness": 0.65, "metallic": 0.0, "bump": 0.1, "glow": 0.0 },
+        { "id": "brass_key", "name": "Brass key", "color": [0.85, 0.65, 0.25], "roughness": 0.30, "metallic": 1.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "glow_crystal", "name": "Glow crystal", "color": [0.35, 0.85, 0.95], "roughness": 0.15, "metallic": 0.0, "bump": 0.0, "glow": 0.5 }
+      ]
+    },
+    {
+      "id": "WK08", "num": 8, "name": "Voxel", "short": "Voxel", "mood": "Everything built from small cubes, lit like a real scale model", "refs": "WK08-voxel",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Built from voxel cubes", "fidelity": "true", "voxel": 0.12},
+      "studio": {"geometry": {"kind": "voxel", "cell": 0.12, "keep_thin": true}, "pass": {"kind": "none"}, "controls": ["geometry.cell"]},
+      "materials": [
+        { "id": "brick", "name": "Brick", "color": [0.48, 0.16, 0.10], "roughness": 0.90, "metallic": 0.0, "bump": 0.4, "glow": 0.0 },
+        { "id": "concrete", "name": "Concrete", "color": [0.45, 0.45, 0.43], "roughness": 0.92, "metallic": 0.0, "bump": 0.35, "glow": 0.0 },
+        { "id": "plank", "name": "Plank", "color": [0.45, 0.28, 0.14], "roughness": 0.80, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "steel_beam", "name": "Steel beam", "color": [0.40, 0.42, 0.45], "roughness": 0.50, "metallic": 0.9, "bump": 0.1, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK09", "num": 9, "name": "Classic Pixel", "short": "Pixel", "mood": "Chunky pixels, a small palette and crisp dark outlines", "refs": "WK09-pixel",
+      "status": "draft", "look": null,
+      "note": "The engine has its own pixel16 look; the shapes here draw this viewer's stand-in for it, and the material numbers are draft settings.",
+      "render": {"label": "Chunky blocks, three flat tones and a dark outline (stands in for a pixel grid)", "fidelity": "approx", "voxel": 0.16, "bands": 3, "shadow": 0.45, "posterize": 5, "outline": 0.03},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "pixel", "px": 4, "levels": 5, "outline": true}, "controls": ["pass.px", "surface.bands"]},
+      "materials": [
+        { "id": "tilled_soil", "name": "Tilled soil", "color": [0.30, 0.17, 0.08], "roughness": 0.95, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "crop_green", "name": "Crop green", "color": [0.20, 0.60, 0.12], "roughness": 0.90, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "barn_red", "name": "Barn red", "color": [0.55, 0.08, 0.06], "roughness": 0.90, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "pond_blue", "name": "Pond blue", "color": [0.10, 0.35, 0.70], "roughness": 0.60, "metallic": 0.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK10", "num": 10, "name": "Cinematic Pixel", "short": "Pixel HD", "mood": "Pixel-art figures in a lit 3D diorama with soft focus and glow", "refs": "WK10-hd2d",
+      "status": "draft", "look": null,
+      "note": "The engine has its own pixelhd look; the shapes here draw this viewer's stand-in for it, and the material numbers are draft settings.",
+      "render": {"label": "Fine blocks with four light steps (no depth-of-field blur)", "fidelity": "approx", "voxel": 0.08, "bands": 4, "shadow": 0.4, "highlight": 0.4},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "pixel", "px": 3, "levels": 12, "outline": false}, "controls": ["pass.px", "surface.bands"]},
+      "materials": [
+        { "id": "cobble", "name": "Cobble", "color": [0.35, 0.33, 0.30], "roughness": 0.85, "metallic": 0.0, "bump": 0.4, "glow": 0.0 },
+        { "id": "timber", "name": "Timber", "color": [0.32, 0.20, 0.10], "roughness": 0.75, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "water", "name": "Water", "color": [0.08, 0.25, 0.40], "roughness": 0.06, "metallic": 0.0, "bump": 0.15, "glow": 0.0 },
+        { "id": "lantern", "name": "Lantern", "color": [1.00, 0.62, 0.20], "roughness": 0.40, "metallic": 0.0, "bump": 0.0, "glow": 0.8 }
+      ]
+    },
+    {
+      "id": "WK11", "num": 11, "name": "Retro Early-Console 3D", "short": "Retro 3D", "mood": "Few polygons, wobbly low-resolution textures, fog and a murky palette", "refs": "WK11-retro3d",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Low-poly faces in few colours", "fidelity": "approx", "cluster": 0.22, "facets": true, "bands": 5, "shadow": 0.35, "posterize": 6},
+      "studio": {"geometry": {"kind": "lowpoly", "cluster": 0.22, "target_tris": 300, "facets": true}, "pass": {"kind": "none"}, "controls": ["geometry.detail", "surface.bands"]},
+      "materials": [
+        { "id": "murky_rock", "name": "Murky rock", "color": [0.28, 0.24, 0.30], "roughness": 0.95, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "rust_iron", "name": "Rust iron", "color": [0.40, 0.18, 0.08], "roughness": 0.80, "metallic": 0.6, "bump": 0.3, "glow": 0.0 },
+        { "id": "faded_banner", "name": "Faded banner", "color": [0.45, 0.10, 0.25], "roughness": 0.90, "metallic": 0.0, "bump": 0.1, "glow": 0.0 },
+        { "id": "candle_glow", "name": "Candle glow", "color": [1.00, 0.75, 0.40], "roughness": 0.50, "metallic": 0.0, "bump": 0.0, "glow": 0.7 }
+      ]
+    },
+    {
+      "id": "WK12", "num": 12, "name": "Rubber-Hose Cartoon", "short": "Rubber-hose", "mood": "Old ink cartoon: thick outlines, cream paper and film grain", "refs": "WK12-rubberhose",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Two-tone cartoon, thick ink lines, aged sepia", "fidelity": "approx", "bands": 2, "shadow": 0.55, "shadow_hue": [1.1,0.95,0.75], "outline": 0.06, "desaturate": 0.55, "mottle": 0.08},
+      "studio": {"geometry": {"kind": "proportion", "head": 1.3, "limbs": 0.8}, "pass": {"kind": "none"}, "controls": ["geometry.head", "surface.outline"]},
+      "materials": [
+        { "id": "ink_black", "name": "Ink black", "color": [0.02, 0.02, 0.02], "roughness": 0.60, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "aged_paper", "name": "Aged paper", "color": [0.85, 0.75, 0.55], "roughness": 0.90, "metallic": 0.0, "bump": 0.15, "glow": 0.0 },
+        { "id": "cartoon_red", "name": "Cartoon red", "color": [0.75, 0.06, 0.05], "roughness": 0.50, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "glove_white", "name": "Glove white", "color": [0.92, 0.92, 0.88], "roughness": 0.55, "metallic": 0.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK13", "num": 13, "name": "Illustrated Storybook", "short": "Storybook", "mood": "Gouache-painted pages, soft edges and warm muted colour", "refs": "WK13-storybook",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Three soft bands, patchy colour and brown lines", "fidelity": "approx", "bands": 3, "shadow": 0.55, "shadow_hue": [1.05,0.95,1.05], "outline": 0.025, "outline_color": [0.22,0.12,0.06], "mottle": 0.12},
+      "studio": {"geometry": {"kind": "proportion", "head": 1.12, "limbs": 0.95}, "pass": {"kind": "paper", "grain": 0.35, "edge": 0.4, "bleed": 0.15}, "controls": ["geometry.head", "pass.grain"]},
+      "materials": [
+        { "id": "gouache_green", "name": "Gouache green", "color": [0.20, 0.38, 0.20], "roughness": 0.90, "metallic": 0.0, "bump": 0.25, "glow": 0.0 },
+        { "id": "thatch", "name": "Thatch", "color": [0.60, 0.45, 0.22], "roughness": 0.95, "metallic": 0.0, "bump": 0.45, "glow": 0.0 },
+        { "id": "plum_robe", "name": "Plum robe", "color": [0.30, 0.10, 0.25], "roughness": 0.85, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "potion_glow", "name": "Potion glow", "color": [0.55, 0.95, 0.35], "roughness": 0.10, "metallic": 0.0, "bump": 0.0, "glow": 0.6 }
+      ]
+    },
+    {
+      "id": "WK14", "num": 14, "name": "Watercolour", "short": "Watercolour", "mood": "Colour washes that bleed past their edges on textured paper", "refs": "WK14-watercolour",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Pale washes with patchy pigment (no paper bleed)", "fidelity": "approx", "bands": 4, "shadow": 0.62, "shadow_hue": [0.95,0.95,1.15], "desaturate": 0.25, "mottle": 0.18, "value": 1.1},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "paper", "grain": 0.5, "edge": 0.55, "bleed": 0.5}, "controls": ["pass.grain"]},
+      "materials": [
+        { "id": "wash_rose", "name": "Rose wash", "color": [0.85, 0.40, 0.45], "roughness": 0.95, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "wash_teal", "name": "Teal wash", "color": [0.20, 0.55, 0.55], "roughness": 0.95, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "paper_white", "name": "Paper white", "color": [0.92, 0.90, 0.85], "roughness": 0.98, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "gold_leaf", "name": "Gold leaf", "color": [0.90, 0.70, 0.35], "roughness": 0.40, "metallic": 0.8, "bump": 0.1, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK15", "num": 15, "name": "Ink Brush", "short": "Ink", "mood": "Black ink brush strokes on rice paper with a few touches of colour", "refs": "WK15-ink-brush",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Grey ink washes and heavy brush lines", "fidelity": "approx", "bands": 2, "shadow": 0.45, "desaturate": 0.85, "outline": 0.065, "mottle": 0.1},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "paper", "grain": 0.3, "edge": 0.6, "bleed": 0.25}, "controls": ["surface.outline", "pass.grain"]},
+      "materials": [
+        { "id": "rice_paper", "name": "Rice paper", "color": [0.88, 0.84, 0.74], "roughness": 0.95, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "sumi_ink", "name": "Sumi ink", "color": [0.03, 0.03, 0.03], "roughness": 0.70, "metallic": 0.0, "bump": 0.1, "glow": 0.0 },
+        { "id": "vermilion", "name": "Vermilion", "color": [0.80, 0.12, 0.05], "roughness": 0.75, "metallic": 0.0, "bump": 0.1, "glow": 0.0 },
+        { "id": "sacred_glow", "name": "Sacred glow", "color": [0.95, 0.85, 0.60], "roughness": 0.50, "metallic": 0.0, "bump": 0.0, "glow": 0.4 }
+      ]
+    },
+    {
+      "id": "WK16", "num": 16, "name": "Gothic Hand-Drawn", "short": "Gothic", "mood": "Dark hand-drawn shapes, pale highlights and gloomy depth", "refs": "WK16-gothic-hand-drawn",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Dark two-tone shapes with ink lines", "fidelity": "approx", "bands": 2, "shadow": 0.35, "shadow_hue": [0.85,0.85,1.15], "outline": 0.04, "desaturate": 0.3, "value": 0.7},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "paper", "grain": 0.45, "edge": 0.65, "bleed": 0.2}, "controls": ["surface.outline", "pass.grain"]},
+      "materials": [
+        { "id": "cave_slate", "name": "Cave slate", "color": [0.08, 0.10, 0.14], "roughness": 0.85, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "shell_white", "name": "Shell white", "color": [0.85, 0.85, 0.82], "roughness": 0.40, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "cloak_grey", "name": "Cloak grey", "color": [0.18, 0.20, 0.25], "roughness": 0.90, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "soul_blue", "name": "Soul blue", "color": [0.40, 0.70, 1.00], "roughness": 0.30, "metallic": 0.0, "bump": 0.0, "glow": 0.7 }
+      ]
+    },
+    {
+      "id": "WK17", "num": 17, "name": "Comic Line Art", "short": "Comic", "mood": "Flat colour fields held by strong ink lines", "refs": "WK17-comic-line-art",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Flat two-tone comic colour with bold ink lines", "fidelity": "true", "bands": 2, "shadow": 0.5, "posterize": 6, "outline": 0.05},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.bands", "surface.outline"]},
+      "materials": [
+        { "id": "dune_sand", "name": "Dune sand", "color": [0.85, 0.62, 0.35], "roughness": 0.95, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "mask_teal", "name": "Mask teal", "color": [0.15, 0.55, 0.55], "roughness": 0.70, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "rust_hull", "name": "Rust hull", "color": [0.55, 0.25, 0.12], "roughness": 0.80, "metallic": 0.3, "bump": 0.0, "glow": 0.0 },
+        { "id": "cloth_ochre", "name": "Ochre cloth", "color": [0.75, 0.50, 0.15], "roughness": 0.90, "metallic": 0.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK18", "num": 18, "name": "Papercraft", "short": "Paper", "mood": "Folded and cut paper with crisp edges and soft shadows", "refs": "WK18-papercraft",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Folded paper facets with soft light steps", "fidelity": "approx", "cluster": 0.28, "facets": true, "bands": 3, "shadow": 0.6, "desaturate": 0.1},
+      "studio": {"geometry": {"kind": "papercraft", "cluster": 0.28, "target_tris": 400}, "pass": {"kind": "none"}, "controls": ["geometry.detail"]},
+      "materials": [
+        { "id": "card_green", "name": "Green card", "color": [0.25, 0.60, 0.25], "roughness": 0.90, "metallic": 0.0, "bump": 0.25, "glow": 0.0 },
+        { "id": "kraft_paper", "name": "Kraft paper", "color": [0.60, 0.42, 0.25], "roughness": 0.92, "metallic": 0.0, "bump": 0.35, "glow": 0.0 },
+        { "id": "crepe_red", "name": "Red crepe", "color": [0.80, 0.12, 0.12], "roughness": 0.88, "metallic": 0.0, "bump": 0.6, "glow": 0.0 },
+        { "id": "foil", "name": "Foil", "color": [0.80, 0.80, 0.82], "roughness": 0.25, "metallic": 1.0, "bump": 0.4, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK19", "num": 19, "name": "Yarn / Fabric / Felt", "short": "Yarn", "mood": "Knitted, stitched and felted surfaces, soft and fuzzy", "refs": "WK19-yarn",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Knitted ridges and fibre-coloured patches", "fidelity": "approx", "ridges": 0.035, "mottle": 0.08},
+      "studio": {"geometry": {"kind": "ridges", "amount": 0.035}, "pass": {"kind": "none"}, "controls": ["geometry.amount"]},
+      "materials": [
+        { "id": "red_wool", "name": "Red wool", "color": [0.70, 0.08, 0.06], "roughness": 0.95, "metallic": 0.0, "bump": 0.8, "glow": 0.0 },
+        { "id": "green_felt", "name": "Green felt", "color": [0.20, 0.45, 0.20], "roughness": 0.98, "metallic": 0.0, "bump": 0.5, "glow": 0.0 },
+        { "id": "denim", "name": "Denim", "color": [0.10, 0.18, 0.35], "roughness": 0.90, "metallic": 0.0, "bump": 0.6, "glow": 0.0 },
+        { "id": "button", "name": "Button", "color": [0.85, 0.75, 0.55], "roughness": 0.30, "metallic": 0.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK20", "num": 20, "name": "Clay / Stop-Motion", "short": "Clay", "mood": "Hand-pressed clay with thumbprints and choppy frame-by-frame charm", "refs": "WK20-clay",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Hand-pressed lumps in the silhouette", "fidelity": "approx", "lumpy": 0.07, "mottle": 0.04},
+      "studio": {"geometry": {"kind": "lumpy", "amount": 0.07}, "pass": {"kind": "none"}, "controls": ["geometry.amount"]},
+      "materials": [
+        { "id": "clay_pink", "name": "Pink clay", "color": [0.85, 0.40, 0.50], "roughness": 0.80, "metallic": 0.0, "bump": 0.5, "glow": 0.0 },
+        { "id": "clay_yellow", "name": "Yellow clay", "color": [0.90, 0.75, 0.20], "roughness": 0.80, "metallic": 0.0, "bump": 0.5, "glow": 0.0 },
+        { "id": "clay_blue", "name": "Blue clay", "color": [0.20, 0.35, 0.80], "roughness": 0.80, "metallic": 0.0, "bump": 0.5, "glow": 0.0 },
+        { "id": "clay_green", "name": "Green clay", "color": [0.30, 0.65, 0.25], "roughness": 0.80, "metallic": 0.0, "bump": 0.5, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK21", "num": 21, "name": "Monochrome Dither / Engraving", "short": "Dither", "mood": "One-colour dithered shading like an old engraving", "refs": "WK21-dither",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Two-tone ink-and-paper dither with outlines", "fidelity": "approx", "dither": true, "outline": 0.025, "outline_color": [0.015,0.015,0.02], "paper": [0.86,0.85,0.78], "side_light": 75},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": []},
+      "materials": [
+        { "id": "near_black", "name": "Near black", "color": [0.03, 0.03, 0.03], "roughness": 0.80, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "bone_white", "name": "Bone white", "color": [0.85, 0.82, 0.72], "roughness": 0.70, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "mid_grey", "name": "Mid grey", "color": [0.30, 0.30, 0.28], "roughness": 0.85, "metallic": 0.0, "bump": 0.2, "glow": 0.0 },
+        { "id": "ship_iron", "name": "Ship iron", "color": [0.25, 0.25, 0.25], "roughness": 0.55, "metallic": 0.9, "bump": 0.1, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK22", "num": 22, "name": "Silhouette and Atmosphere", "short": "Silhouette", "mood": "Black shapes against glowing fog and back light", "refs": "WK22-silhouette",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Flat dark silhouette (no fog backdrop)", "fidelity": "approx", "bands": 1, "value": 0.12, "desaturate": 0.6},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "silhouette", "fog": 0.55}, "controls": []},
+      "materials": [
+        { "id": "shadow_black", "name": "Shadow black", "color": [0.01, 0.01, 0.01], "roughness": 0.95, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "fog_grey", "name": "Fog grey", "color": [0.55, 0.55, 0.53], "roughness": 0.98, "metallic": 0.0, "bump": 0.0, "glow": 0.0 },
+        { "id": "wet_bark", "name": "Wet bark", "color": [0.05, 0.05, 0.04], "roughness": 0.40, "metallic": 0.0, "bump": 0.4, "glow": 0.0 },
+        { "id": "eye_glow", "name": "Eye glow", "color": [0.95, 0.95, 0.90], "roughness": 0.30, "metallic": 0.0, "bump": 0.0, "glow": 0.9 }
+      ]
+    },
+    {
+      "id": "WK23", "num": 23, "name": "Neon Geometric", "short": "Neon", "mood": "Glowing edges on dark glossy shapes in a synthetic night", "refs": "WK23-neon",
+      "status": "draft", "look": null,
+      "note": "Rough starter settings; not art-directed yet.",
+      "render": {"label": "Dark bodies with glowing coloured outlines", "fidelity": "approx", "bands": 2, "shadow": 0.4, "value": 0.5, "outline": 0.045, "outline_color": [0.15,0.95,1], "outline_glow": true},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": ["surface.outline"]},
+      "materials": [
+        { "id": "dark_panel", "name": "Dark panel", "color": [0.02, 0.02, 0.04], "roughness": 0.15, "metallic": 0.3, "bump": 0.0, "glow": 0.0 },
+        { "id": "cyan_glow", "name": "Cyan glow", "color": [0.00, 0.85, 1.00], "roughness": 0.20, "metallic": 0.0, "bump": 0.0, "glow": 0.9 },
+        { "id": "magenta_glow", "name": "Magenta glow", "color": [1.00, 0.05, 0.70], "roughness": 0.20, "metallic": 0.0, "bump": 0.0, "glow": 0.9 },
+        { "id": "chrome", "name": "Chrome", "color": [0.90, 0.90, 0.92], "roughness": 0.05, "metallic": 1.0, "bump": 0.0, "glow": 0.0 }
+      ]
+    },
+    {
+      "id": "WK24", "num": 24, "name": "Cinematic Realism", "short": "Realism", "mood": "Film-like lighting, rich detail and natural colour", "refs": "WK24-realism",
+      "status": "draft", "look": null,
+      "note": "The photoreal look's daylight preset is for world surfaces, not per-material presets; these are draft settings.",
+      "render": {"label": "The engine's own physically based light", "fidelity": "true"},
+      "studio": {"geometry": {"kind": "none"}, "pass": {"kind": "none"}, "controls": []},
+      "materials": [
+        { "id": "weathered_leather", "name": "Weathered leather", "color": [0.22, 0.12, 0.06], "roughness": 0.65, "metallic": 0.0, "bump": 0.4, "glow": 0.0 },
+        { "id": "oiled_wood", "name": "Oiled wood", "color": [0.28, 0.15, 0.07], "roughness": 0.45, "metallic": 0.0, "bump": 0.3, "glow": 0.0 },
+        { "id": "iron", "name": "Iron", "color": [0.35, 0.34, 0.33], "roughness": 0.55, "metallic": 1.0, "bump": 0.25, "glow": 0.0 },
+        { "id": "linen", "name": "Linen", "color": [0.72, 0.66, 0.55], "roughness": 0.90, "metallic": 0.0, "bump": 0.35, "glow": 0.0 }
+      ]
+    }
+  ]
+}

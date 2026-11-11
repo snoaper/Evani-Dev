@@ -43,7 +43,7 @@ use evani_render::mesh::{BUILTIN_MESH_COUNT, MeshId};
 use evani_render::world::MeshInstance;
 use serde_json::Value;
 
-use cli::{kart, sandbox};
+use cli::{kart, material_view, sandbox};
 use cli::render::{self, Setup, Shot};
 
 struct Args {
@@ -58,10 +58,15 @@ struct Args {
     zfight: bool,
     report_only: bool,
     sample: Option<usize>,
+    model: Option<String>,
 }
 
 const USAGE: &str = "usage: evani-geocheck <app> [--title-s 40] [--race-s 30] [--every 6] [--no-render] [--port 8095] [--highlights 40] [--keep-raw] [--zfight [--report-only] [--sample N]]
+       evani-geocheck --model <folder|<id>.<tier>.glb> [--no-render]
 
+  --model         one model's tier files outside any game (overlaps between its pieces, floating nodes, mesh
+                  validation, z-fighting from orbit cameras); report in .vibedeck/geocheck/model-<id>/ with
+                  pictures of every tier in views/ (skip them with --no-render).
   --zfight        the native replay and the z-fighting scan only (zfight/zfight.json, .md, debug images).
                   The scan is cached in <target>/evani-geocheck-cache/<app>/<key>/ (key: build, scene,
                   camera set, capture settings); a repeat run with the same key skips the replay and the scan.
@@ -83,6 +88,7 @@ fn parse_args() -> Result<Args, String> {
         zfight: false,
         report_only: false,
         sample: None,
+        model: None,
     };
     let mut it = std::env::args().skip(1);
     while let Some(x) = it.next() {
@@ -95,6 +101,7 @@ fn parse_args() -> Result<Args, String> {
             "--highlights" => a.highlights = val("--highlights")?.parse().map_err(|_| "bad --highlights")?,
             "--no-render" => a.render = false,
             "--keep-raw" => a.keep_raw = true,
+            "--model" => a.model = Some(val("--model")?),
             "--zfight" => a.zfight = true,
             "--report-only" => a.report_only = true,
             "--sample" => {
@@ -114,7 +121,7 @@ fn parse_args() -> Result<Args, String> {
             }
         }
     }
-    if a.app.is_empty() {
+    if a.app.is_empty() && a.model.is_none() {
         return Err(USAGE.into());
     }
     if (a.report_only || a.sample.is_some()) && !a.zfight {
@@ -139,20 +146,19 @@ fn workspace_root() -> Result<PathBuf, String> {
 /// Thresholds and tags from `apps/<app>/geocheck.toml`,
 /// `kits/evani-kit-<app>/geocheck.toml` and `"geocheck"` arrays in the kit's
 /// `data/*.json`.
-fn load_config(root: &Path, app: &str, cfg: &mut Config, notes: &mut Vec<String>) -> Result<Vec<Tag>, String> {
+/// The app's geocheck config as found: per file its thresholds and its tag
+/// list (raw JSON), apps/<app>/geocheck.toml, then the kit's, then the kit's
+/// data files' `geocheck` lists.
+/// One config file as found: its path, its thresholds and its tag list (raw JSON).
+type ConfigSource = (PathBuf, Option<Value>, Option<Value>);
+
+fn config_sources(root: &Path, app: &str) -> Result<Vec<ConfigSource>, String> {
     let mut out = Vec::new();
     let kit = root.join("kits").join(format!("evani-kit-{app}"));
     for f in [root.join("apps").join(app).join("geocheck.toml"), kit.join("geocheck.toml")] {
         let Ok(text) = std::fs::read_to_string(&f) else { continue };
         let v: Value = toml::from_str(&text).map_err(|e| format!("{}: {e}", f.display()))?;
-        if let Some(t) = v.get("thresholds") {
-            cfg.apply_json(t).map_err(|e| format!("{}: {e}", f.display()))?;
-        }
-        if let Some(t) = v.get("tag") {
-            let n = tags::parse(t).map_err(|e| format!("{}: {e}", f.display()))?;
-            notes.push(format!("{} tag(s) from {}", n.len(), rel(root, &f)));
-            out.extend(n);
-        }
+        out.push((f, v.get("thresholds").cloned(), v.get("tag").cloned()));
     }
     let mut files: Vec<PathBuf> = std::fs::read_dir(kit.join("data"))
         .map(|d| d.filter_map(Result::ok).map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "json")).collect())
@@ -162,12 +168,45 @@ fn load_config(root: &Path, app: &str, cfg: &mut Config, notes: &mut Vec<String>
         let Ok(text) = std::fs::read_to_string(&f) else { continue };
         let Ok(v) = serde_json::from_str::<Value>(&text) else { continue };
         if let Some(t) = v.get("geocheck") {
-            let n = tags::parse(t).map_err(|e| format!("{}: {e}", f.display()))?;
+            out.push((f, None, Some(t.clone())));
+        }
+    }
+    Ok(out)
+}
+
+fn load_config(root: &Path, app: &str, cfg: &mut Config, notes: &mut Vec<String>) -> Result<Vec<Tag>, String> {
+    let mut out = Vec::new();
+    for (f, thresholds, tag) in config_sources(root, app)? {
+        if let Some(t) = thresholds {
+            cfg.apply_json(&t).map_err(|e| format!("{}: {e}", f.display()))?;
+        }
+        if let Some(t) = tag {
+            let n = tags::parse(&t).map_err(|e| format!("{}: {e}", f.display()))?;
             notes.push(format!("{} tag(s) from {}", n.len(), rel(root, &f)));
             out.extend(n);
         }
     }
     Ok(out)
+}
+
+/// The same config for the live debug view (`debug.geometry` `tags` and
+/// `thresholds`), so its colours judge with the report's tags and limits
+/// (critic round 6 of material-view: the debug view, given none, disagreed
+/// with the report).
+pub(crate) fn view_config(root: &Path, app: &str) -> Result<Value, String> {
+    let mut thresholds = serde_json::Map::new();
+    let mut tag_list = Vec::new();
+    for (_, t, tag) in config_sources(root, app)? {
+        if let Some(Value::Object(m)) = t {
+            thresholds.extend(m);
+        }
+        match tag {
+            Some(Value::Array(a)) => tag_list.extend(a),
+            Some(v) => tag_list.push(v),
+            None => {}
+        }
+    }
+    Ok(serde_json::json!({ "tags": tag_list, "thresholds": thresholds }))
 }
 
 fn rel(root: &Path, p: &Path) -> String {
@@ -418,15 +457,29 @@ fn zfight_capture(args: &Args, cfg: &Config) -> Result<cli::cache::Capture, Stri
 fn run() -> Result<i32, String> {
     let args = parse_args()?;
     let root = workspace_root()?;
+    if let Some(m) = &args.model {
+        if !args.app.is_empty() || args.zfight {
+            return Err(format!("--model checks one model on its own: no app and no --zfight
+{USAGE}"));
+        }
+        let (report, out, tag_list) = cli::model::run(&root, Path::new(m), args.render)?;
+        return finish(&root, &out, report, &tag_list);
+    }
     if args.app == "sandbox" {
         if args.report_only || args.sample.is_some() {
             return Err("--report-only and --sample: only kart-racer has the cached --zfight scan".into());
         }
         return run_sandbox(&args, &root);
     }
+    if args.app == "material-view" {
+        if args.report_only || args.sample.is_some() {
+            return Err("--report-only and --sample: only kart-racer has the cached --zfight scan".into());
+        }
+        return run_material_view(&args, &root);
+    }
     if args.app != "kart-racer" {
         return Err(format!(
-            "no geocheck adapter for {} yet: only kart-racer and sandbox have one (2D games use evani-geocheck-2d). An adapter runs the game natively and says how its collision works; see docs/GEOCHECK.md.",
+            "no geocheck adapter for {} yet: only kart-racer, sandbox and material-view have one (2D games use evani-geocheck-2d). An adapter runs the game natively and says how its collision works; see docs/GEOCHECK.md.",
             args.app
         ));
     }
@@ -645,6 +698,8 @@ fn run() -> Result<i32, String> {
             highlights: args.highlights,
             keep_raw: args.keep_raw,
             still_param: Some(kart::STILL_PARAM),
+            pre_steps: Vec::new(),
+            debug_config: view_config(&root, &args.app)?,
         };
         render::run(&setup, &stat, &mut report)?;
     } else {
@@ -831,12 +886,160 @@ fn run_sandbox(args: &Args, root: &Path) -> Result<i32, String> {
             // The spinners are movers: held still and hidden for the gap
             // and flicker shots, which judge the static world.
             still_param: Some(sandbox::STILL_PARAM),
+            pre_steps: Vec::new(),
+            debug_config: view_config(root, &args.app)?,
         };
         render::run(&setup, &stat, &mut report)?;
     } else {
         report.ran.push((Check::Gap, "not run (--no-render): gaps need captures in the live game.".into()));
         report.notes.push("Render phase skipped (--no-render): no gap, flicker or highlight captures.".into());
     }
+    finish(root, &out, report, &tag_list)
+}
+
+/// Distance between two camera eyes.
+fn dist3(a: [f32; 3], b: [f32; 3]) -> f32 {
+    ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
+}
+
+/// The material viewer: every target-pack scene staged natively by the
+/// app's dump test (`cli/material_view.rs`), each checked on its own (static
+/// overlaps, floating, mesh validation, camera clipping from four views
+/// round its home orbit and the moment's camera, z-fighting from those
+/// cameras), then the render phase per scene in the live game, the scene
+/// opened by its capture moment first. Nothing moves and nothing collides.
+fn run_material_view(args: &Args, root: &Path) -> Result<i32, String> {
+    let out = render::out_dir(root, &args.app);
+    std::fs::create_dir_all(&out).map_err(|e| format!("create {}: {e}", out.display()))?;
+    let mut report = Report {
+        app: args.app.clone(),
+        ..Report::default()
+    };
+    let mut cfg = Config::default();
+    let tag_list = load_config(root, &args.app, &mut cfg, &mut report.notes)?;
+    let dump = material_view::record(root, &out)?;
+    let mut shapes = Shapes::new();
+    shapes.add_library(&dump.library);
+    let views_dir = out.join("views");
+    let crops_dir = out.join("crops");
+    for d in [&views_dir, &crops_dir, &out.join("scenes")] {
+        let _ = std::fs::remove_dir_all(d);
+        std::fs::create_dir_all(d).map_err(|e| format!("create {}: {e}", d.display()))?;
+    }
+    let mut ran_first: Vec<(Check, String)> = Vec::new();
+    for sc in &dump.scenes {
+        let id = sc.id.clone();
+        let label = |m: &MeshInstance| material_view::label(m, &dump, &id);
+        let statics: Vec<(usize, MeshInstance)> = sc.instances.iter().copied().enumerate().collect();
+        let stat = Scene::build_with(&statics, &mut shapes, &label, cfg.clone(), &|i| i >= sc.decal_from);
+        let mut part = Report {
+            app: args.app.clone(),
+            ..Report::default()
+        };
+        part.notes.push(format!(
+            "Scene {id}: {} instances in {} objects ({} of them model parts), {:.0} x {:.0} m; {} sky dome instance(s) left out (the procedural sky, drawn round the camera, is the backdrop, not world geometry).",
+            stat.items.len(),
+            stat.objects.len(),
+            sc.instances.iter().filter(|m| dump.models.iter().any(|(mid, _)| *mid == m.mesh)).count(),
+            stat.bounds.extent()[0],
+            stat.bounds.extent()[2],
+            sc.sky_left_out
+        ));
+        for (mid, n) in &stat.skipped {
+            part.notes.push(format!("Scene {id}: not checked: {n} instance(s) of mesh {} (its geometry is not in the mesh library).", mid.0));
+        }
+        part.issues.extend(checks::overlaps(&stat));
+        part.ran.push((
+            Check::Overlap,
+            format!("exact convex intersection volume between parts of different objects, above {} m^3 (models are surfaces: their overlap volume is not measured).", cfg.overlap_volume),
+        ));
+        part.issues.extend(checks::floating(&stat));
+        part.ran.push((Check::Floating, format!("rays down from each object's base; gaps above {} m, or nothing below.", cfg.float_gap)));
+        part.issues.extend(checks::meshes_placed(&shapes, &sc.instances, &|mid| shapes.open_intended(mid)));
+        part.ran.push((
+            Check::Mesh,
+            "every drawn mesh validated, the models' highest-detail triangles included (degenerate, duplicate, open, non-manifold, flipped, inside-out, self-intersecting).".into(),
+        ));
+        let mut cams: Vec<CameraPose> = vec![sc.camera];
+        cams.extend(sc.views.iter().copied());
+        let frames: Vec<(f64, Camera, Vec<&Scene>)> =
+            cams.iter().enumerate().map(|(k, p)| (k as f64, Camera::from_pose(p, material_view::ASPECT), vec![&stat])).collect();
+        let mut cam_issues = checks::camera_clip(&frames);
+        for i in &mut cam_issues {
+            i.detail = format!("camera {}: {}", i.time.unwrap_or(0.0), i.detail);
+        }
+        part.issues.extend(cam_issues);
+        part.ran.push((Check::Camera, format!("the near plane tested against solids from the moment's camera and {} views round the home orbit.", sc.views.len())));
+        let snaps: Vec<checks::Snapshot> = cams
+            .iter()
+            .enumerate()
+            .map(|(k, p)| checks::Snapshot { time: k as f64, meshes: Vec::new(), decal_from: 0, camera: Camera::from_pose(p, material_view::ASPECT) })
+            .collect();
+        let viewers = viewers_of(&snaps, &[], material_view::VIEWPORT_H);
+        zfight_checks(&mut part, &stat, &viewers, &[], args.render);
+        part.ran.push((Check::Moving, "not applicable: a held moment has no movers (the turntable is off and the scenes draw the same every frame).".into()));
+        part.ran.push((Check::Collision, "not applicable: a viewer has no player and nothing collides.".into()));
+        tags::apply(&mut part.issues, &tag_list);
+        if args.render {
+            let sub = out.join("scenes").join(&id);
+            let views: Vec<Shot> = cams.iter().enumerate().map(|(k, p)| Shot { name: format!("{id}{}", k + 1), pose: *p }).collect();
+            // The moment's camera and the orbit view farthest from it, so the
+            // two debug views show the scene from two sides (critic round 2:
+            // view 1 and view 2 were the same picture).
+            let far = (1..cams.len()).max_by(|&a, &b| dist3(cams[a].eye, cams[0].eye).total_cmp(&dist3(cams[b].eye, cams[0].eye)));
+            let debug_views: Vec<Shot> = std::iter::once(0).chain(far).map(|k| views[k].clone()).collect();
+            let setup = Setup {
+                root,
+                app: &args.app,
+                out: &sub,
+                port: args.port,
+                tier: None,
+                views,
+                debug_views,
+                highlights: args.highlights.div_ceil(dump.scenes.len().max(1)),
+                keep_raw: args.keep_raw,
+                still_param: None,
+                pre_steps: vec![material_view::open_step(&id)],
+                debug_config: view_config(root, &args.app)?,
+            };
+            render::run(&setup, &stat, &mut part)?;
+            // The scene's pictures into the report's own folders.
+            for (from, to) in [(sub.join("views"), &views_dir), (sub.join("crops"), &crops_dir)] {
+                for f in std::fs::read_dir(&from).into_iter().flatten().flatten() {
+                    let _ = std::fs::copy(f.path(), to.join(f.file_name()));
+                }
+            }
+        }
+        for i in &mut part.issues {
+            i.detail = format!("scene {id}: {}", i.detail);
+            // Mesh findings name the model part, not the checker's mesh number.
+            for o in &mut i.objects {
+                let n = o.strip_prefix("mesh ").and_then(|r| r.split(' ').next()).and_then(|n| n.parse::<u16>().ok());
+                if let Some((_, name)) = n.and_then(|n| dump.models.iter().find(|(mid, _)| mid.0 == n)) {
+                    *o = format!("{id}/model {name}");
+                }
+            }
+        }
+        if ran_first.is_empty() {
+            ran_first = part.ran.clone();
+        }
+        report.issues.extend(part.issues);
+        report.notes.extend(part.notes);
+    }
+    for (c, text) in ran_first {
+        report.ran.push((c, format!("per scene ({} scenes, each its own world): {text}", dump.scenes.len())));
+    }
+    if !args.render {
+        report.notes.push("Render phase skipped (--no-render): no gap, flicker or highlight captures.".into());
+    }
+    report.notes.insert(
+        0,
+        format!(
+            "Native staging: the app's geocheck_dump test opened {} scenes as their capture moments do; {} model shape(s) checked from their highest-detail triangles.",
+            dump.scenes.len(),
+            dump.models.len()
+        ),
+    );
     finish(root, &out, report, &tag_list)
 }
 
@@ -859,9 +1062,6 @@ fn finish(root: &Path, out: &Path, mut report: Report, tag_list: &[Tag]) -> Resu
     Ok(if un > 0 { 1 } else { 0 })
 }
 
-#[cfg(test)]
-mod zfight_tests;
-
 fn main() {
     match run() {
         Ok(code) => std::process::exit(code),
@@ -869,5 +1069,37 @@ fn main() {
             eprintln!("evani-geocheck: {e}");
             std::process::exit(2);
         }
+    }
+}
+
+#[cfg(test)]
+mod zfight_tests;
+
+/// Guard (critic round 6 of material-view: the debug views painted props the
+/// report did not count): the live debug view gets the report's own tags
+/// and thresholds, read from the same files, for the material viewer's real
+/// config.
+#[cfg(test)]
+mod view_config_tests {
+    use super::*;
+
+    #[test]
+    fn the_debug_view_step_carries_the_reports_tags_and_thresholds() {
+        let root = workspace_root().expect("workspace root");
+        let mut cfg = Config::default();
+        let mut notes = Vec::new();
+        let report_tags = load_config(&root, "material-view", &mut cfg, &mut notes).expect("config");
+        assert!(!report_tags.is_empty(), "material-view tags its bottle cork");
+        let vc = view_config(&root, "material-view").expect("view config");
+        let step = cli::render::debug_step(true, &vc);
+        assert_eq!(step["cmd"], "debug.geometry");
+        let p = &step["params"];
+        assert_eq!(p["on"], true);
+        let view_tags = tags::parse(&p["tags"]).expect("the step's tags parse as the live command parses them");
+        assert_eq!(view_tags, report_tags, "the debug view's tags are the report's");
+        let mut view_cfg = Config::default();
+        view_cfg.apply_json(&p["thresholds"]).expect("the step's thresholds apply");
+        assert_eq!(format!("{view_cfg:?}"), format!("{cfg:?}"), "the debug view's thresholds are the report's");
+        assert_eq!(cli::render::debug_step(false, &vc)["params"], serde_json::json!({ "on": false }));
     }
 }

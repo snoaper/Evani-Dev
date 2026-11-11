@@ -10,6 +10,8 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { waitDevToolsUrl } from '../live-check/devtools-port.mjs';
+import { acquireGpuLock } from './gpu-lock.mjs';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -111,6 +113,9 @@ export const STUBS = `(() => {
 export async function startChrome({ chrome, width = 1920, height = 1080, flags = [], prefix = 'evani-chrome-' } = {}) {
   const path = findChrome(chrome);
   if (!path) throw new Error('no Chrome found (set EVANI_CHROME or pass --chrome)');
+  // One rendering Chrome at a time on this PC: wait for the GPU capture lock
+  // (tools/bench-runner/gpu-lock.mjs); stop() gives it back.
+  const releaseGpu = await acquireGpuLock(prefix);
   const isShell = /headless_shell|chrome-headless-shell/.test(path);
   const profile = mkdtempSync(join(tmpdir(), prefix));
   const all = [
@@ -129,11 +134,20 @@ export async function startChrome({ chrome, width = 1920, height = 1080, flags =
     'about:blank',
   ];
   if (!isShell) all.unshift('--headless=new');
-  const proc = spawn(path, all, { stdio: 'ignore', windowsHide: true });
+  let proc;
+  try {
+    proc = spawn(path, all, { stdio: 'ignore', windowsHide: true });
+  } catch (e) {
+    releaseGpu();
+    throw e;
+  }
   let exited = false;
   proc.on('exit', () => (exited = true));
   let cdp = null;
+  let stopped = false;
   const stop = async () => {
+    if (stopped) return;
+    stopped = true;
     if (cdp) {
       try {
         await cdp.send('Browser.close', {}, undefined, 5000);
@@ -150,17 +164,10 @@ export async function startChrome({ chrome, width = 1920, height = 1080, flags =
     } catch {
       // the profile is in the temp folder; leftovers are harmless
     }
+    releaseGpu();
   };
   try {
-    let wsUrl = null;
-    for (let i = 0; i < 200 && !wsUrl && !exited; i++) {
-      const f = join(profile, 'DevToolsActivePort');
-      if (existsSync(f)) {
-        const [port, p] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-        if (port && p) wsUrl = `ws://127.0.0.1:${port}${p}`;
-      }
-      if (!wsUrl) await sleep(100);
-    }
+    let wsUrl = await waitDevToolsUrl(profile, { exited: () => exited });
     if (!wsUrl) throw new Error('Chrome did not open its debugging port');
     cdp = await Cdp.connect(wsUrl);
     const ver = await cdp.send('Browser.getVersion');

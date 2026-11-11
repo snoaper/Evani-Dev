@@ -31,6 +31,63 @@ anim = ["models", "dep:evani-anim", "evani-render/skinning"]
 # the box layout crate (evani-ui, S3-13b) comes with it.
 ui = ["evani-render/msdf", "dep:evani-ui"]
 live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-kit-match-3/showcase"]
+# The material library (Evani.Materials, 2026-11-03: "the material library
+# in everything"): the same lines as the sandbox's, so this game can list any
+# catalogue recipe or condition in evani.toml `[materials]`.
+# `[materials]` in evani.toml (P10b, docs/materials/BATCH1_BUILD_PLAN.md 2.2):
+# `recipes` and `conditions` map to these. `material-recipes` brings the recipe
+# stage; `recipe-<name>` and `cond-<layer>` add one recipe or layer each;
+# `material-layers` (cloth), `char-materials` (skin, hair, eye) and
+# `material-nature` (water, glass, foliage, thin) are the families. All off
+# unless listed, so a game that lists none downloads none of it. `cargo xtask
+# check` names any of these lines a game is missing.
+material-recipes = ["models", "evani-render/material-recipes", "dep:evani-material-recipes"]
+recipe-metal = ["material-recipes", "evani-material-recipes/recipe-metal"]
+recipe-paint = ["material-recipes", "evani-material-recipes/recipe-paint"]
+recipe-plastic = ["material-recipes", "evani-material-recipes/recipe-plastic"]
+recipe-wood = ["material-recipes", "evani-material-recipes/recipe-wood"]
+recipe-wood-layouts = ["material-recipes", "evani-material-recipes/recipe-wood-layouts"]
+recipe-organic-food = ["material-recipes", "evani-material-recipes/recipe-organic-food"]
+# Cut-out holes (batch 3 B3-P2; `"cutout"` in `[materials] recipes`): grates,
+# chain-link, wire mesh and lattice, and the hole-aware shadow pipeline.
+material-cutout = ["material-recipes", "evani-render/material-recipes-cut"]
+# The see-through pass (batch 3 B3-P3; `"blend"` in `[materials] recipes`):
+# glass, smoke, steam, fire and holograms drawn blended, sorted far to near;
+# `"refraction"` adds the copy frosted, wavy and block glass bend and blur.
+material-blend = ["material-recipes", "evani-render/material-recipes-blend"]
+material-refract = ["material-blend", "evani-render/material-recipes-refract"]
+recipe-glass = ["material-recipes", "evani-material-recipes/recipe-glass"]
+recipe-bark = ["material-recipes", "evani-material-recipes/recipe-bark"]
+recipe-stone = ["material-recipes", "evani-material-recipes/recipe-stone"]
+recipe-masonry = ["material-recipes", "evani-material-recipes/recipe-masonry"]
+recipe-plaster = ["material-recipes", "evani-material-recipes/recipe-plaster"]
+recipe-ground = ["material-recipes", "evani-material-recipes/recipe-ground"]
+recipe-cloth = ["material-recipes", "evani-material-recipes/recipe-cloth"]
+recipe-leather = ["material-recipes", "evani-material-recipes/recipe-leather"]
+recipe-fur = ["material-recipes", "evani-material-recipes/recipe-fur"]
+recipe-feather = ["material-recipes", "evani-material-recipes/recipe-feather"]
+recipe-scales = ["material-recipes", "evani-material-recipes/recipe-scales"]
+recipe-hide = ["material-recipes", "evani-material-recipes/recipe-hide"]
+recipe-keratin = ["material-recipes", "evani-material-recipes/recipe-keratin"]
+recipe-thin = ["material-recipes", "evani-material-recipes/recipe-thin"]
+recipe-organic = ["material-recipes", "evani-material-recipes/recipe-organic"]
+recipe-ceramic = ["material-recipes", "evani-material-recipes/recipe-ceramic"]
+recipe-gem = ["material-recipes", "evani-material-recipes/recipe-gem"]
+recipe-ice = ["material-recipes", "evani-material-recipes/recipe-ice"]
+recipe-fire = ["material-recipes", "evani-material-recipes/recipe-fire"]
+recipe-glow = ["material-recipes", "evani-material-recipes/recipe-glow"]
+recipe-foliage = ["material-recipes", "evani-material-recipes/recipe-foliage"]
+cond-wet = ["material-recipes", "evani-material-recipes/cond-wet"]
+cond-mud = ["material-recipes", "evani-material-recipes/cond-mud"]
+cond-dust = ["material-recipes", "evani-material-recipes/cond-dust"]
+cond-snow = ["material-recipes", "evani-material-recipes/cond-snow"]
+cond-wear = ["material-recipes", "evani-material-recipes/cond-wear"]
+cond-oxide = ["material-recipes", "evani-material-recipes/cond-oxide"]
+cond-growth = ["material-recipes", "evani-material-recipes/cond-growth"]
+cond-blood = ["material-recipes", "evani-material-recipes/cond-blood"]
+material-layers = ["models", "evani-render/material-layers"]
+char-materials = ["models", "evani-render/char-materials"]
+material-nature = ["models", "dep:evani-material-nature"]
 
 [dependencies]
 evani-core.workspace = true
@@ -44,6 +101,8 @@ evani-live = { workspace = true, optional = true }
 evani-gltf = { workspace = true, optional = true }
 evani-ui = { workspace = true, optional = true }
 evani-anim = { workspace = true, optional = true }
+evani-material-recipes = { workspace = true, optional = true }
+evani-material-nature = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen.workspace = true

@@ -8,11 +8,12 @@
 //! same keys, pad and touch as offline) go out as a 3-byte input, and the
 //! client's predicted race (a spectator: the played one) is copied into the
 //! game's world, seen from the player's own kart, for the kit's drawing,
-//! sound and HUD. Every view and input is bytes; the host carries them.
+//! sound and HUD, with every kart eased over the prediction's corrections
+//! ([`NetSmooth`]: drawing only). Every view and input is bytes; the host carries them.
 
 use evani_core::ecs::World;
 use evani_kit_kart_racer::kart::Controls;
-use evani_kit_kart_racer::net::{KartInput, NetRace};
+use evani_kit_kart_racer::net::{DT, KartInput, NetRace, NetSmooth};
 use evani_kit_kart_racer::race::{Phase, Race};
 use evani_net::lockstep::{ClientConfig, LockstepClient, LockstepGame};
 use evani_net::wire::Writer;
@@ -38,6 +39,8 @@ pub struct Online {
     link: Box<dyn Link>,
     client: Option<LockstepClient<NetRace>>,
     shown: u64,
+    /// Eases the drawn karts over the prediction's corrections.
+    smooth: NetSmooth,
     ticks: u64,
     buf: Vec<u8>,
     w: Writer,
@@ -53,6 +56,7 @@ impl Online {
             link,
             client: None,
             shown: 0,
+            smooth: NetSmooth::default(),
             ticks: 0,
             buf: Vec::new(),
             w: Writer::new(),
@@ -125,7 +129,10 @@ impl Online {
             _ => Some(usize::from(self.link.follow().unwrap_or(0))),
         };
         match client.display().show(world, follow, self.shown) {
-            Ok(t) => self.shown = t,
+            Ok(t) => {
+                self.shown = t;
+                self.smooth.apply_world(world, DT);
+            }
             Err(e) => self.error = Some(format!("online: view: {e}")),
         }
         // The touch controls belong to a seated player's race only.

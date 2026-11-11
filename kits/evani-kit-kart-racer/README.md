@@ -49,10 +49,10 @@ Gamepads work too (pad 1 for player 1, pad 2 for player 2). Esc, P or Start paus
 
 - Start a one-player race, hold W, and drift through the first bend (steer and hold Left Shift) until the sparks turn orange, then let go for a boost.
 - Drive through a row of floating item boxes and press E to use what you get; from the back of the pack you get stronger items.
-- Pause with Esc, open Settings, switch effects off and on (outlines, speed lines, shake, bloom) and change a key.
+- Pause with Esc, open Settings, switch effects off and on (speed lines, shake, bloom) and change a key.
 - Go back to the title and start a two-player race: player 2 drives with the arrow keys, Right Shift and Enter.
 - Finish three laps: first to third gets the podium, fourth or lower loses.
 
 ## Effects
 
-The game lists `outline`, `speedlines`, `shake` and `bloom` in its `evani.toml`. The tier budget keeps all four on Medium and up (8 of the points), drops bloom on Low, and on VR keeps outline and bloom (speed lines and shake are off for comfort). On tiers with fewer than 120 000 triangles per frame (Low) the kit draws every other tree.
+The game lists `speedlines`, `shake`, `bloom` and `shadows` in its `evani.toml`; it leaves out the ink `outline` (the owner prefers the clean look without dark edges, 2026-10-29), so no tier draws ink lines. The tier budget keeps the effects on Medium and up, drops bloom on Low, and on VR keeps bloom (speed lines and shake are off for comfort). On tiers with fewer than 120 000 triangles per frame (Low) the kit draws every other tree.

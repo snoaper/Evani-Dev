@@ -15,7 +15,7 @@
 //!   distance, sprites, orbit camera), here so native tools draw the same.
 
 pub mod draw;
-pub mod place;
+pub mod place; #[cfg(any(test, feature = "game-pass-demo"))] pub mod game_pass_demo;
 
 use evani_core::ecs::{Stage, SystemDesc, World};
 use evani_core::formulas::{FormulaId, FormulaJson, Formulas};
@@ -116,7 +116,7 @@ impl KitPlugin for ExampleKitPlugin {
     }
 
     fn build(&self, kit: &mut PluginContext) -> Result<(), PluginError> {
-        kit.component::<Spinner>("example.spinner");
+        kit.component::<Spinner>("example.spinner"); #[cfg(feature = "game-pass-demo")] game_pass_demo::register(kit)?;
 
         let spin_speed = kit.param_f32(
             ParamDef::f32("kit.example.spin_speed", 1.5)

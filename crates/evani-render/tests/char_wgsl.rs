@@ -4,12 +4,15 @@
 //! (the plain lit pass) and the real `char_params` body at every quality,
 //! and so does the shipped forward source.
 
-#![cfg(feature = "char-materials")]
+#![cfg(all(feature = "char-materials", not(feature = "relief")))]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)] // test code: a failed read is a failed test
 
 use evani_core::slots::ShaderSlots;
 use evani_material_character::params::{Values, body};
-use evani_material_character::shader::{CHAR_PARAMS, patch_lit};
+use evani_material_character::shader::{CHAR_PARAMS, DATA_BODY, patch_lit};
+
+/// The body the engine ships: the constants read from the char_live uniform.
+const DATA: Option<u32> = Some(u32::MAX);
 use evani_material_character::lut;
 use evani_render::model::surface::{SPECULAR, SURFACE_PARAMS, SURFACE_WORDS};
 use evani_render::splice::{Bodies, splice};
@@ -49,7 +52,9 @@ fn slots(quality: Option<u32>) -> ShaderSlots {
     s.declare(SPECULAR);
     s.declare(SURFACE_PARAMS);
     s.declare(CHAR_PARAMS);
-    if let Some(q) = quality {
+    if quality == DATA {
+        s.set_default("char_params", DATA_BODY, "test").unwrap();
+    } else if let Some(q) = quality {
         let v = Values { quality: q as f32, ..Values::default() };
         s.set_default("char_params", &body(&v, q, 4, &lut::fitted()), "test").unwrap();
     }
@@ -85,12 +90,15 @@ fn patched_lit_pass_validates_everywhere() {
             let src = parts.concat();
             for msaa in [1, 4] {
                 let patched = patch_lit(&src, msaa).expect("every patched line is in the lit pass");
-                for q in [None, Some(0), Some(1), Some(2), Some(3)] {
+                for q in [None, Some(0), Some(1), Some(2), Some(3), DATA] {
                     let name = format!("char {tail_name} skin={skin} msaa={msaa} q={q:?}");
                     let s = splice(&patched, &slots(q), Bodies::Current).unwrap_or_else(|e| panic!("{name}: {e:?}"));
                     let m = validate(&name, &s.source);
                     assert!(writes_mask(&m), "{name}: the mask output");
                     assert_eq!(uniform_size(&m, "surface"), Some(SURFACE_WORDS as u32 * 4), "{name}");
+                    if q.is_some() {
+                        assert_eq!(uniform_size(&m, "char_live"), Some(16 * evani_material_character::params::ENTRIES as u32), "{name}");
+                    }
                 }
             }
         }
@@ -126,7 +134,7 @@ fn shipped_forward_patches_and_validates() {
     }
     for msaa in [1, 4] {
         let p = patch_lit(fwd, msaa).expect("the shipped lit pass patches");
-        let s = splice(&p, &slots(Some(2)), Bodies::Current).unwrap();
+        let s = splice(&p, &slots(DATA), Bodies::Current).unwrap();
         let m = validate(&format!("shipped msaa={msaa}"), &(s.source + &stubs));
         assert!(writes_mask(&m));
     }

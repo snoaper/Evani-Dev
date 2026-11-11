@@ -172,6 +172,9 @@ pub(crate) fn process(world: &World, token: u64, text: &str) {
         )),
         "telemetry.subscribe" => crate::telemetry::subscribe(world, &params),
         "telemetry.unsubscribe" => crate::telemetry::unsubscribe(world, &params),
+        "motion.trace" => crate::motion::start(world, &params),
+        "motion.read" => crate::motion::read(world, &params),
+        "motion.stop" => crate::motion::stop(world),
         "debug.geometry" => match crate::geometry::command(world, token, &id, &params) {
             Ok(Some(now)) => Ok(now),
             Ok(None) => return,

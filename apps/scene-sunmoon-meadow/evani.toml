@@ -1,0 +1,28 @@
+# The Sun and moon meadow Scene's module manifest (docs/SCENES.md). `cargo xtask
+# build scene-sunmoon-meadow` turns this into Cargo features of the
+# evani-scene-sunmoon-meadow crate; anything not listed is not built.
+name = "scene-sunmoon-meadow"
+kit = "scene-sunmoon-meadow"      # crate kits/evani-kit-scene-sunmoon-meadow
+look = "photoreal"                # crate looks/evani-look-photoreal (its daylight preset)
+effects = []                      # no fx module
+
+[modules]
+physics = "none"
+live = true          # dev only; `--ship` builds always drop it
+# The procedural library: the sky dome, the sun and moon discs and the
+# meadow's long grass (Asset Studio column 38, round 8).
+procedural = ["sky-dynamic-sky-dome", "sky-sun-and-moon-discs", "vegetation-long-grass"]
+
+# What a reviewer should try (`cargo xtask review` puts it on the card).
+[review]
+try = [
+  "It opens at golden hour, looking over the dark meadow at a small white sun low on the horizon with a thin crescent moon high above it.",
+  "Fly with W A S D, up with Space or E, down with C or Q, faster with Shift. Hold the mouse to look, or click once and then again to lock the mouse.",
+  "On a phone: the left stick flies, dragging on the right looks round, Up and Down change height, the pause button top right holds everything.",
+  "Wait: the sun sets, dusk comes and the night is moonlit; the day keeps going round (30 minutes a day).",
+]
+
+# A Scene on Evani.app: a free-flying camera, no character, no goals, timer or
+# fail state (docs/SCENES.md, docs/PLAYGROUNDS.md).
+[playground]
+free_roam = true

@@ -37,6 +37,9 @@ pub struct SurfaceBake {
     /// past the last mip.
     pub mean_color: [f32; 3],
     pub mean_rough: f32,
+    /// The tile's mean height (0..1): what a fine feature's height fades to
+    /// where it is under two pixels on screen (`fine_width`).
+    pub mean_height: f32,
     /// The tile (m) and relief depth (m) baked.
     pub tile: [f32; 2],
     pub depth: f32,
@@ -170,11 +173,13 @@ pub fn bake(pattern: &Pattern, size: u32) -> SurfaceBake {
     let inv = 1.0 / top.len() as f32;
     let mut mean_color = [0.0f32; 3];
     let mut mean_rough = 0.0f32;
+    let mut mean_height = 0.0f32;
     for t in top {
         for (m, c) in mean_color.iter_mut().zip(t.color) {
             *m += c * inv;
         }
         mean_rough += t.rough * inv;
+        mean_height += t.height * inv;
     }
     let texels = all.iter().flatten().map(|t| encode(t, smax)).collect();
     SurfaceBake {
@@ -184,6 +189,7 @@ pub fn bake(pattern: &Pattern, size: u32) -> SurfaceBake {
         slope_scale: smax,
         mean_color,
         mean_rough,
+        mean_height,
         tile,
         depth,
     }

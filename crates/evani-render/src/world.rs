@@ -182,6 +182,27 @@ impl Default for RenderWorld {
 /// Default darkness of a blob shadow's centre.
 pub const DEFAULT_BLOB_STRENGTH: f32 = 0.7;
 
+/// A cast blob's packing ([`RenderWorld::draw_blob_cast`]): the radius word
+/// holds `radius + BLOB_CAST_STEP * steps`, `steps` the height in
+/// [`BLOB_CAST_UNIT`] m (forward.wgsl `blob_vis` decodes the same numbers).
+pub const BLOB_CAST_STEP: f32 = 16.0;
+/// The height step of a cast blob (m).
+pub const BLOB_CAST_UNIT: f32 = 0.05;
+
+/// The radius word of a blob under an object `height` m tall (radius kept
+/// under [`BLOB_CAST_STEP`], height at most 50 m).
+pub fn pack_blob_cast(radius: f32, height: f32) -> f32 {
+    let r = radius.clamp(1e-3, BLOB_CAST_STEP - 0.01);
+    let steps = (height.clamp(0.0, 50.0) / BLOB_CAST_UNIT).round();
+    r + BLOB_CAST_STEP * steps
+}
+
+/// A blob's radius word as (radius, height): what `blob_vis` reads.
+pub fn unpack_blob(w: f32) -> (f32, f32) {
+    let steps = (w / BLOB_CAST_STEP).floor();
+    (w - BLOB_CAST_STEP * steps, steps * BLOB_CAST_UNIT)
+}
+
 impl RenderWorld {
     pub fn draw_mesh(&mut self, m: MeshInstance) {
         self.meshes.push(m);
@@ -201,6 +222,19 @@ impl RenderWorld {
     /// A blob shadow of `radius` metres on the ground at `ground`.
     pub fn draw_blob(&mut self, ground: [f32; 3], radius: f32) {
         self.blobs.push([ground[0], ground[1], ground[2], radius]);
+    }
+
+    /// A blob shadow under an object `height` metres tall. Where there is a
+    /// shadow map it is the same disc as [`RenderWorld::draw_blob`]; without
+    /// one (Lite and Low) it also casts: the disc is swept away from the sun
+    /// as far as the object's shadow would reach, fading along it, so a
+    /// bench or a pillar throws its shadow the way the map's would rather
+    /// than a ring hidden under it (critic round 6 of material-view). The
+    /// radius must stay under [`BLOB_CAST_STEP`] m; the height is kept in
+    /// [`BLOB_CAST_UNIT`] m steps, packed into the radius word (forward.wgsl
+    /// `blob_vis` reads it back).
+    pub fn draw_blob_cast(&mut self, ground: [f32; 3], radius: f32, height: f32) {
+        self.blobs.push([ground[0], ground[1], ground[2], pack_blob_cast(radius, height)]);
     }
 
     /// This frame's canvas HUD: the sprites on [`RenderWorld::hud_layers`]
@@ -355,5 +389,32 @@ mod tests {
         };
         assert_eq!(RenderWorld::material(&look, "glow"), 1);
         assert_eq!(RenderWorld::material(&look, "nope"), 0);
+    }
+
+    /// Guard (critic round 6 of material-view: on Low the bench, pillar and
+    /// easel cast nothing a viewer could see): a cast blob keeps its radius
+    /// and height through the packing, a plain blob reads back as height 0,
+    /// and the forward shader decodes the same numbers and casts only where
+    /// there is no shadow map.
+    #[test]
+    fn cast_blobs_pack_their_height_and_the_shader_reads_it() {
+        for (r, h) in [(0.9, 0.45), (0.72, 1.8), (0.14, 1.9), (2.5, 0.0), (15.0, 50.0)] {
+            let (r2, h2) = unpack_blob(pack_blob_cast(r, h));
+            assert!((r2 - r).abs() < 2e-3 && (h2 - h).abs() < BLOB_CAST_UNIT * 0.51, "{r} {h} -> {r2} {h2}");
+        }
+        assert_eq!(unpack_blob(0.8), (0.8, 0.0));
+        let mut rw = RenderWorld::default();
+        rw.draw_blob([0.0; 3], 0.8);
+        rw.draw_blob_cast([1.0, 0.0, 2.0], 0.9, 0.45);
+        assert_eq!(rw.blobs[0][3], 0.8);
+        assert!((unpack_blob(rw.blobs[1][3]).1 - 0.45).abs() < 1e-3);
+        let src = crate::shaders::FORWARD.source;
+        let f = &src[src.find("fn blob_vis(").expect("blob_vis")..];
+        let f = &f[..f.find("
+}").expect("blob_vis end")];
+        assert!(f.contains(&format!("floor(b.w / {BLOB_CAST_STEP:.1})")) && f.contains(&format!("b.w - {BLOB_CAST_STEP:.1} * k")), "the shader's packing differs");
+        assert!(f.contains(&format!("k * {BLOB_CAST_UNIT}")), "the shader's height step differs");
+        assert!(f.contains("frame.shadow.x < 0.5"), "a cast blob must cast only without a shadow map (Ultra unchanged)");
+        assert!(f.contains("select(0.0, 1.0, len > 0.0)"), "a plain blob must stay the round disc");
     }
 }

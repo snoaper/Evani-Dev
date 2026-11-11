@@ -184,10 +184,10 @@ pub fn write_shading(out: &mut [f32; FRAME_WORDS], s: &Shading) {
         s.texel,
         s.pcf_radius as f32,
     ]);
-    let blobs = if s.shadow_map { &[][..] } else { &s.blobs[..s.blobs.len().min(MAX_BLOBS)] };
+    let blobs = if s.shadow_map { &[][..] } else { &s.blobs[..s.blobs.len().min(MAX_BLOBS)] }; #[cfg(feature = "contact-shadows")] let blobs = { let _ = blobs; &s.blobs[..s.blobs.len().min(MAX_BLOBS - CONTACT_FIRST)] };
     out[at + 20..at + 24].copy_from_slice(&[blobs.len() as f32, s.blob_strength, s.normal_offset, s.bias]);
     let b = at + 24;
-    out[b..].fill(0.0);
+    out[b..].fill(0.0); #[cfg(feature = "contact-shadows")] let b = b + CONTACT_FIRST * 4;
     for (i, v) in blobs.iter().enumerate() {
         out[b + i * 4..b + i * 4 + 4].copy_from_slice(v);
     }
@@ -1485,3 +1485,213 @@ const LAYERS_FULL: &str = include_str!("../shaders/model_lit_layers.wgsl");
 const LAYERS_BYTES: [u8; wgsl_strip(LAYERS_FULL.as_bytes(), &mut [])] = wgsl_stripped(LAYERS_FULL.as_bytes());
 #[cfg(all(feature = "material-layers", not(feature = "relief")))]
 const LIT_PARTS: [&[u8]; 7] = [LIT_BASE.as_bytes(), &LIT_BYTES, &LAYERS_BRDF_BYTES, &LAYERS_BYTES, LIT_POINTS.as_bytes(), LIT_AO.as_bytes(), LIT_SKY.as_bytes()];
+
+/// The cut-out depth pass (batch 3 B3-P2, `material-recipes-cut`): the
+/// model shadow uniform and vertex input (never the skinned stage, whose
+/// joints share binding 1.0) and `model_cut_shadows.wgsl`, stripped; the
+/// recipe crate's `cut.wgsl` is appended by [`model_cut_shadows`].
+#[cfg(all(feature = "models", feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))]
+const MODEL_CUT_SHADOWS_FULL: &str = concat!(
+    include_str!("../shaders/shadows_depth.wgsl"),
+    include_str!("../shaders/model_shadows.wgsl"),
+    include_str!("../shaders/model_cut_shadows.wgsl")
+);
+#[cfg(all(feature = "models", feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))]
+const MODEL_CUT_SHADOWS_BYTES: [u8; wgsl_strip(MODEL_CUT_SHADOWS_FULL.as_bytes(), &mut [])] = wgsl_stripped(MODEL_CUT_SHADOWS_FULL.as_bytes());
+
+/// The whole cut-out depth module: [`MODEL_CUT_SHADOWS_FULL`] stripped, then
+/// the recipe crate's pattern maths (`evani_material_recipes::shader::CUT_WGSL`).
+#[cfg(all(feature = "models", feature = "shadows", any(feature = "material-recipes-cut", feature = "material-recipes-blend"), not(feature = "relief")))]
+///
+/// Batch 3 B3-P3: the same module serves the see-through parts with
+/// `material-recipes-blend` (their stipple, `BLEND_SHADOW_WGSL`). Its
+/// fragment stage asks `rc_shadow_drop`, which this assembles: a see-through
+/// block's stipple first (`rc_blend_drop`, -1 when the block is not
+/// see-through), then the cut-out's holes; a build with only one of the two
+/// gets a stand-in for the other.
+pub fn model_cut_shadows() -> String {
+    let tail = evani_material_recipes::shader::shadow_tail(cfg!(feature = "material-recipes-cut"), cfg!(feature = "material-recipes-blend"));
+    format!("{}\n{tail}", utf8(&MODEL_CUT_SHADOWS_BYTES))
+}
+
+// Contact shadows on every tier (feature `contact-shadows`, critic round 3
+// of material-view: on High and Ultra nothing grounded the pouf, because
+// the shadow map replaced the blob shadows and a high sun hides the cast
+// shadow behind the subject). The blobs stay on while the shadow map is on:
+// they move up past the shadow cascade words (`blobs[0..5]`, shadow_ext.rs),
+// so they start at `CONTACT_FIRST` on every tier, and the forward module's
+// blob loop reads from there (`contact_patch`, at pipeline build). A game
+// without the feature writes and reads exactly as before. Declared last: no
+// line above moves.
+/// Where the blobs start in the forward uniform's blob array with
+/// `contact-shadows` (after the near cascade's matrix and its words).
+#[cfg(feature = "contact-shadows")]
+pub const CONTACT_FIRST: usize = 5;
+/// The blob loop as the forward module ships it, and as the feature reads it.
+#[cfg(feature = "contact-shadows")]
+pub const CONTACT_HOOKS: [(&str, &str); 2] = [
+    ("let count = min(u32(max(frame.blob_info.x, 0.0)), 32u);", "let count = min(u32(max(frame.blob_info.x, 0.0)), 27u);"),
+    ("let b = frame.blobs[i];", "let b = frame.blobs[i + 5u];"),
+];
+
+/// The mesh pass's light: the blob dims the sun only.
+#[cfg(feature = "contact-shadows")]
+pub const CONTACT_LIGHT: [(&str, &str); 2] = [
+    ("let vis = shadow_vis(in.world, n) * blob_vis(in.world, n);", "let blob = blob_vis(in.world, n); let vis = shadow_vis(in.world, n) * blob;"),
+    ("        c = base * (", "        c = base * (blob * "),
+];
+
+/// Where the function starting `src` ends: its closing brace at the start
+/// of a line (either line ending: a checkout may carry CRLF).
+#[cfg(feature = "contact-shadows")]
+fn fn_end(src: &str) -> Option<usize> {
+    src.match_indices("\n}").map(|(i, _)| i).find(|i| matches!(src.as_bytes().get(i + 2), None | Some(b'\n' | b'\r')))
+}
+
+/// The blob loop of a spliced forward-based module reads the blobs where
+/// `contact-shadows` writes them, and the mesh pass's contact disc dims the
+/// sky light (the ambient term) as well as the sun, as the model pass's
+/// does (`lit_hemi(n) * ao * blob`). Critic round 4 of material-view: on Low
+/// the yard's bench and pillar had no contact shadow while the cushion (a
+/// model) had a soft one; under the yard's bright sky the disc dimmed only
+/// the direct sun and barely showed. A module without the loop is unchanged.
+#[cfg(feature = "contact-shadows")]
+pub fn contact_patch(mut sp: crate::splice::Spliced) -> crate::splice::Spliced {
+    if sp.source.contains(CONTACT_HOOKS[1].0) {
+        for (from, to) in CONTACT_HOOKS {
+            sp.source = sp.source.replace(from, to);
+        }
+        // Only `fs_main`, the mesh pass, and only when both lines are there.
+        if let Some(at) = sp.source.find("fn fs_main(")
+            && let Some(len) = fn_end(&sp.source[at..])
+        {
+            let body = &sp.source[at..at + len];
+            if CONTACT_LIGHT.iter().all(|(from, _)| body.matches(from).count() == 1) {
+                let mut patched = body.to_string();
+                for (from, to) in CONTACT_LIGHT {
+                    patched = patched.replacen(from, to, 1);
+                }
+                sp.source.replace_range(at..at + len, &patched);
+            }
+        }
+    }
+    sp
+}
+
+#[cfg(all(test, feature = "contact-shadows"))]
+mod contact_tests {
+    use super::*;
+
+    /// Guard: the blobs stay in the uniform when the shadow map is on, from
+    /// `CONTACT_FIRST`, clear of the cascade words, and the count says how
+    /// many (at most the slots left).
+    #[test]
+    fn blobs_stay_on_with_the_shadow_map() {
+        let many = [[1.0, 0.0, 2.0, 0.5]; MAX_BLOBS];
+        let mut out = [0.0f32; FRAME_WORDS];
+        let s = Shading { shadow_map: true, blobs: &many[..3], blob_strength: 0.7, ..Shading::default() };
+        write_shading(&mut out, &s);
+        let at = SHADING_AT + 24;
+        assert_eq!(out[SHADING_AT + 20], 3.0);
+        assert_eq!(&out[at..at + CONTACT_FIRST * 4], &[0.0; CONTACT_FIRST * 4][..]);
+        assert_eq!(&out[at + CONTACT_FIRST * 4..at + CONTACT_FIRST * 4 + 4], &[1.0, 0.0, 2.0, 0.5]);
+        let s = Shading { shadow_map: false, blobs: &many, ..Shading::default() };
+        write_shading(&mut out, &s);
+        assert_eq!(out[SHADING_AT + 20] as usize, MAX_BLOBS - CONTACT_FIRST);
+        // The shader's cap matches.
+        assert!(CONTACT_HOOKS[0].1.contains(&format!("{}u)", MAX_BLOBS - CONTACT_FIRST)));
+        assert!(CONTACT_HOOKS[1].1.contains(&format!("i + {CONTACT_FIRST}u")));
+    }
+
+    /// Guard: the shipped forward source still holds the blob loop exactly
+    /// as the patch expects (a reworded loop would silently read the
+    /// cascade words as blobs), and the patched module still compiles.
+    #[test]
+    fn the_contact_patch_finds_the_blob_loop() {
+        for (from, _) in CONTACT_HOOKS {
+            assert_eq!(FORWARD.source.matches(from).count(), 1, "{from}");
+        }
+        let sp = contact_patch(crate::splice::Spliced { source: FORWARD.source.to_string(), spans: Vec::new() });
+        for (from, to) in CONTACT_HOOKS {
+            assert!(!sp.source.contains(from) && sp.source.contains(to), "{to}");
+        }
+        // Critic round 4 of material-view: the mesh pass's contact disc dims
+        // the sky light too (the yard's bench and pillar on Low), once.
+        let fs = &sp.source[sp.source.find("fn fs_main(").expect("fs_main")..];
+        let fs = &fs[..fn_end(fs).expect("fs_main end")];
+        for (from, to) in CONTACT_LIGHT {
+            assert_eq!(fs.matches(to).count(), 1, "{to}");
+            assert!(!fs.contains(from) || to.contains(from), "{from}");
+        }
+        assert!(fs.contains("c = base * (blob * frame.ambient.rgb + frame.light_color.rgb * diffuse)"), "the ambient term carries the blob");
+        // The patched module still parses and validates (the rest of the
+        // forward source is unchanged, so its own test covers the stubs).
+        let src = sp.source.replace("//@slot toon_ramp", "fn slot_toon_ramp(x: f32) -> f32 { return x; }").replace("//@slot fog", "fn slot_fog(d: f32, y: f32) -> f32 { return 0.0; }").replace("//@slot rim", "fn slot_rim(a: f32, b: f32, c: f32, d: vec3<f32>) -> vec3<f32> { return vec3<f32>(0.0); }");
+        if let Ok(m) = naga::front::wgsl::parse_str(&src) {
+            assert!(m.entry_points.iter().any(|e| e.name == "fs_main"));
+        }
+    }
+
+    /// Guard (round 4 of material-view: the contact discs never showed on
+    /// High and Ultra): the frame hands the world's blobs to `write_shading`
+    /// under a shadow map when the feature is on, so it has something to
+    /// keep (a build without the feature is byte-for-byte as before).
+    #[test]
+    fn the_frame_passes_its_blobs_under_a_shadow_map() {
+        let frame = include_str!("gpu/frame.rs");
+        let arm = frame.split("shadow_map: true,").nth(1).and_then(|s| s.split("None =>").next()).unwrap_or_default();
+        assert!(arm.contains("#[cfg(feature = \"contact-shadows\")] blobs: &rw.blobs,"), "the shadow-map arm drops the world's blobs");
+        assert_eq!(frame.matches("blobs: &rw.blobs,").count(), 2, "both shading arms pass the world's blobs");
+    }
+}
+
+// The sampling pattern is a 2 x 2 tile (critic round 3 of material-view:
+// interleaved gradient noise left a grey grain on the shader ball's
+// occluded bowl and foot on Ultra, because a 3 x 3 tent can't average its
+// long-period pattern out). The denoise's 3 x 3 tent weighs each parity of
+// a 2 x 2 tile equally, so the tile cancels exactly on flat depth.
+#[cfg(all(test, feature = "gtao"))]
+mod gtao_noise_tests {
+    /// The AO pass's WGSL, as gpu/gtao.rs holds it (that module builds for
+    /// the browser only).
+    const AO_WGSL: &str = include_str!("gpu/gtao.rs");
+
+    /// The WGSL's tile, mirrored: ign((x, y)) for a pixel centre.
+    fn tile(x: u32, y: u32) -> f32 {
+        let (qx, qy) = (x & 1, y & 1);
+        ((qx * 2 + qy * 3) & 3) as f32 * 0.25 + 0.125
+    }
+
+    /// Guard: every 3 x 3 tent window of the slice and step patterns has
+    /// the same weighted mean (no grain survives the denoise), the four
+    /// values cover the slice evenly, and the WGSL is the mirrored code.
+    #[test]
+    fn the_ao_noise_cancels_under_the_denoise() {
+        let mean = |f: &dyn Fn(u32, u32) -> f32, cx: u32, cy: u32| {
+            let (mut s, mut w) = (0.0, 0.0);
+            for dy in 0..3u32 {
+                for dx in 0..3u32 {
+                    let k = ((2 - (dx as i32 - 1).abs()) * (2 - (dy as i32 - 1).abs())) as f32;
+                    s += f(cx + dx - 1, cy + dy - 1) * k;
+                    w += k;
+                }
+            }
+            s / w
+        };
+        let slice = |x: u32, y: u32| tile(x, y);
+        let step = |x: u32, y: u32| tile(y + 1, x);
+        for f in [&slice as &dyn Fn(u32, u32) -> f32, &step] {
+            let m0 = mean(f, 5, 5);
+            for (x, y) in [(6, 5), (5, 6), (6, 6), (9, 12)] {
+                assert!((mean(f, x, y) - m0).abs() < 1e-6, "grain at ({x}, {y})");
+            }
+            assert!((m0 - 0.5).abs() < 1e-6);
+        }
+        let mut v: Vec<f32> = (0..4).map(|i| tile(i & 1, i >> 1)).collect();
+        v.sort_by(f32::total_cmp);
+        assert_eq!(v, [0.125, 0.375, 0.625, 0.875]);
+        assert!(AO_WGSL.contains("return f32((q.x * 2u + q.y * 3u) & 3u) * 0.25 + 0.125;"));
+        assert!(AO_WGSL.contains("ign(frag.yx + vec2<f32>(1.0, 0.0))"));
+        assert!(AO_WGSL.contains("f32((2 - abs(x)) * (2 - abs(y)))"), "the denoise is the 3 x 3 tent");
+    }
+}

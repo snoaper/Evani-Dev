@@ -1,0 +1,39 @@
+[package]
+name = "evani-grass"
+description = "Evani.Dev procedural grass and crops: GPU-generated Bezier blades (long meadow, short lawn, muddy trampled ground, uncut wheat with ears) with travelling wind, character trampling that springs back, a rain wetness response and tiered LOD, all live-tunable"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+publish.workspace = true
+
+# An opt-in module: a game lists it in evani.toml (`[modules] grass = true`),
+# which turns on the game's `grass` feature, an optional dependency on this
+# crate. Only then is any of it in the download. It draws through
+# evani-render's `world-draws` feature (its own compute pass and its own
+# draws inside the forward pass), which nothing else turns on, so every
+# other game is byte for byte what it was. Fully procedural: no meshes or
+# textures ship, only code and WGSL.
+[features]
+default = []
+# Follow evani-render's per-frame near/far planes when a game turns them on.
+camera-range = ["evani-render/camera-range"]
+# Dev builds with live capture: the blades follow a capture's sub-pixel
+# projection jitter and its own camera pose. Ship builds leave it off.
+capture = ["evani-render/capture", "evani-core/capture"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render = { workspace = true, features = ["forward", "world-draws"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu.workspace = true
+bytemuck.workspace = true
+wasm-bindgen-futures.workspace = true
+
+[dev-dependencies]
+# Native tests only: validate the WGSL modules as the GPU side assembles them.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+
+[lints]
+workspace = true

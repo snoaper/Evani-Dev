@@ -70,10 +70,14 @@ pub fn has_arg(args: &[String]) -> bool {
 /// The options of `cmd` that take a value (so the value is not a game id).
 pub fn value_options(cmd: &str) -> &'static [&'static str] {
     match cmd {
-        "geocheck" => &["--port", "--title-s", "--race-s", "--every", "--highlights", "--sample"],
+        "live" | "dev" => &["--port"],
+        "geocheck" => &["--port","--title-s", "--race-s", "--every", "--highlights", "--sample"],
         "netlog" => &["--tier", "--out", "--page-ms", "--shots-at", "--throttle-kbps", "--chrome", "--device"],
         "review" => &["--port", "--chrome", "--main"],
         "size-report" => &["--max-file-bytes", "--max-total-bytes"],
+        "publish" => &["--port", "--out", "--from", "--mark-published"],
+        "upgrade-engine" => &["--to", "--max-diff", "--shot-ms", "--chrome"],
+        "smoothness" => crate::smoothness::VALUE_OPTIONS,
         _ => &[],
     }
 }
@@ -184,6 +188,7 @@ mod tests {
         assert_eq!(positionals(&a(&["--tier", "low", "match-3"]), value_options("netlog")), [&"match-3".to_string()]);
         assert!(positionals(&a(&["--port", "8095", "--main", "m1-foundation", "--rebench"]), value_options("review")).is_empty());
         assert!(positionals(&a(&["--max-file-bytes", "26214400", "--modules"]), value_options("size-report")).is_empty());
+        assert!(positionals(&a(&["--dry-run", "--out", "o", "--port", "8114", "--from", "f", "--mark-published", "v2"]), value_options("publish")).is_empty());
         // A command without value options: every bare word is a game id.
         assert_eq!(positionals(&a(&["--ship", "x"]), value_options("build")), [&"x".to_string()]);
         let r = temp("package");

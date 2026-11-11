@@ -1,0 +1,277 @@
+[package]
+name = "evani-material-view"
+description = "Evani.Dev material-view: a viewer for looking at and tuning materials, the in-engine home of Evani.Materials"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Module switches. `cargo xtask build material-view` reads evani.toml and turns it
+# into exactly these features (with --no-default-features), so a module the
+# game doesn't list is an absent optional dependency: zero bytes.
+# `default` mirrors evani.toml so a plain `trunk serve` matches it.
+[features]
+default = [
+    "bloom", "vignette", "shadows", "models", "live",
+    "material-styles", "material-layers", "material-characters", "material-nature", "material-playground",
+    "material-catalogue",
+    "material-studio",
+    # evani.toml [materials]: every recipe and condition layer.
+    "material-recipes", "char-materials",
+    "recipe-metal",
+    "recipe-wood",
+    "recipe-wood-layouts",
+    "recipe-organic-food",
+    "recipe-cloth",
+    "recipe-thin",
+    "material-cutout",
+    "material-blend",
+    "material-refract",
+    "recipe-glass",
+    "recipe-bark",
+    "recipe-stone",
+    "recipe-masonry",
+    "recipe-plaster",
+    "recipe-ground",
+    "recipe-leather",
+    "recipe-fur",
+    "recipe-hide",
+    "recipe-keratin",
+    "recipe-feather",
+    "recipe-scales",
+    "recipe-ceramic",
+    "recipe-gem",
+    "recipe-ice",
+    "recipe-paint",
+    "recipe-plastic",
+    "recipe-organic",
+    "recipe-fire",
+    "recipe-glow",
+    "recipe-foliage",
+    "cond-wet",
+    "cond-mud",
+    "cond-dust",
+    "cond-snow",
+    "cond-wear",
+    "cond-oxide",
+    "cond-growth",
+    "cond-blood",
+    # evani.toml `[modules] procedural`: every category of the library.
+    "procedural",
+    "procedural-geometry",
+    "procedural-terrain",
+    "procedural-rocks",
+    "procedural-vegetation",
+    "procedural-trees",
+    "procedural-water",
+    "procedural-sky",
+    "procedural-roads",
+    "procedural-buildings",
+    "procedural-architecture",
+    "procedural-furniture",
+    "procedural-props",
+    "procedural-industrial",
+    "procedural-city",
+    "procedural-vehicles",
+    "procedural-aircraft",
+    "procedural-boats",
+    "procedural-humans",
+    "procedural-clothing",
+    "procedural-animals",
+    "procedural-weapons",
+    "procedural-agriculture",
+    "procedural-textures",
+    "procedural-effects",
+]
+fx = ["dep:evani-fx"]
+bloom = ["fx", "evani-fx/bloom", "evani-fx/bloom-emitters"]
+vignette = ["fx", "evani-fx/vignette"]
+shadows = ["fx", "evani-fx/shadows"]
+# Stage 3 `models`: the model reader and the model pipeline.
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models", "evani-live?/models"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-material-nature?/capture", "evani-procedural-lib?/capture"]
+# The material families (evani.toml `[modules] materials`; each is the app
+# feature `material-<family>`). A family not listed is not built: its scene
+# module, its engine pass and its params are absent.
+#
+# Art styles: each style's starter materials on a test shape (sphere,
+# monkey, teapot...), rebuilt as a small model per edit in place
+# (`model-replace`), through the lit surface pass.
+material-styles = ["models", "evani-render/look-surface", "evani-render/model-replace"]
+# Layered finishes: sheen, clear coat, anisotropy and thin film on models
+# through the lit surface pass (the shader ball and the cushion).
+material-layers = ["models", "evani-render/look-surface", "evani-render/material-layers", "dep:evani-material-layers"]
+# Characters: skin, wet eyes, hair and fur (the head bust).
+material-characters = ["models", "evani-render/look-surface", "evani-render/char-materials"]
+# Nature: water, glass, foliage, grass, thin back-light and lamp glow (the
+# pool and the lamp corner).
+material-nature = ["dep:evani-material-nature"]
+# Playground surfaces: brick, cobble, tiles and planks with rain, puddles and
+# moss, under the procedural sky (the ground patch).
+material-playground = [
+    "dep:evani-material-proc", "evani-material-proc/sky", "evani-material-proc/relief",
+    "dep:evani-look-photoreal",
+]
+
+# The material catalogue (batch 1 build plan 2.7, P13/P14): the left
+# library panel (categories, search, filters) over all 1,054 rows, and the
+# open row drawn on its test shape in the open art style, with its switches.
+# Dev data (the catalogue JSON and the row-to-glTF writer) rides only in this
+# viewer; no game carries it. The recipe stage's style detail step keeps the
+# open row's pattern inside the non-realistic styles (`material-recipe-style`).
+material-catalogue = [
+    "material-styles", "material-recipes", "evani-kit-material-view/catalogue",
+    "evani-material-recipes/gltf", "evani-material-recipes/data",
+    "evani-render/material-recipe-style",
+]
+# The Asset & Style Studio (docs/studio/SPEC.md, docs/studio/CONTRACTS.md):
+# the selection record (asset, style, material) and the asset catalogue
+# (catalog/assets) as the kit's `Studio` resource, and the app's studio
+# module (src/studio/). Dev data, like the catalogue it builds on.
+# Its Procedural section shows the spectral sea (evani-material-nature's
+# part `spectral-sea`), so the studio turns that part on.
+material-studio = ["material-catalogue", "evani-kit-material-view/studio", "dep:evani-style-geo", "evani-render/studio-passes", "evani-render/swatches", "evani-material-nature?/spectral-sea"]
+# evani.toml `[materials]` (P10b): the recipe stage, one feature per recipe
+# and per condition layer, and the character family for skin, hair and eye
+# (cloth and the nature recipes use material-layers and material-nature).
+material-recipes = ["models", "evani-render/material-recipes", "dep:evani-material-recipes"]
+char-materials = ["models", "evani-render/char-materials"]
+recipe-metal = ["material-recipes", "evani-material-recipes/recipe-metal"]
+recipe-wood = ["material-recipes", "evani-material-recipes/recipe-wood"]
+recipe-bark = ["material-recipes", "evani-material-recipes/recipe-bark"]
+recipe-stone = ["material-recipes", "evani-material-recipes/recipe-stone"]
+recipe-masonry = ["material-recipes", "evani-material-recipes/recipe-masonry"]
+recipe-plaster = ["material-recipes", "evani-material-recipes/recipe-plaster"]
+recipe-ground = ["material-recipes", "evani-material-recipes/recipe-ground"]
+recipe-leather = ["material-recipes", "evani-material-recipes/recipe-leather"]
+recipe-fur = ["material-recipes", "evani-material-recipes/recipe-fur"]
+recipe-hide = ["material-recipes", "evani-material-recipes/recipe-hide"]
+recipe-keratin = ["material-recipes", "evani-material-recipes/recipe-keratin"]
+recipe-feather = ["material-recipes", "evani-material-recipes/recipe-feather"]
+recipe-scales = ["material-recipes", "evani-material-recipes/recipe-scales"]
+recipe-ceramic = ["material-recipes", "evani-material-recipes/recipe-ceramic"]
+recipe-gem = ["material-recipes", "evani-material-recipes/recipe-gem"]
+recipe-glass = ["material-recipes", "evani-material-recipes/recipe-glass"]
+recipe-ice = ["material-recipes", "evani-material-recipes/recipe-ice"]
+recipe-paint = ["material-recipes", "evani-material-recipes/recipe-paint"]
+recipe-plastic = ["material-recipes", "evani-material-recipes/recipe-plastic"]
+recipe-organic = ["material-recipes", "evani-material-recipes/recipe-organic"]
+recipe-fire = ["material-recipes", "evani-material-recipes/recipe-fire"]
+recipe-glow = ["material-recipes", "evani-material-recipes/recipe-glow"]
+recipe-foliage = ["material-recipes", "evani-material-recipes/recipe-foliage"]
+# Batch 3: cloth's and thin's recipe stages and wood's layouts part.
+recipe-cloth = ["material-recipes", "evani-material-recipes/recipe-cloth"]
+recipe-thin = ["material-recipes", "evani-material-recipes/recipe-thin"]
+recipe-wood-layouts = ["material-recipes", "evani-material-recipes/recipe-wood-layouts"]
+recipe-organic-food = ["material-recipes", "evani-material-recipes/recipe-organic-food"]
+material-cutout = ["material-recipes", "evani-render/material-recipes-cut"]
+# The see-through pass (batch 3 B3-P3): glass, smoke, steam, fire and
+# holograms drawn blended and sorted; refraction for frosted, wavy and block glass.
+material-blend = ["material-recipes", "evani-render/material-recipes-blend"]
+material-refract = ["material-blend", "evani-render/material-recipes-refract"]
+cond-wet = ["material-recipes", "evani-material-recipes/cond-wet"]
+cond-mud = ["material-recipes", "evani-material-recipes/cond-mud"]
+cond-dust = ["material-recipes", "evani-material-recipes/cond-dust"]
+cond-snow = ["material-recipes", "evani-material-recipes/cond-snow"]
+cond-wear = ["material-recipes", "evani-material-recipes/cond-wear"]
+cond-oxide = ["material-recipes", "evani-material-recipes/cond-oxide"]
+cond-growth = ["material-recipes", "evani-material-recipes/cond-growth"]
+cond-blood = ["material-recipes", "evani-material-recipes/cond-blood"]
+# The procedural library (evani.toml `[modules] procedural`, docs/PROCEDURAL.md):
+# the crate, and one feature per listed category or asset forwarding to
+# evani-procedural-lib. The viewer lists every category.
+procedural = ["dep:evani-procedural-lib", "evani-procedural-lib/preview"]
+procedural-geometry = ["procedural", "evani-procedural-lib/geometry"]
+procedural-terrain = ["procedural", "evani-procedural-lib/terrain"]
+procedural-rocks = ["procedural", "evani-procedural-lib/rocks"]
+procedural-vegetation = ["procedural", "evani-procedural-lib/vegetation"]
+procedural-trees = ["procedural", "evani-procedural-lib/trees"]
+procedural-water = ["procedural", "evani-procedural-lib/water"]
+procedural-sky = ["procedural", "evani-procedural-lib/sky"]
+procedural-roads = ["procedural", "evani-procedural-lib/roads"]
+procedural-buildings = ["procedural", "evani-procedural-lib/buildings"]
+procedural-architecture = ["procedural", "evani-procedural-lib/architecture"]
+procedural-furniture = ["procedural", "evani-procedural-lib/furniture"]
+procedural-props = ["procedural", "evani-procedural-lib/props"]
+procedural-industrial = ["procedural", "evani-procedural-lib/industrial"]
+procedural-city = ["procedural", "evani-procedural-lib/city"]
+procedural-vehicles = ["procedural", "evani-procedural-lib/vehicles"]
+procedural-aircraft = ["procedural", "evani-procedural-lib/aircraft"]
+procedural-boats = ["procedural", "evani-procedural-lib/boats"]
+procedural-humans = ["procedural", "evani-procedural-lib/humans"]
+procedural-clothing = ["procedural", "evani-procedural-lib/clothing"]
+procedural-animals = ["procedural", "evani-procedural-lib/animals"]
+procedural-weapons = ["procedural", "evani-procedural-lib/weapons"]
+procedural-agriculture = ["procedural", "evani-procedural-lib/agriculture"]
+procedural-textures = ["procedural", "evani-procedural-lib/textures"]
+procedural-effects = ["procedural", "evani-procedural-lib/effects"]
+
+[dependencies]
+evani-core.workspace = true
+# The look's ambient occlusion (catalog stylizedpbr: "strong rim and ambient
+# occlusion"): the engine's ground-truth AO at the tier's quality (Medium and up).
+# And the sky's reflection (`ibl`: the analytic sky on Lite and Low, a small
+# prefiltered sky cube from Medium up), so clear coats, metals and wet
+# surfaces reflect a sky with a horizon instead of a flat two-colour dome
+# (critic round 2: the clear coat read as a plain ball, metal as grey
+# plastic). About +6.5 KB gzip (DECISIONS "Sky lighting").
+# And contact shadows on every tier (`contact-shadows`: the blob discs stay
+# where the shadow map is on; critic round 3: the pouf floated on Ultra).
+# And exact sun casts for the baked cones on Lite and Low (`sun-exact`:
+# critic round 4, torn dark patches on the shader ball's creases on Low).
+# And, for the procedural library's realism view (round 8 measured that
+# none of these was built: the stepped, hard shadows of rounds 3 to 7):
+# soft shadows with a light size (`pcss-stable`, the look's `pcss` slot),
+# two shadow cascades on High and Ultra (`shadow-cascades`) and a photo
+# studio of soft light panels in the sky light (`studio-sky`, on only while
+# a library asset is staged: render.sky.studio).
+evani-render = { workspace = true, features = ["gtao", "ibl", "contact-shadows", "sun-exact", "pcss-stable", "shadow-cascades", "studio-sky"] }
+evani-kit-material-view.workspace = true
+# The film preset: the key/fill/kick rig the lit surface pass shows.
+evani-look-stylizedpbr = { workspace = true, features = ["film", "gtao", "pcss"] }
+evani-fx = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+# The studio's geometry stage and source reader (material-studio only).
+evani-style-geo = { workspace = true, optional = true }
+evani-material-layers = { workspace = true, optional = true }
+evani-material-nature = { workspace = true, optional = true }
+evani-material-proc = { workspace = true, optional = true }
+evani-look-photoreal = { workspace = true, optional = true }
+evani-material-recipes = { workspace = true, optional = true }
+# The procedural library (its Procedural tab's categories and assets).
+evani-procedural-lib = { workspace = true, optional = true }
+# The page's JSON (wasm) and the catalogue's glTF materials (both targets).
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+# The styles scene fetches the streamed monkey and teapot once more to read
+# their mesh (evani-core's FetchSource), without compiling them in.
+wasm-bindgen-futures.workspace = true
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlCanvasElement",
+    "ImageData",
+    "NodeList",
+    "CanvasRenderingContext2d",
+    "CssStyleDeclaration",
+    "DomTokenList",
+    "DomRect",
+    "Node",
+    "Event",
+    "EventTarget",
+    "MouseEvent",
+    "PointerEvent",
+    "WheelEvent",
+    "console",
+] }
+
+[lints]
+workspace = true

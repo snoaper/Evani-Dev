@@ -79,6 +79,6 @@ flate2.workspace = true
 evani-kit-example.workspace = true
 evani-look-basic.workspace = true
 evani-render.workspace = true
-evani-fx = { workspace = true, features = ["bloom", "vignette"] }
+evani-fx = { workspace = true, features = ["bloom", "vignette", "trails"] }
 # Native tests only: a fake renderer parses spliced slot WGSL.
 naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }

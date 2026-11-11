@@ -5,20 +5,25 @@
 // kit-surface hook, with wet, puddle and moss layers on top.
 //
 // Block (records from MP_RELIEF):
-//   0: [magic, surfaces, tier mode (0 flat, 1 colour, 2 full), height strength]
+//   0: [magic, surfaces, tier mode (0 flat, 1 colour and bent normal, 2 full), height strength]
 //   1: [wetness, puddles, moss, puddle scale (m)]
 //   2: [moss colour rgb, moss scale (m)]
 //   3: [free surface (or -1), 0, 0, 0]
 //   4 + 4k: [first float (from the block), size, levels, slope scale]
-//           [tile u, tile v (m), depth (m), 0]
+//           [tile u, tile v (m), depth (m), fine feature width (m), 0 none]
 //           [mean colour rgb, mean roughness]
-//           [colour multiplier rgb, 0]
+//           [colour multiplier rgb, mean height]
 // Each texel is two exact-integer floats (src/relief/bake.rs): colour
 // (sqrt, 8 bits each) and slope u, slope v (7 bits, 63 flat), height
 // (6 bits), roughness (4 bits).
 
 const RL_MAGIC: f32 = 7177.0;
 const RL_FIRST: u32 = 32u;
+
+// The surface point's screen derivatives (dpdx, dpdy), set by kit_surface
+// before any branch (derivatives need uniform control flow); zero elsewhere.
+var<private> rl_dx: vec3<f32>;
+var<private> rl_dy: vec3<f32>;
 
 struct RlTex {
     c: vec3<f32>,
@@ -196,7 +201,10 @@ fn rl_shade(k: u32, t: RlTex, p: vec3<f32>, n: vec3<f32>, grad: vec3<f32>, nr: p
     rough = mix(rough, 0.03, pm);
     g = g * (1.0 - pm);
 //$DEBUG
-    if (mode >= 2u) {
+    // Low (mode 1) lights with the bent normal too: the slope is already
+    // worked out above, so the stones keep their relief at no extra fetch
+    // (critic round 6: Low's cobbles were flat).
+    if (mode >= 1u) {
         *nr = vec4<f32>(normalize(n - g), clamp(rough, 0.02, 1.0));
     }
     return c;
@@ -217,8 +225,32 @@ fn rl_face(k: u32, s: MpS, bi: u32, n: vec3<f32>, nr: ptr<function, vec4<f32>>) 
         u = rl_rot(q, u);
         v = rl_rot(q, v);
     }
-    let t = rl_sample(k, s.uv, s.fw);
+    var t = rl_sample(k, s.uv, s.fw);
+    t = rl_fine(k, t, u, v);
     return rl_shade(k, t, s.p, n, u * t.s.x + v * t.s.y, nr);
+}
+
+// Band-limit the surface's fine feature (the tiles' grout) by its screen
+// footprint, axis by axis: a joint across u is fine / |d u per pixel| pixels
+// wide on screen; under two pixels its bevel's slope (the normal) fades out
+// smoothly, gone at one pixel, and its height fades to the tile's mean, so
+// a grazing or distant joint can't flash a one-pixel highlight under a
+// sub-pixel camera move. Where the joint is two pixels or wider (any square-
+// on view) nothing changes; the colour keeps its mip filtering.
+fn rl_fine(k: u32, t: RlTex, u: vec3<f32>, v: vec3<f32>) -> RlTex {
+    let o = MP_RELIEF + 4u + 4u * k;
+    let fine = kit_data[o + 1u].w;
+    if (fine <= 0.0) {
+        return t;
+    }
+    let du = length(vec2<f32>(dot(rl_dx, u), dot(rl_dy, u)));
+    let dv = length(vec2<f32>(dot(rl_dx, v), dot(rl_dy, v)));
+    let ku = smoothstep(1.0, 2.0, fine / max(du, 1e-9));
+    let kv = smoothstep(1.0, 2.0, fine / max(dv, 1e-9));
+    var o2 = t;
+    o2.s = t.s * vec2<f32>(ku, kv);
+    o2.h = mix(kit_data[o + 3u].w, t.h, min(ku, kv));
+    return o2;
 }
 
 // Relief surface k on any other world mesh (rocks): triplanar.

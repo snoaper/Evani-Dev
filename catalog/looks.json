@@ -373,7 +373,7 @@
     },
     {
       "id": "hd2d",
-      "name": "HD-2D diorama",
+      "name": "Pixel-art diorama",
       "type": "2.5D",
       "style_class": "3d",
       "cameras": [

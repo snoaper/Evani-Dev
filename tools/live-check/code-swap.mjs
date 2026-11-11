@@ -25,6 +25,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { waitDevToolsUrl } from './devtools-port.mjs';
 
 const args = {};
 for (let i = 2; i < process.argv.length; i++) if (process.argv[i].startsWith('--')) args[process.argv[i].slice(2)] = process.argv[++i];
@@ -101,12 +102,7 @@ const chrome = spawn(chromePath, [
 function closeChrome() { try { chrome.kill(); } catch {} try { rmSync(profile, { recursive: true, force: true }); } catch {} }
 process.on('exit', closeChrome);
 
-let wsUrl = null;
-for (let i = 0; i < 200 && !wsUrl; i++) {
-  const f = join(profile, 'DevToolsActivePort');
-  if (existsSync(f)) { const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/); if (p && path) wsUrl = `ws://127.0.0.1:${p}${path}`; }
-  if (!wsUrl) await sleep(100);
-}
+let wsUrl = await waitDevToolsUrl(profile);
 if (!wsUrl) { console.error('Chrome did not start'); process.exit(2); }
 const ws = new WebSocket(wsUrl);
 await new Promise((r) => ws.addEventListener('open', r, { once: true }));

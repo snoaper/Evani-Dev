@@ -17,10 +17,20 @@
 //! Live params ([`SkyHandles`]): `sky.turbidity`, `sky.rayleigh`,
 //! `sky.mie_coefficient`, `sky.mie_directional_g`, `sky.cloud_scale`,
 //! `sky.cloud_speed`, `sky.cloud_coverage`, `sky.cloud_density`,
-//! `sky.cloud_elevation`, `sky.brightness`, `sky.sun_disc`; and the sun:
+//! `sky.cloud_elevation`, `sky.brightness`, `sky.sun_disc`, `sky.visible`
+//! (draw the dome at all) and `sky.open_below` (leave the dome open under
+//! the horizon, so a sea drawn over the depth afterwards, such as
+//! evani-material-nature's open ocean, reaches the skyline instead of being
+//! cut off where the view meets the dome); and the sun:
 //! `sky.follow_light` (default on: the dome's sun is wherever
 //! `render.light.direction` points, so the disc sits where the shadows come
 //! from), else `sky.sun_elevation` and `sky.sun_azimuth` (degrees).
+//!
+//! Feature `sky-horizon` adds [`CloudHorizon`] (`sky.cloud_horizon_low`,
+//! `_high`, `_curve` and `_haze`): where the clouds fade in over the
+//! horizon, how much the layer curves away and how far the haze hides it,
+//! for cameras that look mostly at the skyline. Its defaults draw the same
+//! clouds as without the feature.
 
 /// The look material the dome is drawn through (unlit, white).
 pub const SKY_MATERIAL: &str = "sky";
@@ -57,6 +67,227 @@ pub struct SkyParams {
     pub brightness: f32,
     /// Draw the sun disc.
     pub sun_disc: bool,
+    /// Draw the dome at all (off: nothing is drawn, the records stay).
+    pub visible: bool,
+    /// Leave the dome open below the horizon: those fragments are dropped,
+    /// so the depth there stays at the far plane and a sea drawn later
+    /// treats it as open sky out to the horizon.
+    pub open_below: bool,
+    /// The clouds near the horizon (feature `sky-horizon`).
+    #[cfg(feature = "sky-horizon")]
+    pub horizon: CloudHorizon,
+}
+
+/// How the clouds meet the horizon (feature `sky-horizon`). Heights are on
+/// the dome: the sine of the elevation (0 the horizon, 1 the zenith).
+#[cfg(feature = "sky-horizon")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CloudHorizon {
+    /// Where the clouds start to show over the horizon, and where they are
+    /// full (the puff detail follows the same band, a little higher).
+    pub fade_low: f32,
+    pub fade_high: f32,
+    /// Scales the cloud layer's curve: below 1 the layer bends away less,
+    /// so clouds low in the sky stay tall heaps instead of thin streaks.
+    pub curve: f32,
+    /// How far the air hides the clouds: 1 as the sky's own extinction
+    /// (far clouds melt into the horizon glow), lower keeps them distinct.
+    pub haze: f32,
+    /// The clouds' own look (record [`crate::layout::SKY_CLOUD_LOOK`]): how
+    /// strongly each small lobe inside a cloud shades like a ball (0.3;
+    /// lower: broad, photographic shading instead of a scaly texture), how
+    /// wide the soft band at a cloud's outline is (0.16; lower: crisper
+    /// edges), how deeply the lobes bite into the outline (1: cauliflower
+    /// edges as drawn; higher: deeper) and the clouds' brightness (1).
+    pub lobe_shade: f32,
+    pub edge: f32,
+    pub bite: f32,
+    pub gain: f32,
+    /// The clear sky's tone (record [`crate::layout::SKY_TONE`]): a colour
+    /// multiplier on the scattered light (1, 1, 1: as the model gives it)
+    /// and how much the sky deepens towards the zenith (0: none; 0.4: the
+    /// zenith at 60 percent, as a clear photographed sky's deep top).
+    pub tint: [f32; 3],
+    pub deep: f32,
+    /// How the clouds are lit (record [`crate::layout::SKY_CLOUD_LIGHT`]):
+    /// how far the lit side leans along the view, away from the eye (0.8;
+    /// below 0 it leans towards the eye, which puts the light on the
+    /// crowns, the upper side on screen, of clouds seen from the ground),
+    /// and how strongly each heap shades like a ball (0.4).
+    pub up_bias: f32,
+    pub body_shade: f32,
+    /// The clouds as a real volume (off: the flat clouds above).
+    pub volume: CloudVolume,
+}
+
+/// The clouds as a real volume (feature `sky-horizon`; `on` false by
+/// default, so the dome draws its flat clouds as before): fair-weather
+/// cumulus in a layer `base` km up and `depth` km thick, marched along each
+/// view ray (`shaders/sky_cumulus.wgsl`). Each heap's footprint comes from
+/// a seeded field over the layer (separate heaps about a third to half of
+/// `size` km across, clusters and clear stretches, `seed` picks the
+/// arrangement; `sky.cloud_coverage` sets how many); its height rises from
+/// a thin rim to a rounded crown, billows heap the crown and fray the rims,
+/// the base stays flat. Lit by the sun through the cloud (multiple
+/// scattering), the sky from above and the ground from below; the clouds'
+/// haze (`sky.cloud_horizon_haze`) hides far ones into the horizon. A faint
+/// high cirrus layer (`cirrus`) lies behind them. Coverage, density, speed
+/// and the clouds' gain are the dome's own params.
+#[cfg(feature = "sky-horizon")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CloudVolume {
+    pub on: bool,
+    pub seed: f32,
+    /// The layer's base and depth (km), the heaps' field size (km).
+    pub base: f32,
+    pub depth: f32,
+    pub size: f32,
+    /// Faint cirrus streaks far up (0 none, 1 most).
+    pub cirrus: f32,
+    /// How high the billows heap (1.4), how soft the surface is (0.05,
+    /// a share of the depth), how dark the base is under its sky light
+    /// (0.2: a fifth of the crown's) and how much the sunlit outer skin
+    /// dims (0.25).
+    pub billow: f32,
+    pub soft: f32,
+    pub base_shade: f32,
+    pub powder: f32,
+}
+
+#[cfg(feature = "sky-horizon")]
+impl Default for CloudVolume {
+    fn default() -> Self {
+        CloudVolume {
+            on: false,
+            seed: 0.0,
+            base: 1.4,
+            depth: 0.9,
+            size: 3.2,
+            cirrus: 0.0,
+            billow: 1.4,
+            soft: 0.05,
+            base_shade: 0.2,
+            powder: 0.25,
+        }
+    }
+}
+
+#[cfg(feature = "sky-horizon")]
+impl CloudVolume {
+    /// The layer record ([`crate::layout::SKY_CUMULUS`]).
+    pub fn record(&self) -> [f32; 4] {
+        [
+            self.base.max(0.1),
+            self.depth.max(0.05),
+            self.size.max(0.1),
+            self.cirrus.clamp(0.0, 1.0),
+        ]
+    }
+
+    /// The look record ([`crate::layout::SKY_CUMULUS_LOOK`]).
+    pub fn look_record(&self) -> [f32; 4] {
+        [
+            self.billow.max(0.0),
+            self.soft.max(0.01),
+            self.base_shade.clamp(0.0, 1.0),
+            self.powder.clamp(0.0, 1.0),
+        ]
+    }
+}
+
+#[cfg(feature = "sky-horizon")]
+impl Default for CloudHorizon {
+    /// The clouds as the dome draws them without the feature.
+    fn default() -> Self {
+        CloudHorizon {
+            fade_low: 0.03,
+            fade_high: 0.27,
+            curve: 1.0,
+            haze: 1.0,
+            lobe_shade: 0.3,
+            edge: 0.16,
+            bite: 1.0,
+            gain: 1.0,
+            tint: [1.0; 3],
+            deep: 0.0,
+            up_bias: 0.8,
+            body_shade: 0.4,
+            volume: CloudVolume::default(),
+        }
+    }
+}
+
+#[cfg(feature = "sky-horizon")]
+impl CloudHorizon {
+    /// The `kit_data` record ([`crate::layout::SKY_HORIZON`]): the fade band
+    /// (its top kept above its bottom), the curve and the haze.
+    pub fn record(&self) -> [f32; 4] {
+        let low = self.fade_low.max(0.0);
+        [
+            low,
+            self.fade_high.max(low + 0.001),
+            self.curve.max(0.0),
+            self.haze.max(0.0),
+        ]
+    }
+
+    /// The clouds' look record ([`crate::layout::SKY_CLOUD_LOOK`]).
+    pub fn look_record(&self) -> [f32; 4] {
+        [
+            self.lobe_shade.max(0.0),
+            self.edge.max(0.005),
+            self.bite.max(0.0),
+            self.gain.max(0.0),
+        ]
+    }
+
+    /// The clear sky's tone record ([`crate::layout::SKY_TONE`]).
+    pub fn tone_record(&self) -> [f32; 4] {
+        [
+            self.tint[0].max(0.0),
+            self.tint[1].max(0.0),
+            self.tint[2].max(0.0),
+            self.deep.clamp(0.0, 0.95),
+        ]
+    }
+
+    /// The clouds' light record ([`crate::layout::SKY_CLOUD_LIGHT`]), with
+    /// the cloud volume's switch and seed.
+    pub fn light_record(&self) -> [f32; 4] {
+        [
+            self.up_bias,
+            self.body_shade.max(0.0),
+            f32::from(u8::from(self.volume.on)),
+            self.volume.seed,
+        ]
+    }
+
+    /// The tone's factor on the scattered light looking along a direction
+    /// `y` up (the sine of the elevation), per channel.
+    pub fn tone(&self, y: f32) -> [f32; 3] {
+        let r = self.tone_record();
+        let y = y.max(0.0);
+        let k = 1.0 - r[3] * y * y;
+        [r[0] * k, r[1] * k, r[2] * k]
+    }
+
+    /// How much cloud shows at height `y` (the shader's horizon fade, 0..1).
+    pub fn fade(&self, y: f32) -> f32 {
+        let r = self.record();
+        smoothstep(r[0], r[1], y)
+    }
+
+    /// How much puff detail shows at height `y` (0..1).
+    pub fn detail(&self, y: f32) -> f32 {
+        let r = self.record();
+        smoothstep(r[0] + 0.07, r[1] + 0.13, y)
+    }
+}
+
+#[cfg(feature = "sky-horizon")]
+fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
+    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
 
 impl Default for SkyParams {
@@ -74,6 +305,10 @@ impl Default for SkyParams {
             cloud_elevation: 0.5,
             brightness: 1.25,
             sun_disc: true,
+            visible: true,
+            open_below: false,
+            #[cfg(feature = "sky-horizon")]
+            horizon: CloudHorizon::default(),
         }
     }
 }
@@ -102,7 +337,7 @@ impl SkyParams {
                 self.cloud_elevation,
                 self.brightness,
                 f32::from(u8::from(self.sun_disc)),
-                0.0,
+                f32::from(u8::from(self.open_below)),
             ],
         ]
     }
@@ -127,12 +362,16 @@ impl SkyParams {
         let r_phase = rayleigh_phase(cos_t * 0.5 + 0.5);
         let m_phase = hg_phase(cos_t, self.mie_directional_g);
         let fade = (1.0 - s[1]).powi(5).clamp(0.0, 1.0);
+        #[cfg(feature = "sky-horizon")]
+        let tone = self.horizon.tone(d[1]);
+        #[cfg(not(feature = "sky-horizon"))]
+        let tone = [1.0f32; 3];
         std::array::from_fn(|i| {
             let ratio = (beta_r[i] * r_phase + beta_m[i] * m_phase) / (beta_r[i] + beta_m[i]);
             let lin = (sun_e * ratio * (1.0 - fex[i])).powf(1.5);
             let lin = lin * (1.0 + ((sun_e * ratio * fex[i]).sqrt() - 1.0) * fade);
             let l0 = 0.1 * fex[i];
-            ((lin + l0) * 0.04 + NIGHT[i]) * self.brightness
+            ((lin + l0) * 0.04 * tone[i] + NIGHT[i]) * self.brightness
         })
     }
 
@@ -187,6 +426,8 @@ pub fn sun_direction(elevation: f32, azimuth: f32) -> [f32; 3] {
 }
 
 use evani_core::params::{BoolParam, F32Param, ParamDef, ParamError, ParamRegistry};
+#[cfg(feature = "sky-horizon")]
+use evani_core::params::Vec3Param;
 
 /// The sun the dome uses while `sky.follow_light` is off: elevation and
 /// azimuth (degrees).
@@ -283,10 +524,118 @@ impl SkyParams {
 pub struct SkyHandles {
     f: [F32Param; 10],
     sun_disc: BoolParam,
+    visible: BoolParam,
+    open_below: BoolParam,
     follow_light: BoolParam,
     sun_elevation: F32Param,
     sun_azimuth: F32Param,
+    #[cfg(feature = "sky-horizon")]
+    horizon: [F32Param; 11],
+    #[cfg(feature = "sky-horizon")]
+    tint: Vec3Param,
+    #[cfg(feature = "sky-horizon")]
+    volume_on: BoolParam,
+    #[cfg(feature = "sky-horizon")]
+    volume: [F32Param; 9],
 }
+
+/// `(suffix, min, max, step, description)` per cloud volume param, in
+/// [`CloudVolume`] field order after `on` (feature `sky-horizon`).
+#[cfg(feature = "sky-horizon")]
+const VOLUME: [(&str, f32, f32, f32, &str); 9] = [
+    ("cloud_seed", 0.0, 1000.0, 0.01, "Which arrangement of cloud heaps the volume draws (any number)"),
+    ("cloud_base", 0.2, 5.0, 0.05, "The cloud volume's flat base (km up)"),
+    ("cloud_depth", 0.1, 4.0, 0.05, "How tall the volume's tallest heaps are (km)"),
+    ("cloud_size", 0.3, 20.0, 0.1, "The volume's heap field size (km; heaps a third to half of it across)"),
+    ("cirrus", 0.0, 1.0, 0.01, "Faint cirrus streaks far up, behind the volume's heaps (0: none)"),
+    ("cloud_billow", 0.0, 3.0, 0.01, "How high the volume's billows heap on the crowns (1.4)"),
+    ("cloud_soft", 0.01, 0.5, 0.005, "How soft the volume's cloud surface is (0.05)"),
+    ("cloud_base_shade", 0.0, 1.0, 0.01, "How much sky light reaches the volume's flat bases (0.2)"),
+    ("cloud_powder", 0.0, 1.0, 0.01, "How much the sunlit outer skin of the volume's heaps dims (0.25)"),
+];
+
+/// `(suffix, min, max, step, description)` per horizon param, in
+/// [`CloudHorizon::record`] order (feature `sky-horizon`).
+#[cfg(feature = "sky-horizon")]
+const HORIZON: [(&str, f32, f32, f32, &str); 11] = [
+    (
+        "cloud_horizon_low",
+        0.0,
+        0.5,
+        0.005,
+        "Where the clouds start to show over the horizon (sine of the elevation)",
+    ),
+    (
+        "cloud_horizon_high",
+        0.0,
+        0.8,
+        0.005,
+        "Where the clouds are full over the horizon (sine of the elevation)",
+    ),
+    (
+        "cloud_horizon_curve",
+        0.0,
+        2.0,
+        0.01,
+        "How much the cloud layer bends away near the horizon (below 1: taller low clouds)",
+    ),
+    (
+        "cloud_horizon_haze",
+        0.0,
+        2.0,
+        0.01,
+        "How far the air hides the clouds near the horizon (1: as the sky's own haze)",
+    ),
+    (
+        "cloud_lobe_shade",
+        0.0,
+        1.0,
+        0.01,
+        "How strongly each small lobe inside a cloud shades like a ball (0.3; lower: broad, photographic shading)",
+    ),
+    (
+        "cloud_edge",
+        0.005,
+        0.5,
+        0.005,
+        "How wide the soft band at a cloud's outline is (0.16; lower: crisper edges)",
+    ),
+    (
+        "cloud_bite",
+        0.0,
+        3.0,
+        0.01,
+        "How deeply the lobes bite into a cloud's outline (1; higher: deeper cauliflower edges)",
+    ),
+    (
+        "cloud_gain",
+        0.0,
+        3.0,
+        0.01,
+        "The clouds' brightness (1)",
+    ),
+    (
+        "zenith_deep",
+        0.0,
+        0.95,
+        0.01,
+        "How much the clear sky deepens towards the zenith (0: as the model gives it)",
+    ),
+    (
+        "cloud_up_bias",
+        -2.0,
+        2.0,
+        0.01,
+        "Where the clouds' lit side leans along the view (0.8: away from the eye; below 0: the crowns, as clouds seen from the ground)",
+    ),
+    (
+        "cloud_body_shade",
+        0.0,
+        2.0,
+        0.01,
+        "How strongly each cloud heap shades like a ball (0.4)",
+    ),
+];
 
 impl SkyHandles {
     /// Register the sky params, starting at `start` (owner `material-proc`).
@@ -313,6 +662,16 @@ impl SkyHandles {
                 .describe("Draw the sun disc")
                 .owner(owner),
         )?;
+        let visible = reg.register_bool(
+            ParamDef::bool("sky.visible", start.visible)
+                .describe("Draw the sky dome")
+                .owner(owner),
+        )?;
+        let open_below = reg.register_bool(
+            ParamDef::bool("sky.open_below", start.open_below)
+                .describe("Leave the dome open below the horizon (for a sea drawn over the depth afterwards)")
+                .owner(owner),
+        )?;
         let follow_light = reg.register_bool(
             ParamDef::bool("sky.follow_light", true)
                 .describe("The dome's sun follows render.light.direction (off: sky.sun_elevation and sky.sun_azimuth)")
@@ -336,12 +695,89 @@ impl SkyHandles {
                 )
                 .owner(owner),
         )?;
+        #[cfg(feature = "sky-horizon")]
+        let horizon = {
+            let h = start.horizon;
+            let v = [
+                h.fade_low,
+                h.fade_high,
+                h.curve,
+                h.haze,
+                h.lobe_shade,
+                h.edge,
+                h.bite,
+                h.gain,
+                h.deep,
+                h.up_bias,
+                h.body_shade,
+            ];
+            let mut out = Vec::with_capacity(HORIZON.len());
+            for (i, (suffix, min, max, step, describe)) in HORIZON.into_iter().enumerate() {
+                out.push(
+                    reg.register_f32(
+                        ParamDef::f32(&format!("sky.{suffix}"), v[i])
+                            .range(min, max)
+                            .step(step)
+                            .describe(describe)
+                            .owner(owner),
+                    )?,
+                );
+            }
+            let out: [F32Param; 11] = out
+                .try_into()
+                .map_err(|_| ParamError::Unknown("sky.cloud_horizon".into()))?;
+            out
+        };
+        #[cfg(feature = "sky-horizon")]
+        let tint = reg.register_vec3(
+            ParamDef::color("sky.tint", start.horizon.tint)
+                .range(0.0, 2.0)
+                .describe("A colour multiplier on the clear sky's scattered light (1, 1, 1: as the model gives it)")
+                .owner(owner),
+        )?;
+        #[cfg(feature = "sky-horizon")]
+        let volume_on = reg.register_bool(
+            ParamDef::bool("sky.cloud_volume", start.horizon.volume.on)
+                .describe("Draw the clouds as a real volume (cumulus heaps lit through themselves) instead of the flat layer")
+                .owner(owner),
+        )?;
+        #[cfg(feature = "sky-horizon")]
+        let volume = {
+            let c = start.horizon.volume;
+            let v = [c.seed, c.base, c.depth, c.size, c.cirrus, c.billow, c.soft, c.base_shade, c.powder];
+            let mut out = Vec::with_capacity(VOLUME.len());
+            for (i, (suffix, min, max, step, describe)) in VOLUME.into_iter().enumerate() {
+                out.push(
+                    reg.register_f32(
+                        ParamDef::f32(&format!("sky.{suffix}"), v[i])
+                            .range(min, max)
+                            .step(step)
+                            .describe(describe)
+                            .owner(owner),
+                    )?,
+                );
+            }
+            let out: [F32Param; 9] = out
+                .try_into()
+                .map_err(|_| ParamError::Unknown("sky.cloud_volume".into()))?;
+            out
+        };
         Ok(SkyHandles {
             f,
             sun_disc,
+            visible,
+            open_below,
             follow_light,
             sun_elevation,
             sun_azimuth,
+            #[cfg(feature = "sky-horizon")]
+            horizon,
+            #[cfg(feature = "sky-horizon")]
+            tint,
+            #[cfg(feature = "sky-horizon")]
+            volume_on,
+            #[cfg(feature = "sky-horizon")]
+            volume,
         })
     }
 
@@ -353,6 +789,54 @@ impl SkyHandles {
         }
         let mut s = SkyParams::default().with_floats(v);
         s.sun_disc = reg.bool(self.sun_disc);
+        s.visible = reg.bool(self.visible);
+        s.open_below = reg.bool(self.open_below);
+        #[cfg(feature = "sky-horizon")]
+        {
+            let [
+                low,
+                high,
+                curve,
+                haze,
+                lobe_shade,
+                edge,
+                bite,
+                gain,
+                deep,
+                up_bias,
+                body_shade,
+            ] = self.horizon.map(|h| reg.f32(h));
+            s.horizon = CloudHorizon {
+                fade_low: low,
+                fade_high: high,
+                curve,
+                haze,
+                lobe_shade,
+                edge,
+                bite,
+                gain,
+                tint: reg.vec3(self.tint),
+                deep,
+                up_bias,
+                body_shade,
+                volume: {
+                    let [seed, base, depth, size, cirrus, billow, soft, base_shade, powder] =
+                        self.volume.map(|h| reg.f32(h));
+                    CloudVolume {
+                        on: reg.bool(self.volume_on),
+                        seed,
+                        base,
+                        depth,
+                        size,
+                        cirrus,
+                        billow,
+                        soft,
+                        base_shade,
+                        powder,
+                    }
+                },
+            };
+        }
         s
     }
 
@@ -448,6 +932,74 @@ mod tests {
         assert_eq!(r[1][0], p.turbidity);
         assert_eq!(r[3][1], p.brightness);
         assert_eq!(r[3][2], 1.0);
+        assert_eq!(r[3][3], 0.0, "closed below by default");
+        let open = SkyParams {
+            open_below: true,
+            ..p
+        };
+        assert_eq!(open.records([0.0, 1.0, 0.0], 0.0)[3][3], 1.0);
+    }
+
+    /// `sky.visible` and `sky.open_below` read back from the registry.
+    #[test]
+    fn visible_and_open_below_are_live_params() {
+        let mut reg = ParamRegistry::default();
+        let h = SkyHandles::register(&mut reg, &SkyParams::default()).unwrap();
+        let set = |reg: &mut ParamRegistry, n: &str, v: bool| {
+            let id = reg.id(n).unwrap();
+            reg.set(id, evani_core::params::ParamValue::Bool(v))
+                .unwrap();
+        };
+        set(&mut reg, "sky.visible", false);
+        set(&mut reg, "sky.open_below", true);
+        let s = h.read(&reg);
+        assert!(!s.visible && s.open_below, "{s:?}");
+    }
+
+    /// Feature `sky-horizon`: the defaults are the clouds without the
+    /// feature (the shader's fixed 0.03..0.27 fade, 0.1..0.4 detail), a lower
+    /// band shows clouds a few degrees over the skyline, the record keeps the
+    /// band ordered, and the four params read back from the registry.
+    #[cfg(feature = "sky-horizon")]
+    #[test]
+    fn cloud_horizon_defaults_match_and_low_bands_show_clouds() {
+        let d = CloudHorizon::default();
+        assert_eq!(d.record(), [0.03, 0.27, 1.0, 1.0]);
+        assert_eq!(SkyParams::default().horizon, d);
+        assert_eq!(d.fade(0.03), 0.0);
+        assert_eq!(d.fade(0.27), 1.0);
+        assert!(d.detail(0.1).abs() < 1e-6 && (d.detail(0.4) - 1.0).abs() < 1e-6);
+        // 3 degrees up: nearly nothing by default, most of a cloud low down.
+        let y3 = 3f32.to_radians().sin();
+        assert!(d.fade(y3) < 0.05, "{}", d.fade(y3));
+        let low = CloudHorizon {
+            fade_low: 0.0,
+            fade_high: 0.08,
+            curve: 0.5,
+            haze: 0.4,
+            ..d
+        };
+        assert!(low.fade(y3) > 0.6, "{}", low.fade(y3));
+        // A band set upside down still has its top above its bottom.
+        let flipped = CloudHorizon {
+            fade_low: 0.2,
+            fade_high: 0.1,
+            ..d
+        };
+        let r = flipped.record();
+        assert!(r[1] > r[0], "{r:?}");
+        let mut reg = ParamRegistry::default();
+        let h = SkyHandles::register(&mut reg, &SkyParams::default()).unwrap();
+        for (n, v) in [
+            ("sky.cloud_horizon_low", 0.0),
+            ("sky.cloud_horizon_high", 0.08),
+            ("sky.cloud_horizon_curve", 0.5),
+            ("sky.cloud_horizon_haze", 0.4),
+        ] {
+            let id = reg.id(n).unwrap();
+            reg.set(id, evani_core::params::ParamValue::F32(v)).unwrap();
+        }
+        assert_eq!(h.read(&reg).horizon, low);
     }
 
     #[test]

@@ -129,7 +129,7 @@ impl App {
         world.insert_resource(crate::play::PlayOutcomes::default());
         let audio = platform_audio(&mut world);
         world.insert_resource(audio);
-        world.insert_resource(ParticleQueue::default());
+        world.insert_resource(ParticleQueue::default()); #[cfg(feature = "trails")] world.insert_resource(crate::trails::TrailQueue::default());
         world.add_event::<EngineEvent>();
 
         let mut app = Self {
@@ -566,7 +566,7 @@ impl App {
 
         for _ in 0..plan.steps {
             let tick = self.world.res::<Time>().tick;
-            self.world.res_mut::<ParticleQueue>().set_tick(tick);
+            self.world.res_mut::<ParticleQueue>().set_tick(tick); #[cfg(feature = "trails")] self.world.res_mut::<crate::trails::TrailQueue>().set_tick(tick);
             self.schedule.run_fixed(&mut self.world);
             self.scene_step(true);
             self.world.update_events();
@@ -590,7 +590,7 @@ impl App {
         self.world.apply_commands();
         self.world.res_mut::<AudioMixer>().update();
         // Emits no particle system took (none in the build) are dropped.
-        self.world.res_mut::<ParticleQueue>().end_frame();
+        self.world.res_mut::<ParticleQueue>().end_frame(); #[cfg(feature = "trails")] self.world.res_mut::<crate::trails::TrailQueue>().end_frame();
 
         let cpu_ms = (crate::time::now_ms() - cpu_start) as f32;
         self.stats.record(dt_ms as f32, cpu_ms);

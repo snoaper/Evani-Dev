@@ -1,0 +1,36 @@
+[package]
+name = "evani-kit-material-view"
+description = "Evani.Dev material viewer kit: scenes, material families and presets, light presets, world rooms (Evani.Materials), orbit camera, keys and touch controls"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+build = "../../tools/bake-index.rs"
+
+[features]
+default = []
+# The material catalogue (batch 1 build plan 2.7, P13/P14): the 1,054 rows
+# and 29 recipes (dev data), the category tree, search and filters, and the
+# open material's switches. Only the material-view app's `material-catalogue`
+# turns it on; without it none of it is compiled.
+catalogue = ["dep:evani-material-recipes"]
+# The Asset & Style Studio (docs/studio/SPEC.md): the selection record
+# (asset, style, material), the asset catalogue and the auto-match rule from
+# evani-studio, as the `Studio` resource. Only the material-view app's
+# `material-studio` turns it on; without it none of it is compiled.
+studio = ["catalogue", "dep:evani-studio", "evani-studio/data"]
+
+[dependencies]
+# `touch`: the on-screen controls (README "Touch controls").
+evani-core = { workspace = true, features = ["touch"] }
+# The scenes are 3D, so the kit turns on the renderer's 3D path (`forward`).
+evani-render = { workspace = true, features = ["forward"] }
+# The data files (library, lights, world rooms) are JSON.
+serde.workspace = true
+serde_json.workspace = true
+evani-material-recipes = { workspace = true, optional = true, features = ["data"] }
+evani-studio = { workspace = true, optional = true }
+
+[lints]
+workspace = true

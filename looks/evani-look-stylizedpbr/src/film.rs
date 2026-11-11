@@ -83,7 +83,7 @@ impl SurfaceKind {
 
 /// The film params, registered as `look.stylizedpbr.<name>` only by the
 /// film build. Their defaults are "off": the preset sets them.
-pub const FILM_PARAMS: [ParamRow; 22] = [
+pub const FILM_PARAMS: [ParamRow; 28] = [
     ("sky", 0.0, 0.0, 2.0, 0.01, "", "Film hemisphere: sky light level (sky and ground 0 = the plain tints times render.ambient)"),
     ("ground", 0.0, 0.0, 2.0, 0.01, "", "Film hemisphere: ground bounce level"),
     ("ground_warmth", 0.0, 0.0, 1.0, 0.01, "", "How warm the ground bounce is (0 white)"),
@@ -106,6 +106,25 @@ pub const FILM_PARAMS: [ParamRow; 22] = [
     ("eye_gloss", 0.0, 0.0, 0.5, 0.01, "", "Wet roughness of eyes and wet skin (0 = off)"),
     ("eye_catch", 0.0, 0.0, 4.0, 0.01, "", "Catchlight strength on wet surfaces (0 = off)"),
     ("hue_keep", PLAIN_HUE_KEEP, 0.0, 1.0, 0.01, "", "Tonemap: share of the hue-keeping luminance curve (0.3 = the plain curve; more keeps bright orange from sliding to yellow)"),
+    // Critic round 3 of material-view: the plain rim, the surface's own
+    // colour a little lighter, read as soft light, not a rim, even at
+    // full strength.
+    ("rim_tint", 0.0, 0.0, 1.0, 0.01, "", "Rim colour: 0 the surface's own (the plain rim), 1 the fill's sky colour, gathered to the silhouette, so the shadow side's edge reads as a rim of light"),
+    // The Material library's realism view (procedural realism round 8):
+    // the engine's sky light (with evani-render `studio-sky`, a studio of
+    // light panels) in place of the film's two-colour hemisphere, and a
+    // photographic tone curve that keeps base colours true.
+    ("studio", 0.0, 0.0, 1.0, 1.0, "", "Ambient from the engine's sky light (its SH9 and reflections; 1) instead of the film's sky and ground colours (0)"),
+    ("tonemap", 0.0, 0.0, 1.0, 1.0, "", "Tone curve: 0 the look's filmic curve, 1 Khronos PBR Neutral (base colours stay true, only highlights roll off)"),
+    // Ranges widened for landscapes (Asset Studio mountains, 2026-11-07: a
+    // massif kilometres off and ranges tens of kilometres off); defaults
+    // unchanged.
+    ("haze_near", 0.0, 0.0, 20000.0, 0.1, "m", "Studio haze: where the floor starts to fade into the backdrop (0 = the look's own light haze)"),
+    ("haze_far", 0.0, 0.0, 120000.0, 0.1, "m", "Studio haze: where the floor is the backdrop's colour"),
+    // The grey studio sweep (commons-render, 2026-11-11): a fade even in
+    // distance crowds into a band just under the horizon; a studio sweep's
+    // floor brightens evenly down the picture from the horizon.
+    ("haze_curve", 0.0, 0.0, 1.0, 1.0, "", "Studio haze's fade: 0 even in distance (haze_near to haze_far), 1 even down the picture (by inverse distance, as a studio sweep's floor rises into its backdrop)"),
 ];
 
 /// The plain tonemap's share of its luminance curve (`mix(pc, bl, 0.3)`).
@@ -132,6 +151,12 @@ pub struct FilmSettings {
     pub eye_gloss: f32,
     pub eye_catch: f32,
     pub hue_keep: f32,
+    pub rim_tint: f32,
+    pub studio: f32,
+    pub tonemap: f32,
+    pub haze_near: f32,
+    pub haze_far: f32,
+    pub haze_curve: f32,
 }
 
 impl Default for FilmSettings {
@@ -141,7 +166,7 @@ impl Default for FilmSettings {
 }
 
 impl FilmSettings {
-    pub fn from_values(v: [f32; 22]) -> Self {
+    pub fn from_values(v: [f32; 28]) -> Self {
         Self {
             sky: v[0],
             ground: v[1],
@@ -161,6 +186,12 @@ impl FilmSettings {
             eye_gloss: v[19],
             eye_catch: v[20],
             hue_keep: v[21],
+            rim_tint: v[22],
+            studio: v[23],
+            tonemap: v[24],
+            haze_near: v[25],
+            haze_far: v[26],
+            haze_curve: v[27],
         }
     }
 
@@ -172,11 +203,49 @@ impl FilmSettings {
         [a.cos() * e.cos(), a.sin() * e.cos(), e.sin()]
     }
 
+    /// The rim with `rim_tint` over 0: the plain rim's falloff gathered
+    /// towards the silhouette (edge squared) and its colour leaning to the
+    /// fill's sky colour, so it reads as light catching the edge rather
+    /// than the surface a shade lighter. At 0 the plain body stays.
+    ///
+    /// Material-view critic round 13: the rim on the shadow side was faint,
+    /// so it leans harder away from the sun (0.25 on the lit side, 2 on the
+    /// far side, was 0.45 to 1). And it was a fixed amount of light: under
+    /// the night preset's dim moon (sun brightness 0.12) it outshone the
+    /// light itself on every grazing surface, and the far lawn read grey
+    /// whatever its colour, matte or fog. It now dims with the sun below a
+    /// brightness of 1 (every day preset is at or above it).
+    pub fn rim_body(&self, base: &Settings) -> String {
+        let t = self.rim_tint.clamp(0.0, 1.0);
+        let c = self.fill_color.map(|x| x.clamp(0.0, 2.0));
+        format!(
+            "    // {BODY_TAG}: soft rim, stronger away from the sun, in the sky's colour (film)
+    let e = 1.0 - clamp(n_dot_v, 0.0, 1.0);
+    let edge = smoothstep(1.0 - {}, 1.0, e);
+    let back = 0.25 + 1.75 * (1.0 - clamp(n_dot_l * 0.5 + 0.5, 0.0, 1.0));
+    let near = 1.0 - smoothstep(40.0, 80.0, distance);
+    let lit = clamp(dot(frame.light_color.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
+    let tint = mix(base * 0.9 + vec3<f32>(0.10, 0.11, 0.13), vec3<f32>({}, {}, {}), {});
+    return tint * (edge * edge * back * near * lit * {});",
+            lit(base.rim_width.clamp(0.05, 1.0)),
+            lit(c[0]),
+            lit(c[1]),
+            lit(c[2]),
+            lit(t),
+            lit(base.rim.max(0.0))
+        )
+    }
+
     /// The sky/ground cases (2 and 3). With `sky` and `ground` at 0 they are
     /// the plain look's tints that multiply the scene ambient; otherwise the
     /// final hemisphere light (w = 1): a sky in the fill colour, a warm
     /// ground bounce.
     pub fn hemisphere_cases(&self) -> String {
+        // The studio: both tints white and w = 0, so the lit pass's
+        // hemisphere is the engine's sky light itself (lit_sky: the SH9).
+        if self.studio >= 0.5 {
+            return "        case 2u: { return vec4<f32>(1.0, 1.0, 1.0, 0.0); }\n        case 3u: { return vec4<f32>(1.0, 1.0, 1.0, 0.0); }\n".into();
+        }
         if self.sky <= 0.0 && self.ground <= 0.0 {
             return "        case 2u: { return vec4<f32>(1.1, 1.08, 1.12, 0.0); }\n        case 3u: { return vec4<f32>(0.55, 0.48, 0.42, 0.0); }\n".into();
         }
@@ -246,6 +315,9 @@ impl FilmSettings {
     /// own mid grey (0.18 maps to 0.24) by a power: shadows deepen and
     /// lights open up, black and white stay where they are.
     pub fn tonemap_body(&self, base: &Settings) -> String {
+        if self.tonemap >= 0.5 {
+            return pbr_neutral_body();
+        }
         let plain = base.tonemap_body();
         let keep = self.hue_keep.clamp(0.0, 1.0);
         if (self.contrast - 1.0).abs() < 1e-4 && (keep - PLAIN_HUE_KEEP).abs() < 1e-4 {
@@ -260,6 +332,49 @@ impl FilmSettings {
             ),
         )
     }
+}
+
+impl FilmSettings {
+    /// The studio haze (`haze_near` over 0): from `haze_near` to `haze_far`
+    /// the fog (the backdrop's colour) rises smoothly to all of it, so a
+    /// lit floor fades into the backdrop with no horizon line.
+    /// `haze_curve` 1: the same rise by inverse distance (`1 - near / d`),
+    /// even down the picture over a flat floor.
+    pub fn haze_body(&self) -> String {
+        let near = self.haze_near.max(0.0);
+        let far = self.haze_far.max(near + 0.01);
+        if self.haze_curve >= 0.5 {
+            let near = near.max(0.01);
+            return format!(
+                "    // {BODY_TAG}: studio haze (film), even down the picture
+    let t = clamp((1.0 - {} / max(distance, {})) / {}, 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);",
+                lit(near),
+                lit(near),
+                lit(1.0 - near / far)
+            );
+        }
+        format!(
+            "    // {BODY_TAG}: studio haze (film)
+    let t = clamp((distance - {}) / {}, 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);",
+            lit(near),
+            lit(far - near)
+        )
+    }
+}
+
+/// Khronos PBR Neutral as the `tonemap` slot body. Adapted to WGSL from the
+/// Khronos Group's reference GLSL (https://github.com/KhronosGroup/ToneMapping,
+/// PBR_Neutral; Copyright 2024 The Khronos Group Inc., Apache-2.0, see
+/// THIRD_PARTY_NOTICES.md and licences/Apache-2.0-Khronos-ToneMapping.txt).
+/// Colours below the compression start pass through (minus a small black
+/// offset), so a concrete grey stays the grey it is; highlights compress and
+/// desaturate towards white.
+pub fn pbr_neutral_body() -> String {
+    format!(
+        "    // {BODY_TAG}: Khronos PBR Neutral (Apache-2.0, The Khronos Group)\n    var c = max(color, vec3<f32>(0.0));\n    let start = 0.76;\n    let desat = 0.15;\n    let x = min(c.r, min(c.g, c.b));\n    let offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n    c = c - offset;\n    let peak = max(c.r, max(c.g, c.b));\n    if (peak < start) {{\n        return clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));\n    }}\n    let d = 1.0 - start;\n    let np = 1.0 - d * d / (peak + d - start);\n    c = c * (np / peak);\n    let g = 1.0 - 1.0 / (desat * (peak - np) + 1.0);\n    return clamp(mix(c, vec3<f32>(np), g), vec3<f32>(0.0), vec3<f32>(1.0));"
+    )
 }
 
 /// The last line of the plain tonemap body, where contrast joins.
@@ -282,6 +397,8 @@ impl Tuned {
                 match *name {
                     "surface_params" => *body = f.surface_params_body(&self.base),
                     "tonemap" => *body = f.tonemap_body(&self.base),
+                    "rim" if f.rim_tint > 0.0 => *body = f.rim_body(&self.base),
+                    "fog" if f.haze_near > 0.0 => *body = f.haze_body(),
                     _ => {}
                 }
             }
@@ -470,6 +587,36 @@ mod tests {
         assert_eq!(off.tonemap_body(&Settings::default()), Settings::default().tonemap_body());
     }
 
+    /// Guard (critic round 3 of material-view: the rim, the surface's own
+    /// colour a shade lighter, was not seen on any shadow side): rim_tint 0
+    /// keeps the plain rim body exactly; over 0 the rim leans to the sky's
+    /// colour and gathers to the silhouette, so on a dark blue face's edge,
+    /// turned from the sun, it adds clearly more than the plain rim, and
+    /// halfway in it adds less.
+    #[test]
+    fn the_film_rim_tint_reads_as_a_rim_of_light() {
+        let base = Settings { rim: 1.0, rim_width: 0.7, ..Settings::default() };
+        let plain = Tuned { base, film: Some(FilmSettings::default()) }.bodies();
+        assert_eq!(plain, Tuned { base, film: None }.bodies().into_iter().map(|(n, b)| (n, if n == "surface_params" || n == "tonemap" { plain.iter().find(|(m, _)| *m == n).map_or(b.clone(), |x| x.1.clone()) } else { b })).collect::<Vec<_>>());
+        let rim_of = |v: &[(&'static str, String)]| v.iter().find(|(n, _)| *n == "rim").map(|x| x.1.clone()).unwrap_or_default();
+        assert_eq!(rim_of(&plain), base.rim_body(), "rim_tint 0 keeps the plain body");
+        let f = FilmSettings { rim_tint: 1.0, fill_color: [0.75, 0.82, 1.0], ..FilmSettings::default() };
+        let tinted = rim_of(&Tuned { base, film: Some(f) }.bodies());
+        assert!(tinted.contains("edge * edge") && tinted.contains("vec3<f32>(0.75000, 0.82000, 1.00000), 1.00000)"), "{tinted}");
+        // Critic round 13: it dims with a dim sun (the night lawn read grey)
+        // and leans hard to the shadow side.
+        assert!(tinted.contains("let lit = clamp(dot(frame.light_color.rgb,") && tinted.contains("near * lit *"), "{tinted}");
+        assert!(tinted.contains("let back = 0.25 + 1.75 * (1.0 - clamp(n_dot_l * 0.5 + 0.5, 0.0, 1.0));"), "{tinted}");
+        // The bodies' maths, mirrored: (colour, falloff) at 1 - n.v = e.
+        let ss = |a: f32, b: f32, x: f32| { let t = ((x - a) / (b - a)).clamp(0.0, 1.0); t * t * (3.0 - 2.0 * t) };
+        let dark_blue = [0.02f32, 0.08, 0.3];
+        let back = 0.45 + 0.55 * (1.0 - (-0.6f32 * 0.5 + 0.5));
+        let plain_add = |e: f32| dark_blue.map(|c| c * 0.9 + 0.12).iter().sum::<f32>() * ss(0.3, 1.0, e) * back;
+        let tint_add = |e: f32| (0.75 + 0.82 + 1.0) * ss(0.3, 1.0, e).powi(2) * back;
+        assert!(tint_add(0.95) > 3.0 * plain_add(0.95), "the edge: {} vs {}", tint_add(0.95), plain_add(0.95));
+        assert!(tint_add(0.5) < tint_add(0.95) * 0.1, "gathered to the silhouette");
+    }
+
     #[test]
     fn the_film_preset_sets_the_rig_skin_and_eyes() {
         let f = Film::preset().unwrap_or_else(|e| panic!("{e}"));
@@ -522,5 +669,22 @@ mod tests {
         assert!(tm.contains("mix(pc, bl, 0.80000)") && tm.contains("vec3<f32>(1.00000)"), "{tm}");
         f.hue_keep = 7.0;
         assert!(f.tonemap_body(&base).contains("mix(pc, bl, 1.00000)"), "clamped to 1");
+    }
+
+    #[test]
+    fn the_studio_haze_fades_by_distance_or_evenly_down_the_picture() {
+        let mut f = FilmSettings { haze_near: 4.0, haze_far: 80.0, ..FilmSettings::default() };
+        assert_eq!(f.haze_curve, 0.0, "off by default: the haze is the one it was");
+        let even = f.haze_body();
+        assert!(even.contains("(distance - 4.00000)") && even.contains("76.00000"), "{even}");
+        f.haze_curve = 1.0;
+        let pic = f.haze_body();
+        assert!(pic.contains("1.0 - 4.00000 / max(distance, 4.00000)") && pic.contains("0.95000"), "{pic}");
+        assert!(evani_core::slots::check_body(&pic).is_ok());
+        // The fade at d: 0 up to haze_near, all of it by haze_far.
+        let t = |d: f32| ((1.0 - 4.0 / d.max(4.0)) / 0.95).clamp(0.0, 1.0);
+        assert_eq!(t(3.0), 0.0);
+        assert!((t(80.0) - 1.0).abs() < 1e-6);
+        assert!(t(8.0) > 0.5, "half way down the picture from the horizon, half the fade");
     }
 }

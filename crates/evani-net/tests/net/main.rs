@@ -10,11 +10,15 @@
 //! * `synctest`: the sync-test guard on the toy game and on games broken
 //!   on purpose.
 //! * `float_probe`: float results natively and in wasm32, compared.
+//! * `sync`: the sync layer (prediction, smoothing, snapshot buffer) at
+//!   150 ms, jitter and 5 % loss.
 
 mod float_kernel;
 mod float_probe;
 mod loopback;
 mod referee;
 mod support;
+#[cfg(feature = "sync")]
+mod sync;
 mod synctest;
 mod wire;

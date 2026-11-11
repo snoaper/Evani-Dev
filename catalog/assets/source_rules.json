@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "note": "How a model tier's vertices map to an asset's regions when the tier carries no `_EVANI_PART` byte and no glTF material named after a region (evani-style-geo source.rs, WP2 of docs/studio/WORK_PACKAGES.md). Steps are tried in order, the first that matches wins, and the last must match anything. `material`: the vertex's glTF material name. `along`, `around`, `distal`, `length`: the body chart `_EVANI_REGION` (0..1 each), as [min, max): min inclusive, max exclusive. `proxies`: solid shapes the tier lacks, built from its own anchors (evani-style-geo proxy.rs), added only when no vertex already holds that region. Every name is a region of the asset's row; `cargo xtask check` refuses one that isn't.",
+  "assets": {
+    "animal.horse": {
+      "chart": "the horse v5 body chart: along runs muzzle 0 to dock 1 on the body, distal grows down a leg and out along an ear (horse-model branch, evani_material_recipes::region). The leg region starts at distal 0.52 (about the knee and hock), where a bay's black points begin; lower values paint the shoulders and hips.",
+      "steps": [
+        {"region": "hoof", "material": "hoof"},
+        {"region": "eye", "material": "eye"},
+        {"region": "coat", "along": [0.0, 0.002]},
+        {"region": "ear", "along": [0.0, 0.15], "distal": [0.02, 1.01]},
+        {"region": "muzzle", "along": [0.0, 0.045]},
+        {"region": "tail", "along": [0.85, 1.01]},
+        {"region": "leg", "distal": [0.52, 1.01]},
+        {"region": "coat"}
+      ],
+      "proxies": [
+        {"region": "mane", "shape": "mane"},
+        {"region": "tail", "shape": "tail"}
+      ]
+    }
+  }
+}

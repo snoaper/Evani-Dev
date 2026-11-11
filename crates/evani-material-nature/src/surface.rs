@@ -33,10 +33,15 @@ pub enum Kind {
     /// A thin box lit through with the foliage colour (a big leaf, a
     /// frond, a petal).
     Leaf,
+    /// The halo of a shade lit from inside whose lit face the scene already
+    /// draws (a paper lantern): only where there is no bloom (Lite and Low),
+    /// as a lamp's, with no pool of light. Its `yaw` is its strength against
+    /// the lamp's (a halo is round, so it has no turn).
+    Glow,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 10] = [
+    pub const ALL: [Kind; 11] = [
         Kind::WaterEllipse,
         Kind::WaterRect,
         Kind::GlassPane,
@@ -47,6 +52,7 @@ impl Kind {
         Kind::ThinPatch,
         Kind::Lamp,
         Kind::Leaf,
+        Kind::Glow,
     ];
 
     /// The shape code the shader reads (`Surf.c.w`).
@@ -62,6 +68,7 @@ impl Kind {
             Kind::ThinPatch => 7.0,
             Kind::Lamp => 8.0,
             Kind::Leaf => 9.0,
+            Kind::Glow => 10.0,
         }
     }
 
@@ -78,6 +85,7 @@ impl Kind {
             Kind::ThinPatch => "thin_patch",
             Kind::Lamp => "lamp",
             Kind::Leaf => "leaf",
+            Kind::Glow => "glow",
         }
     }
 
@@ -95,6 +103,7 @@ impl Kind {
             "thin_patch" | "paper" | "sail" | "curtain" => Kind::ThinPatch,
             "leaf" | "frond" | "petal" => Kind::Leaf,
             "lamp" | "lampshade" | "candle" => Kind::Lamp,
+            "glow" | "halo" => Kind::Glow,
             _ => return None,
         })
     }
@@ -230,6 +239,9 @@ pub(crate) struct State {
     /// Per-channel scale of the reflected sky, packed ([`crate::pack_sky_tint`]).
     pub(crate) sky_tint: Cell<f32>,
     pub(crate) mode: Cell<crate::effect::Mode>,
+    /// A live capture's sub-pixel projection jitter (pixels), 0 otherwise.
+    #[cfg(feature = "capture")]
+    pub(crate) jitter: Cell<[f32; 2]>,
 }
 
 /// The surfaces to draw (a world resource; cheap to clone, clones share the
@@ -249,6 +261,8 @@ impl Default for NatureSurfaces {
             sun_col: Cell::new([1.0; 3]),
             sky_tint: Cell::new(crate::pack_sky_tint([1.0; 3])),
             mode: Cell::new(crate::effect::Mode::Off),
+            #[cfg(feature = "capture")]
+            jitter: Cell::new([0.0; 2]),
         }))
     }
 }
@@ -302,10 +316,10 @@ impl NatureSurfaces {
 
     /// Pick this frame's surfaces: those in front of the camera within its
     /// reach, at most `cap`, nearest kept first, then sorted far to near so
-    /// batches combine back to front. `see_through_only` (Lite and Low, whose
-    /// flat draws show only water and glass) leaves the rest out, so they
-    /// take no batch.
-    pub(crate) fn plan(&self, cap: usize, see_through_only: bool) {
+    /// batches combine back to front. Every tier plans every kind (critic
+    /// round 1: Lite and Low used to plan only water and glass, so leaves and
+    /// grass lost their light there).
+    pub(crate) fn plan(&self, cap: usize) {
         let cam = self.0.camera.get();
         let (Ok(src), Ok(mut out)) = (self.0.surfaces.try_borrow(), self.0.drawn.try_borrow_mut()) else {
             return;
@@ -325,9 +339,6 @@ impl NatureSurfaces {
             d[0] * d[0] + d[1] * d[1] + d[2] * d[2]
         };
         out.extend(src.iter().copied().filter(|s| {
-            if see_through_only && !s.kind.see_through() {
-                return false;
-            }
             let d = [
                 s.centre[0] - cam.eye[0],
                 s.centre[1] - cam.eye[1],

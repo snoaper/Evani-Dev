@@ -497,3 +497,46 @@ fn evani_model_files_are_not_resimplified() {
     assert_eq!(e_out.parts, e_in.parts);
     assert_eq!(e_out.tier.as_deref(), Some("low"));
 }
+
+/// `--materials <map.json>` (P10b): a model converted with a map carries
+/// `evani_material` and the row's `evani_recipe` block in every tier file
+/// (gltfpack keeps extras), the plain colour factors, and a bad map is refused
+/// before anything is written.
+#[test]
+fn a_materials_map_puts_the_catalogue_block_in_every_tier() {
+    let Some(()) = tools_or_skip("a_materials_map_puts_the_catalogue_block_in_every_tier") else { return };
+    let cat = evani_convert::materials::load_catalog(&root()).unwrap();
+    let wood = cat.rows.iter().find(|r| r.recipe == "wood").unwrap();
+    let want = cat.encode(wood).unwrap().to_hex();
+    let dir = scratch("materials-map");
+    let input = fixture(&dir);
+    let map = dir.join("map.json");
+    std::fs::write(&map, format!("{{\"painted\": \"{}\"}}", wood.id)).unwrap();
+    let mut o = fixture_options(&input, &dir.join("out"));
+    o.tiers = vec!["low".into(), "high".into()];
+    o.materials = Some(map.clone());
+    let r = convert(&o).unwrap();
+    assert!(r.errors.is_empty(), "problems: {:?}", r.errors);
+    assert!(r.report["notes"].as_array().unwrap().iter().any(|n| n.as_str().is_some_and(|n| n.contains("materials: 1 material(s)") && n.contains(&wood.id))), "{}", r.report["notes"]);
+    for file in tier_files(&r) {
+        let doc = Doc::read_file(&r.out_dir.join(&file)).unwrap();
+        let m = &doc.json["materials"][0];
+        assert_eq!(m.pointer("/extras/evani_material").and_then(Value::as_str), Some(wood.id.as_str()), "{file}");
+        assert_eq!(m.pointer("/extras/evani_recipe").and_then(Value::as_str), Some(want.as_str()), "{file}: the catalogue row's block");
+        assert!(m.pointer("/pbrMetallicRoughness/baseColorFactor").is_some(), "{file}: the plain colour factor");
+        // The engine reader still reads it (the check's staleness rules read the same file).
+        let g = read(&r.out_dir, &file);
+        assert!(!g.nodes.is_empty());
+    }
+    // The master stays the untouched input.
+    let master = Doc::read_file(&r.out_dir.join("fixture.master.glb")).unwrap();
+    assert!(master.json["materials"][0].get("extras").is_none(), "the master is the input, unchanged");
+
+    // A map naming a material the model lacks, or an id the catalogue lacks, stops the run with a fix.
+    std::fs::write(&map, format!("{{\"missing\": \"{}\"}}", wood.id)).unwrap();
+    let Err(e) = convert(&o) else { panic!("a missing material is refused") };
+    assert!(e.contains("\"missing\"") && e.contains("\"painted\"") && e.contains("fix:"), "{e}");
+    std::fs::write(&map, "{\"painted\": \"wood.nope.nothing\"}").unwrap();
+    let Err(e) = convert(&o) else { panic!("an unknown id is refused") };
+    assert!(e.contains("not a catalogue id") && e.contains("fix:"), "{e}");
+}

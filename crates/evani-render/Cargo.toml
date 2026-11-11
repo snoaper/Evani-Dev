@@ -23,6 +23,16 @@ capture = ["evani-core/capture"]
 # 2D games leave it off and download none of it. A 3D draw in a build
 # without it is reported once in the ErrorLog.
 forward = []
+# The Asset & Style Studio's screen passes (`studio_passes.rs`, WP5):
+# pixel, paper, tilt-shift and silhouette over the tonemapped image, with
+# their params. Only the material viewer's studio turns it on; every other
+# build ships none of it.
+studio-passes = ["forward"]
+# The studio's material swatch balls (`swatch.rs`): a model drawn offscreen
+# through its real material pipeline in the frame's light, tonemapped and
+# read back as small pictures for the page (no pre-baked images). Only the
+# material viewer's studio turns it on; every other build ships none of it.
+swatches = ["models"]
 # One directional shadow map (resolution and PCF from the tier) drawn in a
 # depth-only `shadows` pass, sampled by the forward pass. Turned on by the
 # evani-fx `shadows` effect; without it the forward shader ships a one-line
@@ -46,8 +56,16 @@ compute = []
 # WGSL ships. The world-space group (`Space::World3d`, forward pass) is
 # drawn only with `forward` too; screen-space groups need only this.
 particles = ["compute"]
+# Ribbons and trails (the evani-fx `trails` effect): one ring of points per
+# emitter from `evani_core::trails::TrailQueue`, a `trails.sim` compute pass
+# ages them and the sprites and forward passes draw each strip from
+# neighbouring points. Without it the queue is not even compiled.
+trails = ["compute", "evani-core/trails"]
+# Screen-space strips (`Space::Screen2d`) in a 3D game. 2D games always have
+# them; a 3D game without this downloads only the world strips.
+trails-screen = ["trails"]
 # Custom meshes from the `MeshLibrary` resource (spline roads and walls,
-# generated meshes): the renderer uploads them and packs up to 64 mesh kinds.
+# generated meshes): the renderer uploads them and packs up to 256 mesh kinds (248 custom).
 # Games that only draw the built-in meshes leave it off. Needs `forward`.
 meshes = ["forward"]
 # Pixel-perfect canvas size for `render.pixel_art`: the backing store follows
@@ -97,6 +115,10 @@ msdf = [
 # upload and the tier's texture budget. Games without `models` download
 # none of it. Needs `forward`.
 models = ["forward", "dep:evani-gltf", "evani-core/texture-budget", "evani-core/stream", "dep:serde_json"]
+# Swap an in-memory model's bytes in place (`Models::replace_glb`): a viewer
+# that rebuilds a model on every slider move keeps one table entry instead
+# of adding one per edit. Opt-in; no shipped game turns it on.
+model-replace = ["models"]
 # Skinned models on the GPU (S3-9): linear blend skinning in the model
 # vertex shader (`shaders/model_skin.wgsl`), one read-only storage buffer of
 # 4x3 joint matrices for every character with a per-instance offset, joints
@@ -178,11 +200,31 @@ ambient = ["shadows"]
 # analytic blurred sky on tiers with `ibl_cube: 0`, a small runtime GGX
 # prefiltered sky cube elsewhere. No HDR or lookup-table file ships.
 ibl = ["ambient", "evani-core/ibl"]
+# A photo studio in place of the sky (the Material library's realism view):
+# `render.sky.studio` blends the sky light into soft light panels (an
+# overhead light, a key softbox turned to the sun, a fill card, walls and a
+# floor bounce) in the SH9 diffuse, the analytic reflection and the sky
+# cube (ambient.rs `studio`). Only the material viewer turns it on; games
+# without it are byte for byte what they were.
+studio-sky = ["ibl"]
 # Ground-truth ambient occlusion (S5-R5, after XeGTAO and Bevy's port): a
 # depth prepass, depth mips, a GTAO slice pass and a depth-aware denoise, all
 # fragment passes, at the tier's `gtao` quality (Medium: half-res 1x2, High:
 # 2x2, Ultra: 3x3; off below). Darkens only the ambient term.
 gtao = ["ambient", "evani-core/gtao"]
+# Contact shadows on every tier (critic round 3 of material-view): the blob
+# shadows (`RenderWorld::draw_blob`) stay on where the shadow map is on, so
+# a subject keeps its soft contact disc when a high sun hides its cast
+# shadow behind it, and Lite/Low and High/Ultra ground it the same way. The
+# blobs move past the cascade words in the forward uniform and the blob loop
+# reads them there (a text patch at pipeline build). Games without it are
+# unchanged.
+contact-shadows = ["shadows"]
+# Exact sun casts for the baked cones (Lite and Low): every corner's rays
+# cast against the model's triangles, not only the grid's depth maps
+# (model/sun.rs module notes). Costs bake time; the material viewer turns it
+# on for its hero models. A game without it bakes the bytes it did.
+sun-exact = ["models"]
 # The pseudo-3D road of arcade racers (S6-5, `pseudo3d.rs`): a segment-
 # projected road with curves, hills, roadside sprites and a scrolling
 # backdrop, drawn as 2D quads at the start of the sprites pass (one
@@ -256,6 +298,50 @@ material-layers = ["look-surface", "dep:evani-material-layers"]
 # fur/hair shine on the lit surface pass, chosen per glTF material by
 # `extras.evani_kind`. Games without it are byte for byte what they were.
 char-materials = ["look-surface", "dep:evani-material-character"]
+# Catalogue material recipes (evani-material-recipes; batch 1 build plan 2.3,
+# P2b): a glTF material's `extras.evani_recipe` (the 32-byte block) picks one
+# of the compiled recipes and its condition layers, drawn by a recipe stage
+# patched into the model lit stage at pipeline build (after the character
+# patch; into the layered stage with `material-layers`). Live switches
+# `material.recipe.enabled` and `material.quality.*`. Off with `relief`, like
+# the lit pass. Games without it are byte for byte what they were.
+material-recipes = ["look-surface", "dep:evani-material-recipes", "evani-material-recipes/engine", "material-split"]
+# The recipe stage's style detail step (dev viewers only; evani-material-recipes
+# `style`): writes the `RecipeStyle` world resource into the per-frame uniform's
+# reserved word, so a non-realistic art style keeps each material's pattern.
+material-recipe-style = ["material-recipes", "evani-material-recipes/style"]
+# One small shader per material (on with `material-recipes`, never listed on
+# its own): each material draws with its own pipeline, built in the
+# background when first drawn: one recipe, one character kind, one pass
+# (opaque, see-through or glass), only the code its entry points reach
+# (gpu/split.rs, evani-material-recipes `split`). There is no all-in-one
+# model module: one with every recipe took 21-28 s to compile.
+material-split = ["models", "look-surface", "dep:evani-material-recipes", "evani-material-recipes/engine", "evani-material-recipes/split"]
+# Cut-out holes for catalogue materials (batch 3 B3-P2): grates, chain-link,
+# wire mesh and lattice. The recipe patch gains two line edits (the holes
+# after the recipe, the edge mark the tonemap pass blends), and with `shadows`
+# the model shadow and AO depth passes draw a cut material's parts through a
+# second, hole-aware depth pipeline (the same holes from the same block), so
+# light comes through them. Every other part keeps the depth-only pipeline.
+# A game turns it on by listing "cutout" in `[materials] recipes`. Games
+# without it are byte for byte what they were.
+material-recipes-cut = ["material-recipes", "evani-material-recipes/cutout"]
+# The see-through pass for catalogue materials (batch 3 B3-P3; batch 1 P15's
+# verdict): a material whose glTF alphaMode is BLEND (glass, smoke, steam,
+# fire, holograms) draws after the opaque models and the world particles,
+# far to near per instance, through a blend pipeline per sample count
+# (premultiplied alpha; fire and holograms add with alpha 0, the same state),
+# depth tested, never written; its shadow is a stipple through the
+# hole-aware depth pipeline, and the AO depth skips it. A game turns it on
+# by listing `"blend"` in `[materials] recipes`. Games without it are byte for byte what
+# they were.
+material-recipes-blend = ["material-recipes", "evani-material-recipes/blend"]
+# Screen-space refraction for frosted, wavy and block glass (B3-P3, on top of
+# the blend): on a frame with such glass, the opaque colour is copied to a
+# half-size texture with three mips and the glass pipeline (one sample, its
+# own module) bends and blurs it. On every tier, so a phone sees the same
+# frosting. `"refraction"` in `[materials] recipes`.
+material-recipes-refract = ["material-recipes-blend", "evani-material-recipes/refract"]
 # Kit surface (playground materials, `kit_surface.rs`): a kit's code may also
 # define `kit_surface(p, n, material, nr)`, which returns the colour and
 # cut-out like `kit_material` and writes a bent normal and a roughness. The
@@ -264,6 +350,42 @@ char-materials = ["look-surface", "dep:evani-material-character"]
 # only when the kit code defines it, so kits without it draw as before.
 # Games without the feature are byte for byte what they were.
 kit-surface = ["kit-material"]
+# Game passes (CORE_REQUESTS `game-gpu-passes`, `game_pass.rs`): a kit or look
+# adds its own full-screen and compute passes to the frame with its own WGSL
+# (`game_pass::add`), its own textures (screen-sized, fixed LUTs, 3D volumes,
+# history copies), several inputs per draw, a place in the frame, a tier rule
+# and live parameters `kit.<id>.<pass>.<name>`. Bad declarations are refused
+# with a `fix:` line. Games without it are byte for byte what they were.
+game-passes = ["compute"]
+# Kit tests only (dev-dependencies): `game_pass::check` compiles every game
+# pass's whole WGSL module with naga. Never in a game's ship build.
+game-passes-check = ["game-passes", "dep:naga"]
+# Post effects that draw a mesh (the spectral sea's wave cascades, part
+# `spectral-sea` of evani-material-nature): graph targets of a fixed size
+# (`TargetDesc::fixed`, e.g. a per-frame wave texture atlas), and an effect
+# draw of many vertices (`PostRecorder::draw_mesh`: the vertex index makes
+# the grid, no vertex buffer) into a colour target with a depth target of
+# its own, sampling its input, the scene depth and one more target (the
+# atlas, in the vertex stage too). Only the sea part turns it on; games
+# without it are byte for byte what they were.
+effect-mesh = []
+# Kit textures (TopGun W3, `kit_textures.rs`): tiling PBR texture arrays
+# (two sets of up to 16 layers, albedo+height and normal+roughness+AO, KTX2
+# ASTC / BC7 / RGBA by device, size by tier) and a game-written macro array
+# with engine mips and per-frame `write_rect`, bound next to `kit_data` for
+# the kit material hooks (bindings 16 to 23). Games without the feature are
+# byte for byte what they were.
+kit-textures = ["kit-material", "dep:serde_json", "web-sys/Response"]
+# Module-drawn world geometry (`world_draw.rs`, CORE_REQUESTS `world-draws`,
+# asked for by evani-grass): a module puts a `WorldDraw` in the
+# `WorldDraws` resource; the renderer gives it one compute pass of its own
+# before the graph walk (its uploads, generation, culling, indirect args)
+# and calls its draws inside the forward pass, after the meshes and models
+# and before world particles, with the forward pass's sample count, colour
+# and depth formats and views. The module owns its pipelines and buffers
+# (instanced, indirect, any WGSL). Turned on only by crates that draw this
+# way (evani-grass); games without it are byte for byte what they were.
+world-draws = ["forward"]
 
 [dependencies]
 evani-core.workspace = true
@@ -272,6 +394,10 @@ evani-material-layers = { workspace = true, optional = true }
 bytemuck.workspace = true
 serde_json = { workspace = true, optional = true }
 evani-material-character = { workspace = true, optional = true }
+# Only with `game-passes-check` (kit tests): validates game-pass WGSL. Same
+# pin as the dev-dependency below.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"], optional = true }
+evani-material-recipes = { workspace = true, optional = true }
 
 # WebGPU only, and only in the browser: native builds (tests, tools) never
 # link a GPU backend, so there is no WebGL/Vulkan/Metal code path anywhere.

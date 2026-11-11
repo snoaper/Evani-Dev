@@ -27,6 +27,7 @@ mod mcp;
 mod models;
 mod page;
 mod proto;
+mod rebuild;
 mod server;
 mod session;
 mod tools;
@@ -51,7 +52,9 @@ defaults: --root . --port 8096 --approve-port 0 (any free port) --game sandbox -
 --app-dir <folder>: a game kept outside the engine folder (its app folder, the one with its
   evani.toml), found and guarded as `cargo xtask build --app-dir` does (it must build against
   this --root). The bridge builds it with Trunk in its own workspace (no live code swapping or
-  page hot-replace), serves only files inside that build, and answers the look guard, model
+  page hot-replace) and rebuilds it when its sources change (checked once a second, after the
+  edits settle) or the page is reloaded out of date, then reloads the open page; it serves
+  only files inside that build, and answers the look guard, model
   and convert commands with `not available for --app-dir yet`. Its session file defaults to
   <game workspace>/.evani/live/sessions/<port>.json (never the engine's tab session)
 --models <folder>: model mode for the Model tab's page (docs/EVANI_MODEL_TAB.md 4.2): the
@@ -292,7 +295,26 @@ async fn serve(args: Args) -> Result<(), String> {
                 eprintln!("evani-live-bridge: live code swapping is off: {reason}");
             }
             hub.set_code_mode(json!({ "mode": "trunk", "reason": reason }));
-            if args.no_build || game.is_current() {
+            if game.outside && !args.no_build {
+                // A game outside the engine: built now if it is out of date, then
+                // rebuilt when its sources change or the page is reloaded
+                // (rebuild.rs, LIVE_API.md 10.5).
+                let current = game.is_current();
+                let game = Arc::new(game);
+                let (probe_game, build_game) = (game.clone(), game.clone());
+                let rebuilder = rebuild::Rebuilder::new(
+                    hub.clone(),
+                    Arc::new(move || probe_game.newest_source_file()),
+                    Box::new(move || {
+                        let g = build_game.clone();
+                        Box::pin(async move { g.build(quiet).await })
+                    }),
+                    current,
+                    quiet,
+                );
+                app.set_rebuilder(rebuilder.clone());
+                Some(tokio::spawn(rebuilder.watch()))
+            } else if args.no_build || game.is_current() {
                 hub.set_build(hub::BuildState { phase: "idle", error: None, build_ms: 0 });
                 None
             } else {

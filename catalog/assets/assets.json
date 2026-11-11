@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "note": "Asset & Style Studio: the asset catalogue (what is drawn). One source model per asset; every art style is generated from it (docs/studio/CONTRACTS.md). Checked by `cargo xtask check` through evani-studio. Materials say where they belong with `belongs_on` in catalog/materials/materials.json; the classes below are the only names it may use.",
+  "default_asset": "animal.horse",
+  "categories": [
+    {"id": "shapes", "name": "Basic shapes"},
+    {"id": "animals", "name": "Animals"},
+    {"id": "people", "name": "People"},
+    {"id": "buildings", "name": "Buildings"},
+    {"id": "plants", "name": "Plants"},
+    {"id": "land", "name": "Terrain"},
+    {"id": "vehicles", "name": "Vehicles"},
+    {"id": "furniture", "name": "Furniture"},
+    {"id": "objects", "name": "Everyday objects"},
+    {"id": "fantasy", "name": "Fantasy"},
+    {"id": "scifi", "name": "Sci-fi"}
+  ],
+  "classes": [
+    {"id": "quadruped.horse", "name": "horse", "label": "a horse", "plural": "horses", "exclusive": true, "swatch": false, "primary_asset": "animal.horse"},
+    {"id": "quadruped.cow", "name": "cow", "label": "a cow", "plural": "cows", "exclusive": true, "swatch": false, "primary_asset": "animal.cow"},
+    {"id": "quadruped.dog", "name": "dog", "label": "a dog", "plural": "dogs", "exclusive": true, "swatch": false, "primary_asset": "animal.dog"},
+    {"id": "building.wall", "name": "wall", "label": "a wall", "plural": "walls", "exclusive": false, "swatch": false, "primary_asset": "building.wall"},
+    {"id": "building.roof", "name": "roof", "label": "a roof", "plural": "roofs", "exclusive": false, "swatch": false, "primary_asset": "building.roof"},
+    {"id": "land.terrain", "name": "ground", "label": "a patch of ground", "plural": "ground patches", "exclusive": false, "swatch": false, "primary_asset": "land.patch"},
+    {"id": "shape.basic", "name": "test shape", "label": "a test shape", "plural": "test shapes", "exclusive": false, "swatch": true, "primary_asset": "shape.sphere"}
+  ],
+  "part_kinds": [
+    {"id": "coat", "name": "Coat"},
+    {"id": "mane", "name": "Mane"},
+    {"id": "tail", "name": "Tail"},
+    {"id": "hoof", "name": "Hooves"},
+    {"id": "horn", "name": "Horns"},
+    {"id": "muzzle", "name": "Muzzle"},
+    {"id": "nose", "name": "Nose"},
+    {"id": "eye", "name": "Eyes"},
+    {"id": "roof_tiles", "name": "Roof tiles"},
+    {"id": "ridge", "name": "Ridge"},
+    {"id": "masonry", "name": "Masonry"},
+    {"id": "plaster", "name": "Plaster"},
+    {"id": "timber_trim", "name": "Timber trim"},
+    {"id": "coping", "name": "Coping"},
+    {"id": "plinth", "name": "Plinth"},
+    {"id": "ground", "name": "Ground"},
+    {"id": "surface", "name": "Surface"}
+  ],
+  "assets": [
+    {
+      "id": "animal.horse", "name": "Horse", "category": "animals", "subcategory": "farm", "class": "quadruped.horse",
+      "search_words": "horse, pony, mare, stallion, foal",
+      "source": {"kind": "blender-script", "script": "tools/models/horse/build_horse.py", "model": "horse"},
+      "regions": [
+        {"id": "coat", "accepts": ["class", "recipe:fur", "recipe:hide", "generic"]},
+        {"id": "leg", "follows": "coat", "tone": "points", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "ear", "follows": "coat", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "mane", "follows": "coat", "tone": "points", "thin": true, "accepts": ["recipe:hair", "class", "generic"]},
+        {"id": "tail", "follows": "coat", "tone": "points", "thin": true, "accepts": ["recipe:hair", "class", "generic"]},
+        {"id": "hoof", "accepts": ["recipe:keratin"], "default_material": "horse.hoof.dark"},
+        {"id": "muzzle", "accepts": ["recipe:hide", "recipe:skin"], "default_material": "horse.muzzle.dark"},
+        {"id": "eye", "accepts": [], "keep": true}
+      ],
+      "parts": [
+        {"id": "coat", "label": "Coat", "kind": "coat", "regions": ["coat", "leg", "ear"]},
+        {"id": "mane", "label": "Mane", "kind": "mane", "regions": ["mane"]},
+        {"id": "tail", "label": "Tail", "kind": "tail", "regions": ["tail"]},
+        {"id": "hooves", "label": "Hooves", "kind": "hoof", "regions": ["hoof"]},
+        {"id": "muzzle", "label": "Muzzle", "kind": "muzzle", "regions": ["muzzle"]},
+        {"id": "eyes", "label": "Eyes", "kind": "eye", "regions": ["eye"]}
+      ],
+      "default_material": "horse.coat.bay",
+      "frame": {"yaw": 35, "pitch": 12, "fill": 0.8},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/animal.horse.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "animal.cow", "name": "Cow", "category": "animals", "subcategory": "farm", "class": "quadruped.cow",
+      "search_words": "cow, cattle, bull, calf, heifer",
+      "source": {"kind": "blender-script", "script": "tools/models/quadruped/build.py", "species": "cow", "model": "cow"},
+      "regions": [
+        {"id": "coat", "accepts": ["class", "recipe:fur", "recipe:hide", "generic"]},
+        {"id": "leg", "follows": "coat", "tone": "points", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "ear", "follows": "coat", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "tail", "follows": "coat", "tone": "points", "thin": true, "accepts": ["recipe:hair", "class", "generic"]},
+        {"id": "horn", "thin": true, "accepts": ["recipe:keratin"], "default_material": "horse.hoof.pale"},
+        {"id": "hoof", "accepts": ["recipe:keratin"], "default_material": "horse.hoof.dark"},
+        {"id": "muzzle", "accepts": ["recipe:hide", "recipe:skin"], "default_material": "horse.muzzle.pink"},
+        {"id": "eye", "accepts": [], "keep": true}
+      ],
+      "parts": [
+        {"id": "coat", "label": "Coat", "kind": "coat", "regions": ["coat", "leg", "ear"]},
+        {"id": "tail", "label": "Tail", "kind": "tail", "regions": ["tail"]},
+        {"id": "horns", "label": "Horns", "kind": "horn", "regions": ["horn"]},
+        {"id": "hooves", "label": "Hooves", "kind": "hoof", "regions": ["hoof"]},
+        {"id": "muzzle", "label": "Muzzle", "kind": "muzzle", "regions": ["muzzle"]},
+        {"id": "eyes", "label": "Eyes", "kind": "eye", "regions": ["eye"]}
+      ],
+      "default_material": "cattle.coat.speckled",
+      "frame": {"yaw": 35, "pitch": 12, "fill": 0.8},
+      "batch": 0, "status": "ready", "thumbnail": "thumbs/animal.cow.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "animal.dog", "name": "Dog", "category": "animals", "subcategory": "pets", "class": "quadruped.dog",
+      "search_words": "dog, puppy, hound, pet",
+      "source": {"kind": "blender-script", "script": "tools/models/quadruped/build.py", "species": "dog", "model": "dog"},
+      "regions": [
+        {"id": "coat", "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "leg", "follows": "coat", "tone": "points", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "ear", "follows": "coat", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "tail", "follows": "coat", "thin": true, "accepts": ["class", "recipe:fur", "generic"]},
+        {"id": "nose", "accepts": ["recipe:hide", "recipe:skin"], "keep": true},
+        {"id": "eye", "accepts": [], "keep": true}
+      ],
+      "parts": [
+        {"id": "coat", "label": "Coat", "kind": "coat", "regions": ["coat", "leg", "ear"]},
+        {"id": "tail", "label": "Tail", "kind": "tail", "regions": ["tail"]},
+        {"id": "nose", "label": "Nose", "kind": "nose", "regions": ["nose"]},
+        {"id": "eyes", "label": "Eyes", "kind": "eye", "regions": ["eye"]}
+      ],
+      "default_material": "dog.coat.tan",
+      "frame": {"yaw": 35, "pitch": 12, "fill": 0.8},
+      "batch": 0, "status": "ready", "thumbnail": "thumbs/animal.dog.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "building.wall", "name": "Wall", "category": "buildings", "subcategory": "parts", "class": "building.wall",
+      "search_words": "wall, brick wall, stone wall, garden wall",
+      "source": {"kind": "code", "shape": "wall"},
+      "regions": [
+        {"id": "face", "accepts": ["class", "generic"]},
+        {"id": "cap", "accepts": ["recipe:stone", "recipe:masonry", "recipe:metal", "generic"], "default_material": "stonework.limestone"},
+        {"id": "plinth", "follows": "face", "accepts": ["recipe:masonry", "recipe:stone", "recipe:plaster", "generic"]}
+      ],
+      "parts": [
+        {"id": "face", "label": "Wall face", "kind": "masonry", "regions": ["face"]},
+        {"id": "cap", "label": "Coping", "kind": "coping", "regions": ["cap"]},
+        {"id": "plinth", "label": "Plinth", "kind": "plinth", "regions": ["plinth"]}
+      ],
+      "default_material": "brick.red.common",
+      "frame": {"yaw": 30, "pitch": 10, "fill": 0.85},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/building.wall.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "building.roof", "name": "Roof", "category": "buildings", "subcategory": "parts", "class": "building.roof",
+      "search_words": "roof, gable, tiles, rooftop",
+      "source": {"kind": "code", "shape": "gable_roof"},
+      "regions": [
+        {"id": "tiles", "accepts": ["class", "generic"]},
+        {"id": "ridge", "thin": true, "accepts": ["class", "recipe:ceramic", "recipe:metal", "generic"], "default_material": "roof.tile.flat_clay"},
+        {"id": "gable", "accepts": ["recipe:masonry", "recipe:plaster", "recipe:stone", "recipe:wood", "generic"], "default_material": "brick.red.common"},
+        {"id": "fascia", "thin": true, "accepts": ["recipe:wood", "recipe:metal", "recipe:paint", "generic"], "default_material": "wood.beam.oak"}
+      ],
+      "parts": [
+        {"id": "tiles", "label": "Roof tiles", "kind": "roof_tiles", "regions": ["tiles"]},
+        {"id": "ridge", "label": "Ridge cap", "kind": "ridge", "regions": ["ridge"]},
+        {"id": "gable", "label": "Gable ends", "kind": "masonry", "regions": ["gable"]},
+        {"id": "fascia", "label": "Fascia and barge boards", "kind": "timber_trim", "regions": ["fascia"]}
+      ],
+      "default_material": "roof.tile.terracotta",
+      "frame": {"yaw": 40, "pitch": 22, "fill": 0.85},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/building.roof.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "land.patch", "name": "Ground patch", "category": "land", "subcategory": "terrain", "class": "land.terrain",
+      "search_words": "ground, terrain, grass, earth, bank, field",
+      "source": {"kind": "code", "shape": "slope"},
+      "regions": [
+        {"id": "ground", "accepts": ["class", "generic"]}
+      ],
+      "parts": [
+        {"id": "ground", "label": "Ground", "kind": "ground", "regions": ["ground"]}
+      ],
+      "default_material": "ground.grass.meadow",
+      "frame": {"yaw": 25, "pitch": 28, "fill": 0.9},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/land.patch.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "shape.sphere", "name": "Sphere", "category": "shapes", "subcategory": "basic", "class": "shape.basic",
+      "search_words": "sphere, ball, round, swatch",
+      "source": {"kind": "code", "shape": "sphere"},
+      "regions": [
+        {"id": "surface", "accepts": ["generic"]}
+      ],
+      "parts": [
+        {"id": "surface", "label": "Surface", "kind": "surface", "regions": ["surface"]}
+      ],
+      "default_material": "plastic.matte.grey",
+      "frame": {"yaw": 30, "pitch": 15, "fill": 0.75},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/shape.sphere.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    },
+    {
+      "id": "shape.cube", "name": "Cube", "category": "shapes", "subcategory": "basic", "class": "shape.basic",
+      "search_words": "cube, box, block, swatch",
+      "source": {"kind": "code", "shape": "cube"},
+      "regions": [
+        {"id": "surface", "accepts": ["generic"]}
+      ],
+      "parts": [
+        {"id": "surface", "label": "Surface", "kind": "surface", "regions": ["surface"]}
+      ],
+      "default_material": "plastic.matte.grey",
+      "frame": {"yaw": 35, "pitch": 20, "fill": 0.75},
+      "batch": 0, "status": "ready",
+      "thumbnail": "thumbs/shape.cube.png", "tiers": ["high", "lite", "low", "medium", "ultra", "vr"]
+    }
+  ]
+}

@@ -7,6 +7,7 @@
 //! evani-model check <intent | model-id> [--tiers ...]
 //! evani-model sheet <intent | model-id> [--kind blueprint] [--out FILE]
 //! evani-model compare <intent | model-id | ours.glb> --target <master.glb> [--tier ultra] [--size 512] [--out FILE] [--threads N]
+//! evani-model construct <recipe.construct.json> [--tiers low,high] [--out DIR] [--set name=value,...] [--check] [--sheet]
 //! evani-model mcp            (stdio MCP server: model_* tools)
 //! ```
 //! Every command prints one compact JSON reply. Work state goes to
@@ -24,7 +25,7 @@ fn flag(args: &[String], name: &str) -> Option<String> {
 }
 
 fn usage() -> String {
-    "usage: evani-model <describe-system | make | compile | check | sheet | compare | mcp> [intent] [--tiers a,b] [--out DIR] [--kind K] [--project DIR] [--threads N]".into()
+    "usage: evani-model <describe-system | make | compile | check | sheet | compare | construct | mcp> [intent] [--tiers a,b] [--out DIR] [--kind K] [--project DIR] [--threads N]".into()
 }
 
 fn main() -> ExitCode {
@@ -57,6 +58,7 @@ fn main() -> ExitCode {
                 None => Err(serde_json::json!({ "error": "no_target", "msg": "compare needs --target <master.glb>", "fix": "evani-model compare <intent | model-id | ours.glb> --target <master.glb> [--tier ultra] [--size 512] [--out sheet.png]" })),
             }
         }
+        "construct" => construct(&args, &target, tiers.as_deref(), ws.threads),
         "mcp" => {
             mcp::serve(&ws);
             return ExitCode::SUCCESS;
@@ -76,4 +78,22 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// `construct`: build a construct recipe (the exact-piece back end) at its
+/// tiers, check it and write the tier files, report and (with `--sheet`) a
+/// picture of the tiers side by side. Exits non-zero when a check fails.
+fn construct(args: &[String], recipe: &str, tiers: Option<&[String]>, threads: usize) -> Result<Value, Value> {
+    let fail = |msg: String, fix: &str| serde_json::json!({ "error": "construct", "msg": msg, "fix": fix });
+    let text = std::fs::read_to_string(recipe).map_err(|e| fail(format!("{recipe}: {e}"), "give the path of a *.construct.json recipe"))?;
+    let mut overrides = Vec::new();
+    for kv in flag(args, "--set").unwrap_or_default().split(',').filter(|s| !s.is_empty()) {
+        let (k, v) = kv.split_once('=').ok_or_else(|| fail(format!("--set {kv}: expected name=value"), "--set width=1.2,height=0.5"))?;
+        let x: f64 = v.trim().parse().map_err(|_| fail(format!("--set {kv}: {v} is not a number"), "--set width=1.2"))?;
+        overrides.push((k.trim().to_string(), x));
+    }
+    let out = flag(args, "--out").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+    let has = |f: &str| args.iter().any(|a| a == f);
+    let c = evani_model::construct_out::compile(&text, &out, tiers, &overrides, has("--check"), has("--sheet"), threads).map_err(|e| fail(e, "fix the recipe as the message says (docs/MODELGEN_PLAN.md 3.4)"))?;
+    if c.problems.is_empty() { Ok(c.report) } else { Err(c.report) }
 }

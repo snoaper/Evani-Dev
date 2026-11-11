@@ -21,7 +21,7 @@ Most approaches are already chosen by you on the research cards (section 3). You
 
 | Today | What Stage 3 adds |
 |---|---|
-| 3D forward path draws built-in meshes (cube, sphere, bevelled cube, cylinder, cone, dome...) plus up to 56 custom meshes (`meshes` feature, `MeshLibrary`), vertices are position + normal only, no UVs, no textures; materials are flat look colours (`MaterialDesc`) with the toon ramp | Imported, quantized, textured meshes with normal maps, per-tier files and LODs (S3-2 to S3-4) |
+| 3D forward path draws built-in meshes (cube, sphere, bevelled cube, cylinder, cone, dome...) plus up to 248 custom meshes (`meshes` feature, `MeshLibrary`), vertices are position + normal only, no UVs, no textures; materials are flat look colours (`MaterialDesc`) with the toon ramp | Imported, quantized, textured meshes with normal maps, per-tier files and LODs (S3-2 to S3-4) |
 | The kart racer builds its karts and drivers from primitives (`draw_kart`, kits/evani-kit-kart-racer/src/draw.rs) | A converted hero kart and an animated driver (S3-16) |
 | `sprite-art` and `text` features: named sprite sheets with mips and a 5 x 9 bitmap font, `text::draw` / `text::measure` (CORE_REQUESTS items A and B) | MSDF fonts, word wrap, kerning and a box layout grow from the same API (S3-13) |
 | `evani_core::assets`: a manifest keyed by content hash with an async loader | Tier, priority and group per entry; background fetch and Cache Storage (S3-4) |

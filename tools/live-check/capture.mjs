@@ -4,7 +4,7 @@
 // and `compare.ab` (bloom on vs off) through `POST /live/v1/cmd` and saves
 // the screenshots.
 //
-//   node tools/live-check/capture.mjs [--port 8096] [--out .vibedeck/screenshots/stage6]
+//   node tools/live-check/capture.mjs [--port 8096] [--out .vibedeck/screenshots/stage6] [--tablet 1]
 //
 // Writes capture.png, compare-a.png, compare-b.png and summary.json into
 // --out; prints the summary on stdout. Exit 0 on success, 2 on failure.
@@ -38,7 +38,7 @@
 // Process-check probes (both review modes; used by `cargo xtask review`, see
 // docs/KIT_PROCESS.md items 11 to 15): a style rule hides the debug overlay
 // and panel for the whole run, and each card capture is followed by a page
-// screenshot (page-<name>.png) and a DOM probe of the overlay and of the HUD
+// screenshot (page-<name>.png, at --page-shot, default 1920x1080) and a DOM probe of the overlay and of the HUD
 // selectors given with `--hud "#hud0,.score"`, plus the live entity count
 // (`session.status`). A moment's phone shot (page-<name>-phone.png) stages the
 // moment again once the page is at the phone size, so it shows the same
@@ -72,10 +72,24 @@
 // summary's `showcase` list and `video` object (`showcase_error` and
 // `video_error` say what failed). The tier and adaptive quality are put back.
 //
+// Tier-switch phase (both review modes, docs/KIT_PROCESS.md item 30): with
+//   --tier-switch lite,ultra,lite,low,high [--tier-switch-max-ms 250]
+// the page's presented frames and pipeline builds are timestamped from the
+// first script on (frame-gaps.mjs), and before any other capture (a tier the
+// browser has compiled once is fast the next time, so a later run would
+// hide the freeze) the start-up is waited out, adaptive quality goes off and
+// the page switches through the tiers in order. Per switch: the longest gap
+// between presented frames from the switch until frames run steadily again,
+// how long that took, and the pipelines and shader modules it built. The
+// summary's `tier_switch` object lists them with the limit; the tier and
+// adaptive quality are put back.
+//
 // Plan mode (used by the geometry check, `cargo run -p evani-geocheck`):
 //   node tools/live-check/capture.mjs --game kart-racer --port 8095 --plan plan.json --out <dir>
 // plan.json is { "tier": "high" | null, "steps": [{ "name", "cmd", "params",
-// "save": "file.png", "note", "timeout_ms" }] }. Adaptive quality goes off
+// "save": "file.png", "note", "timeout_ms" }], "settle": true }. With settle, the
+// page's frames are timestamped and the plan waits until they run steadily
+// (up to 5 minutes) before its first step. Adaptive quality goes off
 // and the tier is set, then each step's live command runs in order (a failed
 // step is recorded, the rest still run); a reply's png_base64 is saved under
 // the step's `save` name. An optional "size": "1920x1080" sets the page size.
@@ -92,6 +106,9 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { waitDevToolsUrl } from './devtools-port.mjs';
+import { FRAME_HOOK, PAGE_NOW, cpuBySecondExpr, gapExpr, steadyExpr } from './frame-gaps.mjs';
+import { withStallRetry } from './stall-retry.mjs';
 
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
@@ -141,7 +158,10 @@ if (!(VIEW_W >= 64 && VIEW_H >= 64 && VIEW_W <= 4096 && VIEW_H <= 4096)) {
 // The engine commit the captures were taken from (labels every capture).
 const COMMIT = (() => {
   const r = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: resolve(fileURLToPath(new URL('../..', import.meta.url))), encoding: 'utf8' });
-  const dirty = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: resolve(fileURLToPath(new URL('../..', import.meta.url))), encoding: 'utf8' });
+  // Dirty means changed source: the review's own outputs under .vibedeck/
+  // (rewritten by the run before this capture starts) don't count, or every
+  // capture of a clean commit would read "+dirty".
+  const dirty = spawnSync('git', ['status', '--porcelain', '--untracked-files=no', '--', '.', ':(exclude).vibedeck'], { cwd: resolve(fileURLToPath(new URL('../..', import.meta.url))), encoding: 'utf8' });
   const h = (r.stdout ?? '').trim();
   return h ? h + ((dirty.stdout ?? '').trim() ? '+dirty' : '') : '';
 })();
@@ -159,6 +179,22 @@ const [SHOW_W, SHOW_H] = (args['showcase-size'] ?? '1920x1080').split('x').map(N
 const ENGINE = args.engine ?? 'unknown';
 const VIDEO_MOMENT = args.video ?? SHOWCASE_MOMENTS[0] ?? null;
 const VIDEO_SECONDS = Number(args['video-seconds'] ?? 10);
+const TIER_SWITCH = list(args['tier-switch']);
+const TIER_SWITCH_MAX_MS = Number(args['tier-switch-max-ms'] ?? 250);
+// Diagnosis (--tier-switch-hold-ms 8000): after each switch, wait this long
+// and record the tier the page is on then (`tier_after_hold`), so a tier the
+// live watch put back shows even on a page with no tier-settle signal.
+const TIER_SWITCH_HOLD_MS = Number(args['tier-switch-hold-ms'] ?? 0);
+// Evidence (not with a timing run: a screenshot costs the page frames):
+// --tier-switch-moment head stages that moment's scene before the switches,
+// --tier-switch-shots 1 saves page screenshots just after each switch and
+// 0.6 s and 2.5 s later (switch-<n>-<from>-<to>-<ms>ms.png), so a model that
+// went missing or blank mid-switch shows.
+const TIER_SWITCH_MOMENT = args['tier-switch-moment'] ?? null;
+const TIER_SWITCH_SHOTS = Boolean(Number(args['tier-switch-shots'] ?? 0));
+// How long one switch (or the start-up before the first) may take to draw steadily again.
+const TIER_SWITCH_SETTLE_MS = 120000;
+const START_SETTLE_MS = 300000;
 const [VIDEO_W, VIDEO_H] = (args['video-size'] ?? '1280x720').split('x').map(Number);
 if (!(VIDEO_W >= 64 && VIDEO_H >= 64 && VIDEO_W <= 4096 && VIDEO_H <= 4096)) {
   console.error('[live-check] --video-size must be WxH, 64-4096 each');
@@ -303,15 +339,91 @@ const SETTLE = `(async () => {
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   return stopped.length;
 })()`;
+// The run video waits until the page draws again before it records. A tier
+// change or a new scene makes the page build pipelines, and while it does the
+// page draws nothing: the material viewer drew 1 frame in 88 s after a tier
+// change and 3 frames in 23.6 s straight after the Ultra showcase, so a
+// screencast started then got no frames (the review's "no run video",
+// 2026-10-25), while the same viewer settled draws 60 frames a second on
+// every tier, size and scene. VIDEO_SETTLE_FPS frames a second over two
+// windows in a row count as drawing; VIDEO_SETTLE_MS caps the wait.
+const VIDEO_SETTLE_FPS = 20;
+const VIDEO_SETTLE_MS = 180000;
+/** Page-side: has the page finished preparing its materials? (the engine's status attributes) */
+const PAGE_PREPARING = `(() => {
+  const e = document.documentElement;
+  const n = e.getAttribute('data-evani-preparing');
+  const standIn = e.hasAttribute('data-evani-stand-in');
+  const lost = e.hasAttribute('data-evani-gpu-lost');
+  // A game's own stand-ins still on screen (models it is still building:
+  // material-view's styled spheres, critic round 7), if it reports them.
+  const b = e.getAttribute('data-evani-building');
+  // Drawn models hidden while their sun cones bake (Lite and Low; the
+  // renderer's capture builds report it): material-view's Low stew proof
+  // was taken with three of five spheres hidden (critic rounds 7 and 8).
+  const k = e.getAttribute('data-evani-baking');
+  // tier-settle: a tier switch not fully applied yet (size, sample count,
+  // shadow map, the tier's model files, cones and pipelines), so a shot
+  // never shows a frame still drawn with the previous tier's state.
+  const settling = e.getAttribute('data-evani-settling');
+  return { preparing: n, building: b, baking: k, settling, stand_in: standIn, gpu_lost: lost, ready: (n === null || n === '0') && (b === null || b === '0') && (k === null || k === '0') && settling === null && !standIn && !lost };
+})()`;
+/** Page-side: the tier-settle and background warm-up status (tier-switch phase). */
+const PAGE_SETTLE = `(() => {
+  const e = document.documentElement;
+  return { settled: e.getAttribute('data-evani-tier-settled'), warming: e.getAttribute('data-evani-warming'), preparing: e.getAttribute('data-evani-preparing') };
+})()`;
+const PREPARING_CAP_MS = Number(args['preparing-cap-ms'] ?? 240000);
+/** Page-side: rAF callbacks and the page state over `ms` (the video diagnosis). */
+const RAF_COUNT = (ms) => `new Promise((done) => {
+  let n = 0;
+  const t0 = performance.now();
+  const tick = () => { n++; if (performance.now() - t0 < ${ms}) requestAnimationFrame(tick); else done({ raf: n, ms: Math.round(performance.now() - t0), visibility: document.visibilityState, focus: document.hasFocus() }); };
+  requestAnimationFrame(tick);
+})`;
 const UNSETTLE = `(() => {
   for (const a of window.__evaniSettled ?? []) { try { a.play(); } catch {} }
   window.__evaniSettled = [];
 })()`;
 
+// Extra page sizes (`--page-sizes 700x900,1280x720@1.5,1024x768,2560x1440`):
+// each moment's page is also shot at these CSS sizes (`@dpr` emulates
+// Windows scaling: 1280x720@1.5 is a 1920 px panel at 150 per cent), saved
+// as page-<name>-<W>x<H>[@<dpr>].png with the cramped-list probe, so a
+// layout is checked at a half-snapped window, a laptop, a tablet and a wide
+// screen, not only at the desktop and phone sizes (critic round 6 of
+// material-view: no tablet captures; chips cut at narrow widths).
+const PAGE_SIZES = (args['page-sizes'] ?? '').split(',').filter(Boolean).map((t) => {
+  const m = /^(\d+)x(\d+)(?:@([\d.]+))?$/.exec(t.trim());
+  const [w, h, dpr] = m ? [Number(m[1]), Number(m[2]), Number(m[3] ?? 1)] : [0, 0, 0];
+  if (!(w >= 320 && h >= 240 && w <= 4096 && h <= 4096 && dpr >= 1 && dpr <= 4)) {
+    console.error(`[live-check] --page-sizes: ${t} must be WxH[@dpr], 320x240 to 4096x4096, dpr 1-4`);
+    process.exit(2);
+  }
+  return { w, h, dpr, tag: `${w}x${h}${m[3] ? '@' + m[3] : ''}` };
+});
+
 // Phone page shots (landscape).
+// The desktop page shot's size (CSS px at device scale 1).
+const [SHOT_PAGE_W, SHOT_PAGE_H] = (args['page-shot'] ?? '1920x1080').split('x').map(Number);
+if (!(SHOT_PAGE_W >= 320 && SHOT_PAGE_H >= 240 && SHOT_PAGE_W <= 4096 && SHOT_PAGE_H <= 4096)) {
+  console.error('[live-check] --page-shot must be WxH, 320x240 to 4096x4096');
+  process.exit(2);
+}
+// A moment is staged once and given --moment-warm-ms (default 1500) before
+// the shot that counts: a moment whose scene builds or streams a model on
+// first sight (a catalogue proof's material, a tier's own model file) would
+// otherwise show its stand-in (material-view round 3: the Low proofs were
+// grey spheres).
+const MOMENT_WARM_MS = Number(args['moment-warm-ms'] ?? 1500);
 const PHONE_W = 844;
 const PHONE_H = 390;
 const PHONE_DPR = Number(args['phone-dpr'] ?? 1);
+// `--tablet 1`: each page shot is also taken on a tablet held upright
+// (820x1180, page-<name>-tablet.png; material-view critic round 6 had no
+// tablet captures to judge portrait framing on).
+const TABLET = args.tablet === '1';
+const [TABLET_W, TABLET_H] = [820, 1180];
 if (!(PHONE_DPR >= 1 && PHONE_DPR <= 4)) {
   console.error('[live-check] --phone-dpr must be a number from 1 to 4');
   process.exit(2);
@@ -344,6 +456,69 @@ const PHONE_PROBE = `(() => {
     min_button_px: Number.isFinite(minButton) ? minButton : null,
     width: innerWidth, height: innerHeight,
   };
+})()`;
+
+/**
+ * Open lists too short to use at a phone size: every shown element that
+ * scrolls its content vertically (more content than room) whose part on
+ * screen is under two 48 px tap rows high. Critic rounds 2 and 6 of
+ * material-view: Browse on a sideways phone opened a box cut off at its
+ * search field, with no row of the list on screen. `cramped` lists them
+ * (`#id.class 62px`); the review's capture check fails on any.
+ */
+const CRAMPED_MIN_PX = 96;
+/** Rows (`data-row`) a scrolling list must show whole at phone sizes when it has that many. */
+const CRAMPED_MIN_ROWS = 3;
+const CRAMPED_PROBE = `(() => {
+  const shown = (el) => {
+    for (let n = el; n; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) <= 0.05) return false;
+    }
+    return true;
+  };
+  const name = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase()) + [...el.classList].map((c) => '.' + c).join('');
+  const cramped = [];
+  for (const el of document.body.querySelectorAll('*')) {
+    const oy = getComputedStyle(el).overflowY;
+    if ((oy !== 'auto' && oy !== 'scroll') || el.scrollHeight <= el.clientHeight + 8 || !shown(el)) continue;
+    // The part on screen: clipped by the window and by every clipping parent.
+    let r = el.getBoundingClientRect();
+    let top = Math.max(r.top, 0), bottom = Math.min(r.bottom, innerHeight);
+    for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+      if (getComputedStyle(n).overflow === 'visible') continue;
+      const p = n.getBoundingClientRect();
+      top = Math.max(top, p.top); bottom = Math.min(bottom, p.bottom);
+    }
+    const h = Math.max(0, Math.round(bottom - top));
+    if (r.width >= 40 && h < ${CRAMPED_MIN_PX}) cramped.push(name(el) + ' ' + h + 'px');
+    // A tall list whose rows (\`data-row\`) sit below the fold is cramped too:
+    // material-view's phone sheet was 380 px tall, but the search box, wrapped
+    // filter chips and categories filled it and no row showed (critic round 7).
+    else if (r.width >= 40) {
+      const rows = [...el.querySelectorAll('[data-row]')].filter(shown);
+      const want = Math.min(${CRAMPED_MIN_ROWS}, rows.length);
+      const seen = rows.filter((x) => { const q = x.getBoundingClientRect(); return q.top >= top - 1 && q.bottom <= bottom + 1; }).length;
+      if (want > 0 && seen < want) cramped.push(name(el) + ' ' + seen + ' of ' + rows.length + ' rows in view');
+    }
+  }
+  // A button the screen edge cuts, outside any sideways-scrolling strip:
+  // material-view's light presets ran off both edges of a phone held
+  // upright (critic round 7).
+  const scrolls = (el) => {
+    for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+      const ox = getComputedStyle(n).overflowX;
+      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden') return true;
+    }
+    return false;
+  };
+  for (const b of document.body.querySelectorAll('button')) {
+    if (!shown(b) || scrolls(b)) continue;
+    const q = b.getBoundingClientRect();
+    if (q.width < 8 || q.bottom <= 0 || q.top >= innerHeight) continue;
+    if (q.left < -1 || q.right > innerWidth + 1) cramped.push('button "' + (b.textContent || '').trim().slice(0, 20) + '" cut by the screen edge');
+  }
+  return { cramped, cramped_min_px: ${CRAMPED_MIN_PX} };
 })()`;
 
 /** The DOM probe: is the debug overlay shown, and is each HUD selector visible and filled in? */
@@ -398,7 +573,49 @@ function sessionToken(port) {
 }
 
 let cmdN = 0;
+// A game that builds many pipelines on its first frames (the material viewer
+// with every recipe compiles for 30 to 60 s) cannot render a capture yet: the
+// renderer's 5 s capture timeout fires. Ask again until the first frame is
+// out, for up to CAPTURE_WARMUP_MS in all; any other error stops at once.
+// Every command before that first frame gets the same grace: with all 22
+// recipes the viewer answered `schema.get` after three tries and then missed
+// `session.status` within the bridge's 11 s, still building pipelines
+// (batch 2's join, 2026-10-25). After the first frame, a timeout fails at once.
+const CAPTURE_WARMUP_MS = 120000;
+let firstCaptureDone = false;
+/** Whether `err` from command `name` is the page or renderer not answering in time. */
+function isWarmupTimeout(name, err) {
+  return String(err?.message ?? err).startsWith(`${name}: timeout:`);
+}
+// A tier change rebuilds the page's pipelines too (the viewer: tens of
+// seconds), so `tier.set` itself waits it out and opens a new warm-up for
+// the commands after it (the showcase timed out on Low and Ultra, 2026-10-25).
+// When the warm-up runs out the page is reloaded once and given one more
+// warm-up; a second stall fails with `ERROR capture: <cmd> stalled ...`
+// (stall-retry.mjs; a stalled browser once left a review with 0 pictures).
+let reloadPage = null;
+// Set once the page is up: resolves when the page has finished preparing its
+// materials (see PAGE_PREPARING). Every capture.frame waits for it, because
+// since the viewer's fast start (lazy async pipelines, matcat-r7) a page draws
+// 60 frames a second long before its materials are ready: the frame-rate
+// waits above would shoot the quick stand-in shading (round 6 review).
+let pageReady = null;
 async function cmd(port, token, name, params, timeoutMs = 120000, note = undefined, opts = undefined) {
+  if (name === 'capture.frame' && pageReady) await pageReady(note ?? name);
+  if (firstCaptureDone && name !== 'tier.set') return cmdOnce(port, token, name, params, timeoutMs, note, opts);
+  const r = await withStallRetry({
+    name,
+    windowMs: CAPTURE_WARMUP_MS,
+    isStall: (e) => isWarmupTimeout(name, e),
+    attempt: () => cmdOnce(port, token, name, params, timeoutMs, note, opts),
+    reload: reloadPage ?? undefined,
+    log,
+  });
+  if (name === 'capture.frame') firstCaptureDone = true;
+  if (name === 'tier.set') firstCaptureDone = false;
+  return r;
+}
+async function cmdOnce(port, token, name, params, timeoutMs, note, opts) {
   const body = { type: 'cmd', v: 1, id: `lc-${++cmdN}`, cmd: name, params, ...(note ? { note } : {}), ...(opts ? { opts } : {}) };
   const r = await fetch(`http://127.0.0.1:${port}/live/v1/cmd`, {
     method: 'POST',
@@ -437,9 +654,10 @@ async function main() {
     } else {
       const jobs = process.env.CARGO_BUILD_JOBS || '4';
       log(`building the bridge (cargo build -j ${jobs})...`);
-      // Cargo builds where CARGO_TARGET_DIR points (relative to the engine root), else target/.
-      const targetDir = process.env.CARGO_TARGET_DIR ? resolve(ROOT, process.env.CARGO_TARGET_DIR) : join(ROOT, 'target');
-      let built = join(targetDir, 'debug', process.platform === 'win32' ? 'evani-live-bridge.exe' : 'evani-live-bridge');
+      // Cargo's own build folder: CARGO_TARGET_DIR when set (relative to the engine root;
+      // a worktree that builds on another drive), else the checkout's target/.
+      const TARGET = process.env.CARGO_TARGET_DIR ? resolve(ROOT, process.env.CARGO_TARGET_DIR) : join(ROOT, 'target');
+      let built = join(TARGET, 'debug', process.platform === 'win32' ? 'evani-live-bridge.exe' : 'evani-live-bridge');
       const b = spawnSync('cargo', ['build', '-j', jobs, '-p', 'evani-live-bridge'], { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
       if (b.stderr) process.stderr.write(b.stderr);
       if (b.status !== 0) {
@@ -451,7 +669,7 @@ async function main() {
         // Build it in a target dir of its own instead (the first time takes a
         // few minutes), so it is this source's bridge, not a stale one.
         log('the bridge exe is in use by a running copy; building a fresh one in target/bridge-alt');
-        const alt = join(ROOT, 'target', 'bridge-alt');
+        const alt = join(TARGET, 'bridge-alt');
         const b2 = spawnSync('cargo', ['build', '-j', jobs, '-p', 'evani-live-bridge', '--target-dir', alt], { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
         if (b2.stderr) process.stderr.write(b2.stderr);
         const altExe = join(alt, 'debug', process.platform === 'win32' ? 'evani-live-bridge.exe' : 'evani-live-bridge');
@@ -462,7 +680,7 @@ async function main() {
         }
       }
       // Run from a per-port copy so the next build can always replace the exe.
-      const runs = join(ROOT, 'target', 'debug', 'bridge-runs');
+      const runs = join(TARGET, 'debug', 'bridge-runs');
       mkdirSync(runs, { recursive: true });
       const exe = join(runs, process.platform === 'win32' ? `evani-live-bridge-${port}.exe` : `evani-live-bridge-${port}`);
       copyFileSync(built, exe);
@@ -520,21 +738,14 @@ async function main() {
     chrome = spawn(chromePath, flags, { stdio: 'ignore', windowsHide: true });
     chromeExited = false;
     chrome.on('exit', () => (chromeExited = true));
-    let wsUrl = null;
-    for (let i = 0; i < 200 && !wsUrl && !chromeExited; i++) {
-      const f = join(profile, 'DevToolsActivePort');
-      if (existsSync(f)) {
-        const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-        if (p && path) wsUrl = `ws://127.0.0.1:${p}${path}`;
-      }
-      if (!wsUrl) await sleep(100);
-    }
+    let wsUrl = await waitDevToolsUrl(profile, { exited: () => chromeExited });
     if (!wsUrl) throw new Error('Chrome did not open its debugging port');
     cdp = await Cdp.connect(wsUrl);
     const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
     const s = (method, params, ms) => cdp.send(method, params, sessionId, ms);
     const consoleLines = [];
+    const planConsole = [];
     // Screencast frames while the showcase video records (null otherwise).
     let castFrames = null;
     cdp.on((m) => {
@@ -550,6 +761,10 @@ async function main() {
       if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error' && consoleLines.length < 20) {
         consoleLines.push('console.error: ' + m.params.args.map((a) => a.value ?? a.description ?? '').join(' ').slice(0, 300));
       }
+      // A plan keeps the page's warnings too (its result lists them).
+      if (PLAN && m.method === 'Runtime.consoleAPICalled' && (m.params.type === 'warning' || m.params.type === 'error') && planConsole.length < 80) {
+        planConsole.push(`${m.params.type}: ` + m.params.args.map((a) => a.value ?? a.description ?? '').join(' ').slice(0, 300));
+      }
     });
     await s('Page.enable');
     await s('Runtime.enable');
@@ -560,6 +775,7 @@ async function main() {
     const PAGE_H = PLAN_H || VIEW_H;
     await s('Emulation.setDeviceMetricsOverride', { width: PAGE_W, height: PAGE_H, deviceScaleFactor: 1, mobile: false });
     await s('Page.addScriptToEvaluateOnNewDocument', { source: STUBS });
+    if (TIER_SWITCH.length || PLAN?.settle) await s('Page.addScriptToEvaluateOnNewDocument', { source: FRAME_HOOK });
     const reviewing = Boolean(MOMENTS || TIMES);
     if (reviewing || PLAN) await s('Page.addScriptToEvaluateOnNewDocument', { source: HIDE_OVERLAY });
     const url = `http://127.0.0.1:${port}/?live=1`;
@@ -576,8 +792,169 @@ async function main() {
     }
     log('page connected');
     await sleep(3000);
+    // One fresh page for a step that stalls through its warm-up (cmd above).
+    reloadPage = async () => {
+      await s('Page.reload', {});
+      firstCaptureDone = false;
+      const t2 = Date.now();
+      for (;;) {
+        await sleep(500);
+        const st3 = await status(port);
+        if (st3?.engine_connected) break;
+        if (Date.now() - t2 > 60000) throw new Error('ERROR capture: the reloaded page did not connect to the bridge in 60 s\n' + consoleLines.join('\n'));
+      }
+      log('page reloaded and connected');
+      await sleep(3000);
+    };
 
     mkdirSync(OUT, { recursive: true });
+
+    // The tier-switch phase (see the header), before every other capture.
+    const pageEval = async (expression) => (await s('Runtime.evaluate', { expression, returnByValue: true }))?.result?.value;
+    // A page that builds its pipelines in the background writes
+    // <html data-evani-preparing="n" data-evani-stand-in> (and a game that builds
+    // its own models data-evani-building="n"); wait until both are 0 and
+    // the stand-in flag is gone, twice in a row, so a shot never shows the
+    // quick stand-in shading. Pages that never write it count as ready.
+    pageReady = async (what) => {
+      const t0 = Date.now();
+      let good = 0;
+      let last = '';
+      while (Date.now() - t0 < PREPARING_CAP_MS) {
+        const r = await pageEval(PAGE_PREPARING).catch(() => null);
+        last = JSON.stringify(r);
+        good = r && r.ready ? good + 1 : 0;
+        if (good >= 2) break;
+        await sleep(250);
+      }
+      if (good < 2) log(`WARNING ${what}: the page was still preparing materials after ${Math.round(PREPARING_CAP_MS / 1000)} s (${last})`);
+      else if (Date.now() - t0 > 1000) log(`${what}: waited ${((Date.now() - t0) / 1000).toFixed(1)} s for the materials to finish`);
+    };
+    const waitSteady = async (from, capMs) => {
+      for (;;) {
+        const r = await pageEval(steadyExpr(from));
+        if (!r?.hook) return { at: null, why: 'the frame hook is not in the page' };
+        if (r.steady_at != null) return { at: r.steady_at };
+        if (r.t - from > capMs) return { at: null, why: `no steady frames within ${Math.round(capMs / 1000)} s` };
+        await sleep(250);
+      }
+    };
+    const runTierSwitch = async () => {
+      if (!TIER_SWITCH.length) return {};
+      const out = { max_ms: TIER_SWITCH_MAX_MS, steps: [] };
+      const errors = [];
+      const start = await waitSteady(0, START_SETTLE_MS);
+      if (start.at == null) errors.push(`start-up: ${start.why}`);
+      out.startup_ms = start.at == null ? null : Math.round(start.at);
+      // A page that warms the other tiers' pipelines in the background
+      // (data-evani-warming) and reports tier-settle is measured once both
+      // are done, so a switch is judged on what it builds itself.
+      const w0 = Date.now();
+      for (;;) {
+        const r = (await pageEval(PAGE_SETTLE).catch(() => null)) ?? {};
+        const warm = r.warming === null || r.warming === undefined || r.warming === '0';
+        const prep = r.preparing === null || r.preparing === undefined || r.preparing === '0';
+        const settled = r.settled === null || r.settled === undefined || r.settled !== '';
+        if (warm && prep && settled) break;
+        if (Date.now() - w0 > START_SETTLE_MS) {
+          errors.push(`start-up: still warming or settling after ${Math.round(START_SETTLE_MS / 1000)} s (${JSON.stringify(r)})`);
+          break;
+        }
+        await sleep(250);
+      }
+      out.warm_wait_ms = Date.now() - w0;
+      if (TIER_SWITCH_MOMENT) {
+        await cmd(port, token, 'capture.frame', { width: 64, moment: TIER_SWITCH_MOMENT }, 60000, `Tier switch check: stage ${TIER_SWITCH_MOMENT}`).catch((e) => errors.push(`moment ${TIER_SWITCH_MOMENT}: ${e.message}`));
+        await waitSteady(await pageEval(PAGE_NOW), TIER_SWITCH_SETTLE_MS);
+      }
+      let shotNo = 0;
+      const st0 = await cmd(port, token, 'session.status', {}).catch(() => ({}));
+      const tier0 = st0.tier;
+      const aq0 = (await cmd(port, token, 'param.get', { names: ['aq.enabled'] }).catch(() => null))?.values?.['aq.enabled'];
+      await cmd(port, token, 'param.set', { values: { 'aq.enabled': false } }, 30000, 'Tier switch check: hold the tier steady').catch((e) => errors.push(`aq.enabled: ${e.message}`));
+      let from = tier0 ?? null;
+      try {
+        for (const tier of TIER_SWITCH) {
+          await sleep(1000);
+          const t0 = await pageEval(PAGE_NOW);
+          const w0 = Date.now();
+          let reply = null;
+          // One try only: a page that stops answering is what this measures.
+          await cmdOnce(port, token, 'tier.set', { tier }, TIER_SWITCH_SETTLE_MS, `Tier switch check: ${from ?? '?'} to ${tier}`).catch((e) => (reply = e.message));
+          if (reply && /unknown|no such tier|not a tier/i.test(reply)) {
+            errors.push(`${tier}: ${reply}`);
+            continue;
+          }
+          const reply_ms = Date.now() - w0;
+          if (TIER_SWITCH_SHOTS) {
+            shotNo += 1;
+            for (const at of [0, 600, 2500]) {
+              const left = at - ((await pageEval(PAGE_NOW)) - t0);
+              if (left > 0) await sleep(left);
+              const ms = Math.round((await pageEval(PAGE_NOW)) - t0);
+              const shot = await s('Page.captureScreenshot', { format: 'png' }, 20000).catch(() => null);
+              if (shot?.data) out.shots = [...(out.shots ?? []), savePng(`switch-${shotNo}-${from ?? 'start'}-${tier}-${ms}ms.png`, shot.data)];
+            }
+          }
+          const steady = await waitSteady(t0, TIER_SWITCH_SETTLE_MS);
+          // The gaps: from the switch until frames run steadily again.
+          const t1 = await pageEval(PAGE_NOW);
+          const g = (await pageEval(gapExpr(t0, t1))) ?? {};
+          // Then tier-settle: until the page says the new tier fully applied
+          // (pages that never write it are taken as settled). A tier the live
+          // watch put back (auto-revert on sustained frame time) never settles:
+          // reported as `reverted`, the next switch starts from it.
+          let settled_after_ms = null;
+          let reverted = false;
+          for (;;) {
+            const r = (await pageEval(PAGE_SETTLE).catch(() => null)) ?? {};
+            if (r.settled === null || r.settled === undefined) break;
+            if (r.settled === tier) {
+              settled_after_ms = Math.round((await pageEval(PAGE_NOW)) - t0);
+              break;
+            }
+            if (r.settled && r.settled !== tier) {
+              const now = await cmd(port, token, 'session.status', {}).catch(() => ({}));
+              if (now.tier && now.tier !== tier) {
+                reverted = true;
+                break;
+              }
+            }
+            if ((await pageEval(PAGE_NOW)) - t0 > TIER_SWITCH_SETTLE_MS) {
+              errors.push(`${tier}: the tier did not settle in ${Math.round(TIER_SWITCH_SETTLE_MS / 1000)} s (${JSON.stringify(r)})`);
+              break;
+            }
+            await sleep(100);
+          }
+          let tier_after_hold;
+          let cpu_by_second;
+          if (TIER_SWITCH_HOLD_MS > 0) {
+            const left = TIER_SWITCH_HOLD_MS - ((await pageEval(PAGE_NOW)) - t0);
+            if (left > 0) await sleep(left);
+            tier_after_hold = (await cmd(port, token, 'session.status', {}).catch(() => ({}))).tier;
+            cpu_by_second = await pageEval(cpuBySecondExpr(t0, t0 + TIER_SWITCH_HOLD_MS)).catch(() => null);
+            if (tier_after_hold && tier_after_hold !== tier) reverted = true;
+          }
+          const step = { from, to: tier, reply_ms, steady_after_ms: steady.at == null ? null : Math.round(steady.at - t0), settled_after_ms, ...(reverted ? { reverted } : {}), ...(tier_after_hold ? { tier_after_hold, cpu_by_second } : {}), ...g, ...(reply ? { reply_error: reply } : {}) };
+          step.ok = steady.at != null && Number.isFinite(g.max_gap_ms) && g.max_gap_ms <= TIER_SWITCH_MAX_MS;
+          out.steps.push(step);
+          log(`tier switch ${from ?? '?'} -> ${tier}: longest frame gap ${g.max_gap_ms} ms, steady after ${step.steady_after_ms} ms, settled after ${settled_after_ms ?? (reverted ? '- (the live watch put the tier back)' : '-')} ms, ${g.slow_frames ?? '?'} frames over 25 ms, ${g.pipelines} pipelines, ${g.modules} shader modules${g.built?.length ? ` (${g.built.join('; ')})` : ''}`);
+          from = tier;
+        }
+      } finally {
+        if (tier0) await cmd(port, token, 'tier.set', { tier: tier0 }, 60000, 'Back to the tier before the tier switch check').catch((e) => log(`tier back: ${e.message}`));
+        if (aq0 !== undefined && aq0 !== false) await cmd(port, token, 'param.set', { values: { 'aq.enabled': aq0 } }, 30000, 'Adaptive quality back on after the tier switch check').catch(() => {});
+        if (tier0) await waitSteady(await pageEval(PAGE_NOW), TIER_SWITCH_SETTLE_MS);
+      }
+      if (errors.length) out.error = errors.join('; ');
+      // The live watch's reverts during the phase (why and how heavy).
+      if (out.steps.some((s) => s.reverted)) {
+        const h = await cmd(port, token, 'history.list', {}).catch(() => null);
+        out.reverts = (h?.entries ?? h?.history ?? []).filter((e) => e.cmd === 'auto_revert' || e.state === 'auto_reverted').slice(-8);
+      }
+      return { tier_switch: out };
+    };
+    const tierSwitch = PLAN ? {} : await runTierSwitch();
 
     // Process-check probes (see the header).
     const probe = { entities: [], params: [], captures: [], geo: [], errors: [] };
@@ -592,6 +969,12 @@ async function main() {
       const h = cap?.canvas_hud;
       const [, , w, ht] = h?.rect_css ?? [0, 0, 0, 0];
       return { selector: 'canvas', matched: h ? 1 : 0, visible: !!h && h.sprites > 0 && w >= 4 && ht >= 4, text_len: h?.sprites ?? 0, rect_css: h?.rect_css ?? null };
+    };
+    // Stage `moment` once and let its scene finish building (MOMENT_WARM_MS).
+    const warmMoment = async (moment) => {
+      if (!moment || MOMENT_WARM_MS <= 0) return;
+      await cmd(port, token, 'capture.frame', { width: 64, moment }, 60000, `Warm up ${moment}`).catch((e) => log(`warm ${moment}: ${e.message}`));
+      await sleep(MOMENT_WARM_MS);
     };
     // A page screenshot with the CSS animations settled (see SETTLE).
     const stillShot = async (opts) => {
@@ -615,7 +998,15 @@ async function main() {
       if (CANVAS_HUD) dom.hud = [...(dom.hud ?? []), canvasHudProbe(cap)];
       let page_png = null;
       try {
-        const shot = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: 1280, height: 720, scale: 0.5 } });
+        // The desktop page at full size (--page-shot, default 1920x1080; the
+        // critic reads the HUD at the size a desktop shows it: half-size
+        // 640x360 shots were too small to judge, critic round 2 of
+        // material-view), the moment staged again for that size.
+        await s('Emulation.setDeviceMetricsOverride', { width: SHOT_PAGE_W, height: SHOT_PAGE_H, deviceScaleFactor: 1, mobile: false });
+        await sleep(500);
+        await warmMoment(moment);
+        if (moment) await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true }, 60000, `Desktop page shot of ${moment}`);
+        const shot = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: SHOT_PAGE_W, height: SHOT_PAGE_H, scale: 1 } });
         page_png = `page-${name}.png`;
         savePng(page_png, shot.data);
       } catch (e) {
@@ -643,6 +1034,8 @@ async function main() {
         if (moment) await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true }, 60000, `Phone shot of ${moment}`);
         const r = await s('Runtime.evaluate', { expression: PHONE_PROBE, returnByValue: true });
         phone = r.result?.value ?? {};
+        const cr = await s('Runtime.evaluate', { expression: CRAMPED_PROBE, returnByValue: true });
+        Object.assign(phone, cr.result?.value ?? {});
         const shot = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: PHONE_W, height: PHONE_H, scale: 1 } });
         phone.png = `page-${name}-phone.png`;
         savePng(phone.png, shot.data);
@@ -651,6 +1044,8 @@ async function main() {
       }
       // And held upright (390x844, portrait), for the critic's phone check.
       let portrait = {};
+      // `--tablet 1`'s shot joins `sizes`, so the review's cramped-list check reads it too.
+      let tablet = null;
       try {
         await s('Emulation.setDeviceMetricsOverride', { width: PHONE_H, height: PHONE_W, deviceScaleFactor: PHONE_DPR, mobile: true });
         await sleep(500);
@@ -663,9 +1058,21 @@ async function main() {
         if (moment) await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true }, 60000, `Portrait shot of ${moment}`);
         const r = await s('Runtime.evaluate', { expression: PHONE_PROBE, returnByValue: true });
         portrait = r.result?.value ?? {};
+        const cr = await s('Runtime.evaluate', { expression: CRAMPED_PROBE, returnByValue: true });
+        Object.assign(portrait, cr.result?.value ?? {});
         const shot = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: PHONE_H, height: PHONE_W, scale: 1 } });
         portrait.png = `page-${name}-portrait.png`;
         savePng(portrait.png, shot.data);
+        if (TABLET) {
+          await s('Emulation.setDeviceMetricsOverride', { width: TABLET_W, height: TABLET_H, deviceScaleFactor: 1, mobile: false });
+          await sleep(500);
+          if (moment) await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true }, 60000, `Tablet shot of ${moment}`);
+          const tc = await s('Runtime.evaluate', { expression: CRAMPED_PROBE, returnByValue: true });
+          const t = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: TABLET_W, height: TABLET_H, scale: 1 } });
+          portrait.tablet_png = `page-${name}-tablet.png`;
+          savePng(portrait.tablet_png, t.data);
+          tablet = { size: `${TABLET_W}x${TABLET_H}`, png: portrait.tablet_png, ...(tc.result?.value ?? {}) };
+        }
       } catch (e) {
         probe.errors.push(`portrait page screenshot ${name}: ${e.message}`);
       } finally {
@@ -678,7 +1085,26 @@ async function main() {
         await s('Emulation.setDeviceMetricsOverride', { width: PAGE_W, height: PAGE_H, deviceScaleFactor: 1, mobile: false }).catch(() => {});
         await sleep(300);
       }
-      probe.captures.push({ name, page_png, phone, portrait, ...dom });
+      const sizes = tablet ? [tablet] : [];
+      for (const z of PAGE_SIZES) {
+        try {
+          await s('Emulation.setDeviceMetricsOverride', { width: z.w, height: z.h, deviceScaleFactor: z.dpr, mobile: false });
+          await sleep(500);
+          if (moment) await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true }, 60000, `${z.tag} page shot of ${moment}`);
+          const cr = await s('Runtime.evaluate', { expression: CRAMPED_PROBE, returnByValue: true });
+          const shot = await pageShot({ format: 'png', clip: { x: 0, y: 0, width: z.w, height: z.h, scale: 1 } });
+          const png = `page-${name}-${z.tag}.png`;
+          savePng(png, shot.data);
+          sizes.push({ size: z.tag, png, ...(cr.result?.value ?? {}) });
+        } catch (e) {
+          probe.errors.push(`${z.tag} page screenshot ${name}: ${e.message}`);
+        }
+      }
+      if (PAGE_SIZES.length) {
+        await s('Emulation.setDeviceMetricsOverride', { width: PAGE_W, height: PAGE_H, deviceScaleFactor: 1, mobile: false }).catch(() => {});
+        await sleep(300);
+      }
+      probe.captures.push({ name, page_png, phone, portrait, sizes, ...dom });
     };
     const readParams = async () => {
       try {
@@ -722,6 +1148,28 @@ async function main() {
       if (!clear0) return;
       await setClear(clear0, 'put the clear colour back').catch((e) => log(`clear colour back: ${e.message}`));
     };
+    // Wait until the page draws at least VIDEO_SETTLE_FPS frames a second
+    // over two 1 s windows in a row (see VIDEO_SETTLE_FPS), up to
+    // VIDEO_SETTLE_MS; then the screencast has frames to send. Resolves with
+    // how long it waited; throws, with the page's last rate, if it never did.
+    const waitForFrames = async (what) => {
+      const t0 = Date.now();
+      let good = 0;
+      let last = null;
+      while (Date.now() - t0 < VIDEO_SETTLE_MS) {
+        const r = await s('Runtime.evaluate', { expression: RAF_COUNT(1000), awaitPromise: true, returnByValue: true }, VIDEO_SETTLE_MS).catch((e) => ({ error: e.message }));
+        last = r?.result?.value ?? r;
+        const fps = last?.raf && last?.ms ? (last.raf * 1000) / last.ms : 0;
+        good = fps >= VIDEO_SETTLE_FPS ? good + 1 : 0;
+        if (good >= 2) {
+          const ms = Date.now() - t0;
+          if (ms > 3000) log(`video ${what}: the page draws again after ${(ms / 1000).toFixed(1)} s (pipelines building)`);
+          return { ms };
+        }
+        if (good === 0) log(`video ${what}: the page draws ${fps.toFixed(1)} frames a second; waiting for it to settle`);
+      }
+      throw new Error(`the page did not draw ${VIDEO_SETTLE_FPS} frames a second within ${VIDEO_SETTLE_MS / 1000} s (last: ${JSON.stringify(last)})`);
+    };
     // The showcase phase (see the header): labelled full-page shots per tier
     // and moment, then the run video.
     const runShowcase = async () => {
@@ -748,6 +1196,7 @@ async function main() {
           for (const moment of SHOWCASE_MOMENTS) {
             try {
               // Held after the reply: the page shot shows the staged frame.
+              await warmMoment(moment);
               await cmd(port, token, 'capture.frame', { width: 64, moment, hold_after: true });
               const label = `${cap(tier)} · engine ${engine} · ${moment}`;
               const r = await s('Runtime.evaluate', {
@@ -759,6 +1208,17 @@ async function main() {
                   d.textContent = ${JSON.stringify(label)};
                   d.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:4px 10px;font:600 18px/1.2 system-ui,sans-serif;color:#fff;background:rgba(0,0,0,0.65);border-radius:4px;pointer-events:none';
                   document.body.appendChild(d);
+                  // Never over a control: lift the label above any button or
+                  // link it would cover (it hid the material viewer's
+                  // "Convert a model" button, critic round 3).
+                  for (let i = 0; i < 6; i++) {
+                    const l = d.getBoundingClientRect();
+                    const hit = [...document.querySelectorAll('button,a,input,select,[role=button]')]
+                      .map((e) => e.getBoundingClientRect())
+                      .filter((r) => r.width > 0 && r.height > 0 && r.left < l.right && r.right > l.left && r.top < l.bottom && r.bottom > l.top);
+                    if (!hit.length) break;
+                    d.style.bottom = (innerHeight - Math.min(...hit.map((r) => r.top)) + 6) + 'px';
+                  }
                   const b = d.getBoundingClientRect();
                   return [b.x, b.y, b.width, b.height];
                 })()`,
@@ -779,15 +1239,21 @@ async function main() {
         if (VIDEO_MOMENT) {
           try {
             await cmd(port, token, 'capture.frame', { width: 64, moment: VIDEO_MOMENT });
+            const settled = await waitForFrames(VIDEO_MOMENT);
             castFrames = [];
             const v0 = Date.now();
             await s('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: VIDEO_W, maxHeight: VIDEO_H, everyNthFrame: 1 });
+            // The page's own frame count over the same window: tells "the page
+            // drew nothing" from "the screencast passed nothing on".
+            const rafProbe = s('Runtime.evaluate', { expression: RAF_COUNT(VIDEO_SECONDS * 1000 - 500), awaitPromise: true, returnByValue: true }, VIDEO_SECONDS * 1000 + 30000).catch((e) => ({ error: e.message }));
             await sleep(VIDEO_SECONDS * 1000);
             await s('Page.stopScreencast');
             const seconds = (Date.now() - v0) / 1000;
             const frames = castFrames;
             castFrames = null;
-            if (!frames.length) throw new Error('the screencast sent no frames');
+            const raf = await rafProbe;
+            log(`video ${VIDEO_MOMENT}: ${frames.length} screencast frames, page ${JSON.stringify(raf?.result?.value ?? raf)}`);
+            if (!frames.length) throw new Error(`the screencast sent no frames (page over the same ${VIDEO_SECONDS} s: ${JSON.stringify(raf?.result?.value ?? raf)})`);
             const dir = join(OUT, 'video-frames');
             rmSync(dir, { recursive: true, force: true });
             mkdirSync(dir, { recursive: true });
@@ -805,7 +1271,7 @@ async function main() {
             const ok = ff.status === 0 && existsSync(webm);
             if (!ok) out.video_error = `ffmpeg did not make video.webm (${ff.error?.message ?? `exit ${ff.status}`})`;
             rmSync(dir, { recursive: true, force: true });
-            out.video = { moment: VIDEO_MOMENT, file: ok ? 'video.webm' : null, seconds, frame_count: frames.length, fps, frames: keep };
+            out.video = { moment: VIDEO_MOMENT, file: ok ? 'video.webm' : null, seconds, frame_count: frames.length, fps, frames: keep, settle_ms: settled.ms };
             log(`video ${VIDEO_MOMENT}: ${frames.length} frames over ${seconds.toFixed(1)} s, webm ${ok}`);
           } catch (e) {
             castFrames = null;
@@ -836,6 +1302,13 @@ async function main() {
       const aq0 = (await cmd(port, token, 'param.get', { names: ['aq.enabled'] }).catch(() => null))?.values?.['aq.enabled'];
       const results = [];
       try {
+        // `"settle": true`: wait for the page to present frames steadily
+        // first (a game whose pipelines take minutes to compile on a busy
+        // machine would otherwise stall the first step).
+        if (PLAN.settle) {
+          const st = await waitSteady(0, PLAN.settle === true ? START_SETTLE_MS : Number(PLAN.settle));
+          log(st.at == null ? `plan settle: ${st.why}` : `plan settle: steady after ${Math.round(st.at)} ms`);
+        }
         await cmd(port, token, 'param.set', { values: { 'aq.enabled': false } }, 30000, 'Geometry check: hold the tier steady (adaptive quality off)').catch((e) => log(`aq.enabled: ${e.message}`));
         if (PLAN.tier) {
           await cmd(port, token, 'tier.set', { tier: PLAN.tier }, 60000, `Geometry check on the ${PLAN.tier} tier`);
@@ -867,6 +1340,7 @@ async function main() {
         if (aq0 !== undefined && aq0 !== false) await cmd(port, token, 'param.set', { values: { 'aq.enabled': aq0 } }, 30000, 'Adaptive quality back on after the geometry check').catch(() => {});
       }
       const summary = { mode: 'plan', port, game: GAME, tier: PLAN.tier ?? tier0 ?? null, steps: results, console: consoleLines };
+      summary.page_log = planConsole;
       writeFileSync(join(OUT, 'plan-result.json'), JSON.stringify(summary, null, 2));
       log(`plan: ${results.filter((r) => r.ok).length}/${results.length} steps ok -> ${join(OUT, 'plan-result.json')}`);
       try {
@@ -900,6 +1374,7 @@ async function main() {
             await sleep(1500);
           }
           // Held after the reply, so the page shots below show this frame.
+          await warmMoment(m.name);
           const c = await cmd(port, token, 'capture.frame', { width: WIDTH, moment: m.name, hold_after: true });
           const repeats = MOMENTS.filter((o) => o.name === m.name).length > 1;
           const file = savePng(repeats ? `moment-${m.name}-${m.tier ?? 'current'}.png` : `moment-${m.name}.png`, c.png_base64);
@@ -927,7 +1402,7 @@ async function main() {
         if (aq0 !== undefined && aq0 !== false) await setAq(aq0, 'Adaptive quality back on after the review captures');
       }
       const show = await runShowcase();
-      const summary = { mode: 'moments', port, game: GAME, commit: COMMIT, viewport: [VIEW_W, VIEW_H], aq_enabled: false, captures, probe, ...show, console: consoleLines };
+      const summary = { mode: 'moments', port, game: GAME, commit: COMMIT, viewport: [VIEW_W, VIEW_H], aq_enabled: false, captures, probe, ...show, ...tierSwitch, console: consoleLines };
       writeFileSync(join(OUT, 'captures.json'), JSON.stringify(summary, null, 2));
       process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
       try {
@@ -956,7 +1431,7 @@ async function main() {
         await restoreClear();
       }
       const show = await runShowcase();
-      const summary = { mode: 'review', port, game: GAME, commit: COMMIT, viewport: [VIEW_W, VIEW_H], captures, probe, ...show, console: consoleLines };
+      const summary = { mode: 'review', port, game: GAME, commit: COMMIT, viewport: [VIEW_W, VIEW_H], captures, probe, ...show, ...tierSwitch, console: consoleLines };
       writeFileSync(join(OUT, 'captures.json'), JSON.stringify(summary, null, 2));
       process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
       try {

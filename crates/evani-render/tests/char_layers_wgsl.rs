@@ -12,7 +12,10 @@
 use evani_core::slots::ShaderSlots;
 use evani_material_character::lut;
 use evani_material_character::params::{Values, body};
-use evani_material_character::shader::{CHAR_PARAMS, patch_layered};
+use evani_material_character::shader::{CHAR_PARAMS, DATA_BODY, patch_layered};
+
+/// The body the engine ships: the constants read from the char_live uniform.
+const DATA: Option<u32> = Some(u32::MAX);
 use evani_material_layers::{BRDF_WGSL, LAYER_WORDS};
 use evani_render::model::surface::{SPECULAR, SURFACE_PARAMS, SURFACE_WORDS};
 use evani_render::splice::{Bodies, splice};
@@ -53,7 +56,9 @@ fn slots(quality: Option<u32>) -> ShaderSlots {
     s.declare(SPECULAR);
     s.declare(SURFACE_PARAMS);
     s.declare(CHAR_PARAMS);
-    if let Some(q) = quality {
+    if quality == DATA {
+        s.set_default("char_params", DATA_BODY, "test").unwrap();
+    } else if let Some(q) = quality {
         let v = Values { quality: q as f32, ..Values::default() };
         s.set_default("char_params", &body(&v, q, 4, &lut::fitted()), "test").unwrap();
     }
@@ -93,13 +98,16 @@ fn the_layered_stage_takes_the_character_patch() {
             let src = parts.concat();
             for msaa in [1, 4] {
                 let patched = patch_layered(&src, msaa).expect("every patched line is in the layered stage");
-                for q in [None, Some(0), Some(1), Some(2), Some(3)] {
+                for q in [None, Some(0), Some(1), Some(2), Some(3), DATA] {
                     let name = format!("char+layers {tail_name} skin={skin} msaa={msaa} q={q:?}");
                     let s = splice(&patched, &slots(q), Bodies::Current).unwrap_or_else(|e| panic!("{name}: {e:?}"));
                     let m = validate(&name, &s.source);
                     assert!(writes_mask(&m, "model_layered_fs"), "{name}: the layered stage writes the mask");
                     assert!(!writes_mask(&m, "model_lit_fs"), "{name}: the unused plain stage is untouched");
                     assert_eq!(uniform_size(&m, "surface"), Some(SURFACE_WORDS as u32 * 4), "{name}");
+                    if q.is_some() {
+                        assert_eq!(uniform_size(&m, "char_live"), Some(16 * evani_material_character::params::ENTRIES as u32), "{name}");
+                    }
                     assert_eq!(uniform_size(&m, "ly_mat"), Some(LAYER_WORDS as u32 * 4), "{name}");
                     assert!(s.source.contains("let flags = select(u32(ly_mat.iri.w + 0.5), 0u, surface.kind.z > 0.5);"), "{name}: character kinds drop their layers");
                 }
@@ -125,7 +133,7 @@ fn shipped_forward_patches_the_layered_stage() {
     }
     for msaa in [1, 4] {
         let p = patch_layered(fwd, msaa).expect("the shipped layered stage patches");
-        let s = splice(&p, &slots(Some(2)), Bodies::Current).unwrap();
+        let s = splice(&p, &slots(DATA), Bodies::Current).unwrap();
         let m = validate(&format!("shipped msaa={msaa}"), &(s.source + &stubs));
         assert!(writes_mask(&m, "model_layered_fs"));
     }

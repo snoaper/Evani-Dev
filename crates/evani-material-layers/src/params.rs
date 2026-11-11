@@ -22,9 +22,15 @@ pub const IRIDESCENCE_STRENGTH: &str = "material.layers.iridescence_strength";
 pub const WEAVE_STRENGTH: &str = "material.layers.weave_strength";
 pub const WEAVE_SCALE: &str = "material.layers.weave_scale";
 pub const QUALITY: &str = "material.layers.quality";
+/// The light as a clear coat mirrors it: the angular radius (degrees) of the
+/// crisp disc the sun makes on a coat (critic round 3 of material-view: one
+/// soft highlight read as plain paint, not a coat).
+pub const COAT_LIGHT_SIZE: &str = "material.layers.coat_light_size";
+/// Its default: a studio softbox's size, a spot that reads as a reflection.
+pub const COAT_LIGHT_DEFAULT: f32 = 7.0;
 
 /// Every parameter this crate registers.
-pub const NAMES: [&str; 7] = [
+pub const NAMES: [&str; 8] = [
     SHEEN_STRENGTH,
     CLEARCOAT_STRENGTH,
     ANISOTROPY_STRENGTH,
@@ -32,12 +38,14 @@ pub const NAMES: [&str; 7] = [
     WEAVE_STRENGTH,
     WEAVE_SCALE,
     QUALITY,
+    COAT_LIGHT_SIZE,
 ];
 
 /// Which path the layered shader takes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Quality {
-    /// Phones: Kajiya-Kay anisotropy, no iridescence, a one-tap weave.
+    /// Phones: Kajiya-Kay anisotropy, no iridescence (the weave and its relief
+    /// are the same as on the full path).
     Cheap,
     /// Medium and up: stretched GGX, thin film, a weave with relief.
     Full,
@@ -73,6 +81,7 @@ pub struct LayerParams {
     pub weave: F32Param,
     pub weave_scale: F32Param,
     pub quality: EnumParam,
+    pub coat_light: F32Param,
 }
 
 fn strength(name: &str, what: &str) -> ParamDef {
@@ -105,6 +114,14 @@ pub fn register(ctx: &mut PluginContext) -> Result<(), ParamError> {
                 .describe("Layered material path: auto follows the tier (Lite and Low cheap), cheap = no iridescence and a simple brushed-metal band, full = everything")
                 .gpu(),
         )?,
+        coat_light: ctx.param_f32(
+            ParamDef::f32(COAT_LIGHT_SIZE, COAT_LIGHT_DEFAULT)
+                .range(0.5, 20.0)
+                .step(0.1)
+                .unit("deg")
+                .describe("How big the sun looks mirrored in a clear coat: the angular radius of its crisp highlight (the same on every tier)")
+                .gpu(),
+        )?,
     };
     ctx.resource(p);
     Ok(())
@@ -112,7 +129,8 @@ pub fn register(ctx: &mut PluginContext) -> Result<(), ParamError> {
 
 /// The shared per-frame uniform (`LayerFrame`): sheen, clear coat,
 /// anisotropy and iridescence strengths (iridescence 0 on the cheap path),
-/// then weave strength, weave scale, the path (0 cheap, 1 full) and 0.
+/// then weave strength, weave scale, the path (0 cheap, 1 full) and the
+/// cosine of the coat's light size.
 pub fn frame_words(reg: &ParamRegistry, p: &LayerParams, tier: &str) -> [f32; FRAME_WORDS] {
     let q = Quality::pick(reg.enum_index(p.quality), tier);
     let full = q == Quality::Full;
@@ -124,8 +142,13 @@ pub fn frame_words(reg: &ParamRegistry, p: &LayerParams, tier: &str) -> [f32; FR
         reg.f32(p.weave),
         reg.f32(p.weave_scale),
         if full { 1.0 } else { 0.0 },
-        0.0,
+        coat_cos(reg.f32(p.coat_light)),
     ]
+}
+
+/// The cosine of a coat light size in degrees (the shader's disc edge).
+pub fn coat_cos(deg: f32) -> f32 {
+    deg.clamp(0.5, 20.0).to_radians().cos()
 }
 
 /// The frame words with every strength at 1 on `tier` (no registry yet).
@@ -139,7 +162,7 @@ pub fn default_frame(tier: &str) -> [f32; FRAME_WORDS] {
         1.0,
         1.0,
         if full { 1.0 } else { 0.0 },
-        0.0,
+        coat_cos(COAT_LIGHT_DEFAULT),
     ]
 }
 

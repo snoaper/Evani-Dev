@@ -26,3 +26,6 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Evani.commons packages made here and versions downloaded from Evani.app (docs/EVANI_COMMONS.md).
+/evani/commons/

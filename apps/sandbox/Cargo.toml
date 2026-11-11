@@ -4,7 +4,7 @@ description = "Evani.Dev sandbox: test game with a minimal debug panel (tier swi
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license = "MIT"
+license.workspace = true
 publish.workspace = true
 
 # Module switches. `cargo xtask build sandbox` reads evani.toml and turns it
@@ -24,6 +24,8 @@ shadows = ["fx", "evani-fx/shadows"]
 fog = ["fx", "evani-fx/fog"]
 decals = ["fx", "evani-fx/decals"]
 grade = ["fx", "evani-fx/grade"]
+particles = ["fx", "evani-fx/particles"]
+trails = ["fx", "evani-fx/trails"]
 physics-simple = ["dep:evani-physics", "evani-physics/simple"]
 physics-rigid = ["dep:evani-physics", "evani-physics/rigid"]
 net = ["dep:evani-net"]
@@ -40,7 +42,7 @@ skin-proof = ["anim"]
 ui = ["evani-render/msdf", "dep:evani-ui"]
 # The S3-13a text proof panel instead of the S3-13b HUD panel (needs `ui`).
 text-proof = ["ui"]
-live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-material-nature?/capture"]
 # The S3-10 surface-relief proof (`trunk build --features relief`; never in
 # evani.toml, so the default and ship builds are unchanged): the shared
 # relief fixture drawn with the toon look's micro-detail patterns.
@@ -124,6 +126,86 @@ nature-orbit = ["nature-proof"]
 playmat-proof = ["dep:evani-material-proc", "evani-material-proc/sky", "evani-material-proc/relief", "dep:evani-look-photoreal"]
 # The same with the weather-mask debug views (`&dbg=1|2|3`).
 playmat-debug = ["playmat-proof", "evani-material-proc/relief-debug"]
+# The material recipes proof (`trunk build --features recipes-proof`;
+# proof_recipes.rs): a row of model shapes whose glTF materials carry
+# catalogue blocks (`extras.evani_recipe`), drawn through evani-render's
+# recipe stage under the film look's lit surface pass. Never in evani.toml
+# or `default`, so the default and ship builds are unchanged. P3: all eight
+# condition layers on, a second row of test balls (one layer each, then all).
+# P4: the first recipes (metal, wood, stone, ceramic); `?set=p4` shows them.
+# P5: bark, masonry, plaster and ground; `?set=p5` shows them.
+# P6: leather, fur, hide and keratin; `?set=p6` shows them.
+# P7: feather and scales; `?set=p7` shows them.
+# P8: gem and ice; `?set=p8` shows them.
+# P9: paint extras, plastic, organic, fire and glow; `?set=p9` shows them.
+recipes-proof = ["lit-proof", "evani-render/material-recipes", "evani-render/material-recipes-cut", "evani-render/material-recipes-refract", "evani-material-recipes/recipe-glass", "dep:evani-material-recipes", "dep:serde_json", "evani-material-recipes/cond-wet", "evani-material-recipes/cond-mud", "evani-material-recipes/cond-dust", "evani-material-recipes/cond-snow", "evani-material-recipes/cond-wear", "evani-material-recipes/cond-oxide", "evani-material-recipes/cond-growth", "evani-material-recipes/cond-blood", "evani-material-recipes/recipe-metal", "evani-material-recipes/recipe-wood", "evani-material-recipes/recipe-wood-layouts", "evani-material-recipes/recipe-bark", "evani-material-recipes/recipe-stone", "evani-material-recipes/recipe-masonry", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-ground", "evani-material-recipes/recipe-cloth", "evani-material-recipes/recipe-leather", "evani-material-recipes/recipe-fur", "evani-material-recipes/recipe-hide", "evani-material-recipes/recipe-keratin", "evani-material-recipes/recipe-foliage", "evani-material-recipes/recipe-thin", "evani-material-recipes/recipe-feather", "evani-material-recipes/recipe-scales", "evani-material-recipes/recipe-ceramic", "evani-material-recipes/recipe-gem", "evani-material-recipes/recipe-ice", "evani-material-recipes/recipe-paint", "evani-material-recipes/recipe-plastic", "evani-material-recipes/recipe-organic", "evani-material-recipes/recipe-organic-food", "evani-material-recipes/recipe-fire", "evani-material-recipes/recipe-glow"]
+# The ribbons and trails proof (`trunk build --features trails-proof`;
+# proof_trails.rs): a kart drifting and a sword swinging, drawn with the
+# `trails` effect, or as dense particles along the same paths (`?tr=dense`),
+# or with neither (`?tr=off`). It holds the sim clock for its captures.
+# Never in evani.toml or `default`, so the default and ship builds are
+# unchanged.
+trails-proof = ["trails", "particles", "evani-core/capture", "evani-render/trails-screen"]
+# P10a: `?set=p10a`, the row-to-glTF adapter on real models (character heads,
+# the curtain, the coated ball) with the layers and character families on, and
+# the catalogue embedded (dev data, never in evani.toml or a ship build).
+recipes-nature-proof = ["recipes-family-proof", "dep:evani-material-nature"]
+recipes-family-proof = ["recipes-proof", "evani-material-recipes/gltf", "evani-material-recipes/data", "evani-render/material-layers", "evani-render/char-materials"]
+
+# `[materials]` in evani.toml (P10b, docs/materials/BATCH1_BUILD_PLAN.md 2.2):
+# `recipes` and `conditions` map to these. `material-recipes` brings the recipe
+# stage; `recipe-<name>` and `cond-<layer>` add one recipe or layer each;
+# `material-layers` (cloth), `char-materials` (skin, hair, eye) and
+# `material-nature` (water, glass, foliage, thin) are the families. All off
+# unless listed, so a game that lists none downloads none of it. `cargo xtask
+# check` names any of these lines a game is missing.
+material-recipes = ["models", "evani-render/material-recipes", "dep:evani-material-recipes"]
+recipe-metal = ["material-recipes", "evani-material-recipes/recipe-metal"]
+recipe-paint = ["material-recipes", "evani-material-recipes/recipe-paint"]
+recipe-plastic = ["material-recipes", "evani-material-recipes/recipe-plastic"]
+recipe-wood = ["material-recipes", "evani-material-recipes/recipe-wood"]
+recipe-wood-layouts = ["material-recipes", "evani-material-recipes/recipe-wood-layouts"]
+recipe-organic-food = ["material-recipes", "evani-material-recipes/recipe-organic-food"]
+# Cut-out holes (batch 3 B3-P2; `"cutout"` in `[materials] recipes`): grates,
+# chain-link, wire mesh and lattice, and the hole-aware shadow pipeline.
+material-cutout = ["material-recipes", "evani-render/material-recipes-cut"]
+# The see-through pass (batch 3 B3-P3; `"blend"` in `[materials] recipes`):
+# glass, smoke, steam, fire and holograms drawn blended, sorted far to near;
+# `"refraction"` adds the copy frosted, wavy and block glass bend and blur.
+material-blend = ["material-recipes", "evani-render/material-recipes-blend"]
+material-refract = ["material-blend", "evani-render/material-recipes-refract"]
+recipe-glass = ["material-recipes", "evani-material-recipes/recipe-glass"]
+recipe-bark = ["material-recipes", "evani-material-recipes/recipe-bark"]
+recipe-stone = ["material-recipes", "evani-material-recipes/recipe-stone"]
+recipe-masonry = ["material-recipes", "evani-material-recipes/recipe-masonry"]
+recipe-plaster = ["material-recipes", "evani-material-recipes/recipe-plaster"]
+recipe-ground = ["material-recipes", "evani-material-recipes/recipe-ground"]
+recipe-cloth = ["material-recipes", "evani-material-recipes/recipe-cloth"]
+recipe-leather = ["material-recipes", "evani-material-recipes/recipe-leather"]
+recipe-fur = ["material-recipes", "evani-material-recipes/recipe-fur"]
+recipe-feather = ["material-recipes", "evani-material-recipes/recipe-feather"]
+recipe-scales = ["material-recipes", "evani-material-recipes/recipe-scales"]
+recipe-hide = ["material-recipes", "evani-material-recipes/recipe-hide"]
+recipe-keratin = ["material-recipes", "evani-material-recipes/recipe-keratin"]
+recipe-thin = ["material-recipes", "evani-material-recipes/recipe-thin"]
+recipe-organic = ["material-recipes", "evani-material-recipes/recipe-organic"]
+recipe-ceramic = ["material-recipes", "evani-material-recipes/recipe-ceramic"]
+recipe-gem = ["material-recipes", "evani-material-recipes/recipe-gem"]
+recipe-ice = ["material-recipes", "evani-material-recipes/recipe-ice"]
+recipe-fire = ["material-recipes", "evani-material-recipes/recipe-fire"]
+recipe-glow = ["material-recipes", "evani-material-recipes/recipe-glow"]
+recipe-foliage = ["material-recipes", "evani-material-recipes/recipe-foliage"]
+cond-wet = ["material-recipes", "evani-material-recipes/cond-wet"]
+cond-mud = ["material-recipes", "evani-material-recipes/cond-mud"]
+cond-dust = ["material-recipes", "evani-material-recipes/cond-dust"]
+cond-snow = ["material-recipes", "evani-material-recipes/cond-snow"]
+cond-wear = ["material-recipes", "evani-material-recipes/cond-wear"]
+cond-oxide = ["material-recipes", "evani-material-recipes/cond-oxide"]
+cond-growth = ["material-recipes", "evani-material-recipes/cond-growth"]
+cond-blood = ["material-recipes", "evani-material-recipes/cond-blood"]
+material-layers = ["models", "evani-render/material-layers"]
+char-materials = ["models", "evani-render/char-materials"]
+material-nature = ["models", "dep:evani-material-nature"]
 
 [dependencies]
 evani-core.workspace = true
@@ -146,6 +228,8 @@ evani-look-photoreal = { workspace = true, optional = true }
 evani-destruct = { workspace = true, optional = true }
 evani-material-layers = { workspace = true, optional = true }
 evani-material-nature = { workspace = true, optional = true }
+evani-material-recipes = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen.workspace = true
@@ -161,6 +245,10 @@ web-sys = { workspace = true, features = [
     "Event",
     "EventTarget",
 ] }
+
+[dev-dependencies]
+# The recipes proof test checks its blocks against the catalogue (dev only).
+evani-material-recipes = { workspace = true, features = ["catalog"] }
 
 [lints]
 workspace = true

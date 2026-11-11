@@ -42,11 +42,19 @@ pub struct App {
     /// `serve --app-dir`: every file served must resolve (symlinks and
     /// junctions followed) inside the build folder.
     contained: bool,
+    /// `serve --app-dir`: rebuilds the game when its sources changed
+    /// (rebuild.rs); a page reload asks it for a build that is up to date.
+    rebuild: std::sync::OnceLock<Arc<crate::rebuild::Rebuilder>>,
 }
 
 impl App {
     pub fn new(hub: Arc<Hub>, token: String, dist: PathBuf, page: Option<Arc<crate::page::PageHot>>) -> Self {
-        Self { hub, token, dist: std::sync::RwLock::new(dist), page, baked: std::sync::RwLock::new(None), contained: false }
+        Self { hub, token, dist: std::sync::RwLock::new(dist), page, baked: std::sync::RwLock::new(None), contained: false, rebuild: std::sync::OnceLock::new() }
+    }
+
+    /// Let a reload of the page start a rebuild of a stale build.
+    pub fn set_rebuilder(&self, r: Arc<crate::rebuild::Rebuilder>) {
+        let _ = self.rebuild.set(r);
     }
 
     /// Serve only files that resolve inside the build folder (a game outside
@@ -204,7 +212,15 @@ async fn files(State(app): State<Shared>, method: Method, req: Request) -> Respo
         return fail(StatusCode::METHOD_NOT_ALLOWED, "bad_request", "GET only");
     }
     let path = req.uri().path();
+    if let Some(rest) = path.strip_prefix(DEV_REFS) {
+        return dev_ref(&app, rest).await;
+    }
     let is_index = path == "/" || path == "/index.html";
+    // A reload of a game outside the engine: if its sources changed since the
+    // build, rebuild now (the holding page below waits for it).
+    if is_index && let Some(r) = app.rebuild.get() {
+        r.start_if_stale(true).await;
+    }
     let build = app.hub.build();
     if build.phase != "idle" {
         return if is_index {
@@ -460,6 +476,28 @@ fn html(text: String) -> Response {
         text,
     )
         .into_response()
+}
+
+/// Where the page asks for local reference pictures (dev only).
+pub const DEV_REFS: &str = "/dev-refs/";
+
+/// A local reference picture from `art-source/style-refs/` under the engine
+/// root: third-party screenshots kept on this PC only (git-ignored). Only
+/// this dev bridge serves them; no build copies them, so a ship or published
+/// bundle never holds them, and a page served any other way gets a 404.
+async fn dev_ref(app: &Shared, rest: &str) -> Response {
+    let base = PathBuf::from(&app.hub.info.root).join("art-source").join("style-refs");
+    let Some(file) = safe_join(&base, rest) else {
+        return (StatusCode::NOT_FOUND, "Not found").into_response();
+    };
+    match tokio::fs::read(&file).await {
+        Ok(bytes) => Response::builder()
+            .header(header::CONTENT_TYPE, content_type(&file))
+            .header(header::CACHE_CONTROL, "no-store")
+            .body(Body::from(bytes))
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+        Err(_) => (StatusCode::NOT_FOUND, "Not found").into_response(),
+    }
 }
 
 /// A path under `dist` from a URL path, refusing anything that climbs out.

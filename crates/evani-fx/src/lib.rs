@@ -34,7 +34,7 @@ pub mod particles;
 #[cfg(feature = "parallax")]
 pub mod parallax;
 #[cfg(feature = "shadows")]
-pub mod shadows; #[cfg(feature = "lights2d")] pub mod lights2d; #[cfg(feature = "fog")] pub mod fog; #[cfg(feature = "decals")] pub mod decals; #[cfg(feature = "grade")] pub mod grade; #[cfg(feature = "look-effects")] mod look_effects;
+pub mod shadows; #[cfg(feature = "lights2d")] pub mod lights2d; #[cfg(feature = "fog")] pub mod fog; #[cfg(feature = "decals")] pub mod decals; #[cfg(feature = "grade")] pub mod grade; #[cfg(feature = "look-effects")] mod look_effects; #[cfg(feature = "trails")] pub mod trails;
 
 use core::fmt::Write;
 
@@ -153,7 +153,7 @@ impl FxModule {
         #[cfg(feature = "shadows")]
         {
             m = m.with_effect(shadows::Shadows);
-        } #[cfg(feature = "lights2d")] { m = m.with_effect(lights2d::Lights2d); } #[cfg(feature = "fog")] { m = m.with_effect(fog::Fog::default()); } #[cfg(feature = "decals")] { m = m.with_effect(decals::Decals::default()); } #[cfg(feature = "grade")] { m = m.with_effect(grade::Grade::default()); }
+        } #[cfg(feature = "lights2d")] { m = m.with_effect(lights2d::Lights2d); } #[cfg(feature = "fog")] { m = m.with_effect(fog::Fog::default()); } #[cfg(feature = "decals")] { m = m.with_effect(decals::Decals::default()); } #[cfg(feature = "grade")] { m = m.with_effect(grade::Grade::default()); } #[cfg(feature = "trails")] { m = m.with_effect(trails::Trails); }
         m
     }
 
@@ -176,7 +176,7 @@ impl FxModule {
         #[cfg(feature = "parallax")]
         "parallax",
         #[cfg(feature = "shadows")]
-        "shadows", #[cfg(feature = "lights2d")] "lights2d", #[cfg(feature = "fog")] "fog", #[cfg(feature = "decals")] "decals", #[cfg(feature = "grade")] "grade",
+        "shadows", #[cfg(feature = "lights2d")] "lights2d", #[cfg(feature = "fog")] "fog", #[cfg(feature = "decals")] "decals", #[cfg(feature = "grade")] "grade", #[cfg(feature = "trails")] "trails",
     ];
 
     pub fn with_effect(mut self, effect: impl Effect) -> Self {
@@ -202,7 +202,7 @@ impl FxModule {
         let mut reg = world.res_mut::<ParamRegistry>();
         for e in &self.entries {
             let name = e.effect.info().name;
-            let mut on = tier.effects_on.iter().any(|n| n == name); #[cfg(feature = "lights2d")] if name == lights2d::INFO.name { on |= lights2d::tier_on(&tier.id); } #[cfg(feature = "look-effects")] { on |= look_effects::requested(world, name, tier); } // 2D lights: on where the tier gives a count; look-effects: the look asked for it (its veto below and the budget still apply)
+            let mut on = tier.effects_on.iter().any(|n| n == name); #[cfg(feature = "lights2d")] if name == lights2d::INFO.name { on |= lights2d::tier_on(&tier.id); } #[cfg(feature = "trails")] if name == trails::INFO.name { on = true; } #[cfg(feature = "look-effects")] { on |= look_effects::requested(world, name, tier); } // 2D lights: on where the tier gives a count; look-effects: the look asked for it (its veto below and the budget still apply)
             if let Some((_, pref)) = look.post_effects.iter().rev().find(|(n, _)| n == name) {
                 on &= *pref;
             }

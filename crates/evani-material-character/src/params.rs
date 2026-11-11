@@ -14,18 +14,19 @@
 //! | quality | tiers        | eye                         | skin                                   | hair |
 //! |---------|--------------|-----------------------------|----------------------------------------|------|
 //! | 0       | lite         | flat painted iris, wet lobes | wrapped diffuse, warm terminator      | strand highlights, coverage edges |
-//! | 1       | low          | + cornea bulge and refraction | as 0                                 | as 0 |
+//! | 1       | low          | + cornea bulge and refraction | pre-integrated lookup by curvature (round 5) | as 0 |
 //! | 2       | medium, vr   | as 1                        | + pre-integrated lookup by curvature, pores | as 0 |
 //! | 3       | high, ultra  | as 1                        | + fine wrinkles                        | as 0 |
 //!
-//! The slot body is rewritten (one rebuild of the two model pipelines) when
-//! a param or the tier changes, the way the stylizedpbr look updates its
-//! slots.
+//! The values are data ([`CharLive`], the `char_live` uniform the slot body
+//! reads): a param or tier change is a buffer write. Writing them into the
+//! slot body rebuilt both model pipelines on each change, and the page froze
+//! 30 to 53 s while the browser compiled the 190 KB module (2026-10-25).
 
 use evani_core::ecs::{Stage, SystemDesc};
 use evani_core::params::{F32Param, ParamDef, ParamRegistry, Vec3Param};
 use evani_core::plugin::{PluginContext, PluginError};
-use evani_core::slots::{ShaderSlots, SlotRebuilds};
+use evani_core::slots::ShaderSlots;
 use evani_core::tiers::Tiers;
 
 use crate::lut::{self, FIT_ROWS, FitRow};
@@ -36,14 +37,18 @@ type Num = (&'static str, f32, f32, f32, f32, &'static str);
 /// A colour param: name, default (linear), description.
 type Col = (&'static str, [f32; 3], &'static str);
 
-/// Colours, in slot order (each is the rgb of one slot entry).
-pub const COLORS: [Col; 6] = [
+/// Colours, in slot order (each is the rgb of one slot entry; the last,
+/// the scalp, is entry 29, after the skin lookup).
+pub const COLORS: [Col; 7] = [
     ("material.eye.iris_color", [0.30, 0.15, 0.05], "Outer iris colour (linear); a material's evani_eye.iris_color wins"),
     ("material.eye.iris_inner_color", [0.62, 0.40, 0.13], "Iris colour round the pupil (the collarette)"),
     ("material.eye.sclera_color", [0.80, 0.76, 0.72], "White of the eye; a material's evani_eye.sclera_color wins"),
     ("material.skin.scatter_color", [1.0, 0.42, 0.26], "Colour of the light that bleeds past the shadow edge under the skin"),
     ("material.hair.primary_color", [1.0, 0.97, 0.92], "Tint of the sharp strand highlight (light colour)"),
     ("material.hair.secondary_color", [1.0, 0.85, 0.7], "Tint of the soft second highlight (times the hair colour)"),
+    // The bust's skin (sRGB 226, 178, 148), so its Low hairline fades into
+    // its own face (material-view critic round 13).
+    ("material.hair.scalp_color", [0.76, 0.445, 0.296], "Skin colour under the hair: on tiers without MSAA the long strands' ends fade into it; a material's evani_hair.scalp_color wins"),
 ];
 
 /// Numbers, in slot order (four per slot entry, after the colours' w).
@@ -63,7 +68,7 @@ pub const NUMS: [Num; 27] = [
     ("material.eye.catchlight_size", 0.02, 0.002, 0.2, 0.002, "Size of the catchlight"),
     ("material.eye.fibre_strength", 1.0, 0.0, 2.0, 0.05, "Contrast of the iris fibres and rings"),
     // Slot 6 w.
-    ("material.skin.wrap", 0.45, 0.0, 1.0, 0.01, "How far light wraps past the shadow edge on Lite and Low"),
+    ("material.skin.wrap", 0.45, 0.0, 1.0, 0.01, "How far light wraps past the shadow edge on Lite"),
     // Slot 7.
     ("material.skin.warmth", 1.0, 0.0, 3.0, 0.05, "Strength of the warm band along the shadow edge"),
     ("material.skin.curvature_scale", 6.0, 0.0, 40.0, 0.5, "How strongly curvature softens the light (1 = true to size; more for small or stylised heads)"),
@@ -77,22 +82,23 @@ pub const NUMS: [Num; 27] = [
     ("material.skin.normal_blur", 0.6, 0.0, 1.0, 0.05, "How much the red light ignores small bumps (light scattered under them)"),
     ("material.skin.unused", 0.0, 0.0, 0.0, 0.0, ""),
     // Slot 9 and 10 w.
-    ("material.hair.primary_strength", 0.35, 0.0, 4.0, 0.01, "Strength of the sharp strand highlight"),
-    ("material.hair.secondary_strength", 0.6, 0.0, 4.0, 0.01, "Strength of the soft, coloured second highlight"),
+    ("material.hair.primary_strength", 0.05, 0.0, 4.0, 0.01, "Strength of the sharp strand highlight"),
+    ("material.hair.secondary_strength", 0.4, 0.0, 4.0, 0.01, "Strength of the soft, coloured second highlight"),
     // Slot 11.
     ("material.hair.primary_shift", 0.1, -1.0, 1.0, 0.01, "Shift of the sharp highlight along the strand (towards the tip)"),
     ("material.hair.secondary_shift", -0.15, -1.0, 1.0, 0.01, "Shift of the second highlight (towards the root)"),
-    ("material.hair.shift_jitter", 0.2, 0.0, 1.0, 0.01, "How much each lock's highlight shifts differently"),
-    ("material.hair.primary_exponent", 80.0, 2.0, 512.0, 1.0, "Sharpness of the strand highlight"),
+    ("material.hair.shift_jitter", 0.6, 0.0, 1.0, 0.01, "How much each lock's highlight shifts differently"),
+    ("material.hair.primary_exponent", 220.0, 2.0, 512.0, 1.0, "Sharpness of the strand highlight"),
     // Slot 12 (four).
     ("material.hair.edge_softness", 0.45, 0.0, 1.0, 0.01, "Soft edge across each lock, as a share of its width"),
 ];
 
-/// The rest of slot 12.
-pub const HAIR_TAIL: [Num; 3] = [
+/// The rest of slot 12, then slot 29's w.
+pub const HAIR_TAIL: [Num; 4] = [
     ("material.hair.tip_width", 0.25, 0.0, 1.0, 0.01, "Lock width at the tip, as a share of its root width"),
     ("material.hair.secondary_exponent", 20.0, 2.0, 512.0, 1.0, "Sharpness of the second highlight"),
     ("material.hair.root_dark", 0.45, 0.0, 1.0, 0.01, "How much darker the hair is at its roots (shadow inside the fur)"),
+    ("material.hair.scalp_fade", 1.0, 0.0, 1.0, 0.01, "On tiers without MSAA (Lite, Low): how far the long strands' ends fade into the scalp colour (0 = a clean cut)"),
 ];
 
 /// `material.character.quality`.
@@ -125,16 +131,16 @@ pub struct Handles {
 /// The values the body is made from.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Values {
-    pub colors: [[f32; 3]; 6],
+    pub colors: [[f32; 3]; 7],
     /// [`NUMS`] then [`HAIR_TAIL`].
-    pub nums: [f32; 30],
+    pub nums: [f32; 31],
     pub quality: f32,
     pub enabled: f32,
 }
 
 impl Default for Values {
     fn default() -> Self {
-        let mut v = Self { colors: [[0.0; 3]; 6], nums: [0.0; 30], quality: QUALITY.1, enabled: ENABLED.1 };
+        let mut v = Self { colors: [[0.0; 3]; 7], nums: [0.0; 31], quality: QUALITY.1, enabled: ENABLED.1 };
         for (o, c) in v.colors.iter_mut().zip(COLORS) {
             *o = c.1;
         }
@@ -200,36 +206,57 @@ fn v4(a: f32, b: f32, c: f32, d: f32) -> String {
     format!("vec4<f32>({}, {}, {}, {})", f(a), f(b), f(c), f(d))
 }
 
-/// The entries of the slot, index 0 to 28.
-pub fn entries(v: &Values, tier: u32, msaa: u32, fit: &[FitRow; FIT_ROWS]) -> Vec<String> {
+/// Entries of the slot: 13 params, the fit's widths and amplitudes, then
+/// the hair's scalp (colour and fade).
+pub const ENTRIES: usize = 13 + 2 * FIT_ROWS + 1;
+
+/// The entries of the slot as numbers, index 0 to 29 (what the
+/// `char_live` uniform holds).
+pub fn values(v: &Values, tier: u32, msaa: u32, fit: &[FitRow; FIT_ROWS]) -> [[f32; 4]; ENTRIES] {
     let q = if v.quality >= 0.0 { v.quality.round().clamp(0.0, 3.0) } else { tier.min(3) as f32 };
     let n = &v.nums;
     let c = &v.colors;
-    let mut e = vec![
-        v4(if v.enabled >= 0.5 { 1.0 } else { 0.0 }, q, msaa.max(1) as f32, 0.0),
-        v4(c[0][0], c[0][1], c[0][2], n[0]),
-        v4(c[1][0], c[1][1], c[1][2], n[1]),
-        v4(c[2][0], c[2][1], c[2][2], n[2]),
-        v4(n[3], n[4], n[5], n[6]),
-        v4(n[7], n[8], n[9], n[10]),
-        v4(c[3][0], c[3][1], c[3][2], n[11]),
-        v4(n[12], n[13], n[14], n[15]),
-        v4(n[16], n[17], n[18], n[19]),
-        v4(c[4][0], c[4][1], c[4][2], n[20]),
-        v4(c[5][0], c[5][1], c[5][2], n[21]),
-        v4(n[22], n[23], n[24], n[25]),
-        v4(n[26], n[27], n[28], n[29]),
+    let head = [
+        [if v.enabled >= 0.5 { 1.0 } else { 0.0 }, q, msaa.max(1) as f32, 0.0],
+        [c[0][0], c[0][1], c[0][2], n[0]],
+        [c[1][0], c[1][1], c[1][2], n[1]],
+        [c[2][0], c[2][1], c[2][2], n[2]],
+        [n[3], n[4], n[5], n[6]],
+        [n[7], n[8], n[9], n[10]],
+        [c[3][0], c[3][1], c[3][2], n[11]],
+        [n[12], n[13], n[14], n[15]],
+        [n[16], n[17], n[18], n[19]],
+        [c[4][0], c[4][1], c[4][2], n[20]],
+        [c[5][0], c[5][1], c[5][2], n[21]],
+        [n[22], n[23], n[24], n[25]],
+        [n[26], n[27], n[28], n[29]],
     ];
-    for r in fit {
-        e.push(v4(r.width[0], r.width[1], r.width[2], 0.0));
+    let mut e = [[0.0; 4]; ENTRIES];
+    e[..head.len()].copy_from_slice(&head);
+    for (k, r) in fit.iter().enumerate() {
+        e[head.len() + k] = [r.width[0], r.width[1], r.width[2], 0.0];
+        e[head.len() + FIT_ROWS + k] = [r.amp[0], r.amp[1], r.amp[2], 0.0];
     }
-    for r in fit {
-        e.push(v4(r.amp[0], r.amp[1], r.amp[2], 0.0));
-    }
+    e[ENTRIES - 1] = [c[6][0], c[6][1], c[6][2], n[30]];
     e
 }
 
-/// The `char_params` slot body.
+/// The entries of the slot as WGSL constants (a body a live edit or a test
+/// can set; the engine's own body reads [`CharLive`] instead).
+pub fn entries(v: &Values, tier: u32, msaa: u32, fit: &[FitRow; FIT_ROWS]) -> Vec<String> {
+    values(v, tier, msaa, fit).iter().map(|e| v4(e[0], e[1], e[2], e[3])).collect()
+}
+
+/// The live character constants (a world resource): written when a param or
+/// the tier changes, uploaded by evani-render to the `char_live` uniform
+/// (binding 14 of the model material group) whenever `generation` moves.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharLive {
+    pub entries: [[f32; 4]; ENTRIES],
+    pub generation: u64,
+}
+
+/// A `char_params` slot body of constants (see [`entries`]).
 pub fn body(v: &Values, tier: u32, msaa: u32, fit: &[FitRow; FIT_ROWS]) -> String {
     let mut s = String::from("    switch i {\n");
     for (i, e) in entries(v, tier, msaa, fit).iter().enumerate() {
@@ -248,20 +275,22 @@ fn tier_now(world: &evani_core::ecs::World) -> (usize, u32, u32) {
     })
 }
 
-/// Declare the slot, register the params, set the first body and keep it
-/// in step with the params and the tier.
+/// Declare the slot with its data body, register the params, write the first
+/// constants and keep [`CharLive`] in step with the params and the tier. The
+/// slot body never changes after this, so neither a tier change nor a
+/// slider rebuilds a pipeline.
 pub fn register(ctx: &mut PluginContext) -> Result<(), PluginError> {
     ctx.world.res_mut::<ShaderSlots>().declare(shader::CHAR_PARAMS);
     let handles = Handles::register(&mut ctx.world.res_mut::<ParamRegistry>())?;
     let fit = lut::fitted();
     let (_, q, ms) = tier_now(ctx.world);
-    let first = body(&handles.read(&ctx.world.res::<ParamRegistry>()), q, ms, &fit);
-    ctx.world.res_mut::<ShaderSlots>().set_default(shader::CHAR_PARAMS.name, &first, OWNER).map_err(|e| PluginError(e.to_string()))?;
-    let mut last = first;
+    let first = values(&handles.read(&ctx.world.res::<ParamRegistry>()), q, ms, &fit);
+    ctx.world.res_mut::<ShaderSlots>().set_default(shader::CHAR_PARAMS.name, shader::DATA_BODY, OWNER).map_err(|e| PluginError(e.to_string()))?;
+    ctx.resource(CharLive { entries: first, generation: 1 });
     let mut seen = (u64::MAX, usize::MAX);
-    ctx.system(SystemDesc::new("material.character.slots", Stage::Update, move |world| {
+    ctx.system(SystemDesc::new("material.character.live", Stage::Update, move |world| {
         let (tier, q, ms) = tier_now(world);
-        let body = {
+        let now = {
             let Some(params) = world.try_res::<ParamRegistry>() else {
                 return;
             };
@@ -269,26 +298,13 @@ pub fn register(ctx: &mut PluginContext) -> Result<(), PluginError> {
                 return;
             }
             seen = (params.revision(), tier);
-            body(&handles.read(&params), q, ms, &fit)
+            values(&handles.read(&params), q, ms, &fit)
         };
-        if body == last {
-            return;
-        }
-        let Some(mut slots) = world.try_res_mut::<ShaderSlots>() else {
-            return;
-        };
-        let queued = world.try_res_mut::<SlotRebuilds>().map(|mut r| r.request_detached(&slots, shader::CHAR_PARAMS.name, &body, 0.0));
-        match queued {
-            Some(Ok(())) => last = body,
-            // No renderer (tests, tools): the body is all there is.
-            None => {
-                if let Some(id) = slots.id(shader::CHAR_PARAMS.name)
-                    && slots.set_body(id, &body).is_ok()
-                {
-                    last = body;
-                }
-            }
-            Some(Err(_)) => {}
+        if let Some(mut live) = world.try_res_mut::<CharLive>()
+            && live.entries != now
+        {
+            live.entries = now;
+            live.generation += 1;
         }
     }));
     Ok(())
@@ -331,7 +347,7 @@ mod tests {
     fn body_has_every_entry_and_the_override_wins() {
         let v = Values::default();
         let b = body(&v, 1, 4, &fit());
-        for i in 0..29 {
+        for i in 0..30 {
             assert!(b.contains(&format!("case {i}u:")), "case {i}");
         }
         assert!(b.contains("case 0u: { return vec4<f32>(1.00000, 1.00000, 4.00000, 0.00000); }"), "{b}");
@@ -341,6 +357,65 @@ mod tests {
         forced.quality = 3.0;
         assert!(body(&forced, 0, 1, &fit()).contains("case 0u: { return vec4<f32>(1.00000, 3.00000, 1.00000"));
         assert!(evani_core::slots::check_body(&b).is_ok());
+    }
+
+    /// The tier's quality and MSAA, and every slider, reach the GPU as data:
+    /// the slot keeps its one body, so no tier change or slider rebuilds a
+    /// pipeline (the viewer froze 30 to 53 s per new tier when they were
+    /// written into the body, 2026-10-25).
+    #[test]
+    fn tier_and_params_move_the_data_never_the_slot_body() {
+        use evani_core::App;
+        use evani_core::plugin::KitPlugin;
+        use evani_core::tiers::Tiers;
+        struct Chars;
+        impl KitPlugin for Chars {
+            fn name(&self) -> &'static str {
+                "chars"
+            }
+            fn build(&self, ctx: &mut PluginContext) -> Result<(), PluginError> {
+                register(ctx)
+            }
+        }
+        let mut app = App::new("t").with_kit(Chars);
+        app.start();
+        let body = |app: &App| {
+            let slots = app.world.res::<ShaderSlots>();
+            slots.id(shader::CHAR_PARAMS.name).and_then(|id| slots.get(id)).map(|d| d.body.clone())
+        };
+        assert_eq!(body(&app).as_deref(), Some(shader::DATA_BODY));
+        assert!(evani_core::slots::check_body(shader::DATA_BODY).is_ok());
+        let live = |app: &App| app.world.res::<CharLive>().clone();
+        for (tier, q) in [("lite", 0.0), ("ultra", 3.0), ("low", 1.0)] {
+            assert!(app.world.res_mut::<Tiers>().set_active(tier));
+            app.run_headless(2, 1000.0 / 60.0);
+            let l = live(&app);
+            assert_eq!(l.entries[0][1], q, "{tier}: quality in entry 0");
+            let ms = app.world.res::<Tiers>().active().msaa.max(1) as f32;
+            assert_eq!(l.entries[0][2], ms, "{tier}: MSAA in entry 0");
+        }
+        let g = live(&app).generation;
+        let h = app.world.res::<ParamRegistry>().id("material.eye.iris_size").unwrap();
+        app.world.res_mut::<ParamRegistry>().set(h, evani_core::params::ParamValue::F32(0.6)).unwrap();
+        app.run_headless(2, 1000.0 / 60.0);
+        let l = live(&app);
+        assert!(l.generation > g && (l.entries[1][3] - 0.6).abs() < 1e-6, "a slider is a data write");
+        assert_eq!(body(&app).as_deref(), Some(shader::DATA_BODY), "the body never changed");
+        assert_eq!(evani_core::tier_switch::tier_switch_test(&mut app, 2), Ok(()));
+    }
+
+    #[test]
+    fn values_and_constants_agree() {
+        let v = Values::default();
+        let n = values(&v, 2, 4, &fit());
+        let e = entries(&v, 2, 4, &fit());
+        assert_eq!((n.len(), e.len()), (ENTRIES, ENTRIES));
+        assert_eq!(ENTRIES, 30, "the char_live uniform holds 30 vec4s");
+        assert_eq!(n[29], [0.76, 0.445, 0.296, 1.0], "the scalp colour and fade last");
+        assert_eq!(e[0], "vec4<f32>(1.00000, 2.00000, 4.00000, 0.00000)");
+        assert_eq!(n[13], [0.1, 0.05, 0.02, 0.0]);
+        assert_eq!(n[13 + FIT_ROWS], [1.0, 1.0, 1.0, 0.0]);
+        assert!(shader::WGSL.contains("e: array<vec4<f32>, 30>,") && shader::WGSL.contains("@group(1) @binding(14) var<uniform> char_live: CharLive;"));
     }
 
     #[test]

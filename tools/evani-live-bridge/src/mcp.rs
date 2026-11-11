@@ -405,13 +405,14 @@ pub fn sweep_result(env: &Value, events: Vec<Value>) -> CallToolResult {
 }
 
 /// The folder for a sweep's thumbnails: `thumbs.dir` (relative, inside
-/// the root) or `.evani/live/sweeps/<run>`.
+/// the root) or `<live folder>/sweeps/<run>` (`.evani/live`, or
+/// `<EVANI_STATE_DIR>/live` for a read-only engine pack).
 fn thumbs_dir(root: &Path, dir: Option<&str>, run: &str) -> Result<PathBuf, String> {
     let rel = match dir {
         Some(d) => PathBuf::from(d),
         None => {
             let run: String = run.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-').collect();
-            Path::new(".evani/live/sweeps").join(if run.is_empty() { "sweep".into() } else { run })
+            return Ok(crate::session::live_dir(root).join("sweeps").join(if run.is_empty() { "sweep".into() } else { run }));
         }
     };
     let inside = rel.components().all(|c| matches!(c, Component::Normal(_) | Component::CurDir));

@@ -332,39 +332,44 @@ fn secs(d: Duration) -> String {
 }
 
 /// Run one cargo step; prints its result line. Returns whether it passed.
+/// Watched (`crate::watch`): a heartbeat line every minute while it runs and
+/// a stall limit, so a stuck step ends with a `fix:` instead of hanging.
 fn step(name: &str, mut cmd: Command) -> bool {
     use std::io::Write as _;
-    print!("  {name} ... ");
+    println!("  {name} ...");
     let _ = std::io::stdout().flush();
     let t = Instant::now();
-    match cmd.output() {
-        Ok(o) if o.status.success() => {
-            let text = format!("{}
-{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr));
-            let warns = warning_lines(&text);
-            if warns.is_empty() {
-                println!("ok ({})", secs(t.elapsed()));
-            } else {
-                println!("ok ({}), WARN {} warning{} (advisory: they may predate your change)", secs(t.elapsed()), warns.len(), plural(warns.len()));
-                for w in warns.iter().take(10) {
-                    println!("    {w}");
-                }
-            }
-            true
-        }
-        Ok(o) => {
-            println!("FAILED ({})", secs(t.elapsed()));
-            let text = format!("{}\n{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr));
-            for l in failure_lines(&text, 20) {
-                println!("{l}");
-            }
-            false
-        }
+    let shown = crate::watch::command_line(&cmd);
+    let o = match crate::watch::run_watched(&mut cmd, &format!("{name}: {shown}"), crate::watch::Watch::detect(), &mut std::io::stdout()) {
+        Ok(o) => o,
         Err(e) => {
-            println!("FAILED to start: {e}");
-            false
+            println!("  {name} ... FAILED to start: {e}");
+            return false;
+        }
+    };
+    if let Some(s) = &o.stalled {
+        println!("  {name} ... STALLED ({}): {}", secs(t.elapsed()), crate::watch::stall_what(s));
+        println!("    fix: {}", crate::watch::stall_fix(&shown, s));
+        return false;
+    }
+    let text = o.text();
+    if !o.success() {
+        println!("  {name} ... FAILED ({})", secs(t.elapsed()));
+        for l in failure_lines(&text, 20) {
+            println!("{l}");
+        }
+        return false;
+    }
+    let warns = warning_lines(&text);
+    if warns.is_empty() {
+        println!("  {name} ... ok ({})", secs(t.elapsed()));
+    } else {
+        println!("  {name} ... ok ({}), WARN {} warning{} (advisory: they may predate your change)", secs(t.elapsed()), warns.len(), plural(warns.len()));
+        for w in warns.iter().take(10) {
+            println!("    {w}");
         }
     }
+    true
 }
 
 /// The text of the final line.
@@ -425,13 +430,94 @@ pub fn run(root: &Path) -> Result<usize, String> {
     if !step("clippy", cargo_command(root, &clippy, limits)) {
         failed += 1;
     }
-    let mut test: Vec<&str> = vec!["test", "--quiet", "--no-fail-fast"];
-    test.extend(pk.iter().map(String::as_str));
-    if !step("tests", cargo_command(root, &test, limits)) {
-        failed += 1;
+    // Tests run in batches (see `test_batches`): one cargo command per game app, so a
+    // sibling's features never reach it.
+    let batches = split_running_tool(test_batches(&pkgs, &chosen), running_tool().as_deref());
+    for (batch, own_target) in &batches {
+        let mut test: Vec<&str> = vec!["test", "--quiet", "--no-fail-fast"];
+        for n in batch {
+            test.extend(["-p", n.as_str()]);
+        }
+        let label = if batches.len() == 1 { "tests".to_string() } else { format!("tests [{}]", batch_label(batch)) };
+        let mut cmd = cargo_command(root, &test, limits);
+        if *own_target {
+            // The tool running this check is a binary in the default target folder; building
+            // its tests there rewrites that very file, which Windows refuses while it runs.
+            cmd.env("CARGO_TARGET_DIR", root.join("target").join("quick-running-tool"));
+        }
+        if !step(&label, cmd) {
+            failed += 1;
+        }
     }
     println!("{}", final_line(failed, chosen.len()));
     Ok(failed)
+}
+
+/// How the chosen crates are split into `cargo test` commands.
+///
+/// One command for the libraries and tools together, and one command for each game app
+/// (a crate under `apps/`) together with the kits it depends on, which is the pair
+/// `check --full` tests (`cargo test -p <app> -p <kit>`). A single `cargo test -p a -p b`
+/// builds every crate once, with the union of the features each one asks for, so a game
+/// whose tests compare its own features with what got compiled (`cfg!(feature = "bloom")`
+/// against the effects the world really has) fails whenever another chosen crate (the
+/// bench, the live tools) turns more on; and a kit whose tests need a module its app
+/// turns on (the model-view kit and `models`) fails when it is tested without that app.
+/// A real game build has neither the siblings nor a missing app, so each app is tested
+/// with its own kits only.
+pub fn test_batches(pkgs: &[Pkg], chosen: &[String]) -> Vec<Vec<String>> {
+    let dir_of = |n: &str| pkgs.iter().find(|p| p.name == n).map_or("", |p| p.dir.as_str());
+    let is_app = |n: &str| dir_of(n).starts_with("apps/");
+    let is_kit = |n: &str| dir_of(n).starts_with("kits/");
+    let kits_of = |app: &str| -> Vec<String> { pkgs.iter().find(|p| p.name == app).map(|p| p.deps.iter().filter(|d| is_kit(d)).cloned().collect()).unwrap_or_default() };
+    let apps: Vec<&String> = chosen.iter().filter(|n| is_app(n)).collect();
+    let owned: BTreeSet<String> = apps.iter().flat_map(|a| kits_of(a)).collect();
+    let mut out: Vec<Vec<String>> = Vec::new();
+    let shared: Vec<String> = chosen.iter().filter(|n| !is_app(n) && !owned.contains(*n)).cloned().collect();
+    if !shared.is_empty() {
+        out.push(shared);
+    }
+    for app in apps {
+        let mut batch = vec![app.clone()];
+        batch.extend(kits_of(app).into_iter().filter(|k| chosen.contains(k)));
+        out.push(batch);
+    }
+    out
+}
+
+/// The workspace crate whose binary is running this check (`cargo xtask` runs
+/// `evani-xtask`), if the running executable is one.
+fn running_tool() -> Option<String> {
+    let exe = std::env::current_exe().ok()?;
+    exe.file_stem()?.to_str().map(str::to_string)
+}
+
+/// Pulls the crate whose own binary is running this check out into a batch of its
+/// own, flagged `true` so its tests build in a separate target folder: they would
+/// otherwise overwrite the running executable (a file lock on Windows). Every
+/// crate is still tested, with the same command; only the build folder differs.
+pub fn split_running_tool(batches: Vec<Vec<String>>, running: Option<&str>) -> Vec<(Vec<String>, bool)> {
+    let mut out = Vec::new();
+    for mut batch in batches {
+        match running.filter(|r| batch.iter().any(|n| n == r)) {
+            Some(r) => {
+                batch.retain(|n| n != r);
+                if !batch.is_empty() {
+                    out.push((batch, false));
+                }
+                out.push((vec![r.to_string()], true));
+            }
+            None => out.push((batch, false)),
+        }
+    }
+    out
+}
+
+fn batch_label(batch: &[String]) -> String {
+    match batch {
+        [one] => one.clone(),
+        many => format!("{} crates", many.len()),
+    }
 }
 
 /// The clippy command line: every warning is an error (`-D warnings`; the workspace is clean).
@@ -448,6 +534,15 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn the_running_tool_is_tested_in_its_own_target_folder() {
+        let b = vec![vec!["a".to_string(), "evani-xtask".to_string()], vec!["app".to_string()]];
+        let out = split_running_tool(b.clone(), Some("evani-xtask"));
+        assert_eq!(out, vec![(vec!["a".to_string()], false), (vec!["evani-xtask".to_string()], true), (vec!["app".to_string()], false)]);
+        let same: Vec<_> = b.into_iter().map(|x| (x, false)).collect();
+        assert_eq!(split_running_tool(same.iter().map(|(x, _)| x.clone()).collect(), Some("something-else")), same);
+    }
+
+    #[test]
     fn clippy_warnings_fail_quick_mode() {
         let pk = vec!["-p".to_string(), "evani-core".to_string()];
         let args = clippy_args(&pk);
@@ -455,6 +550,24 @@ mod tests {
         assert!(args.ends_with(&["--", "-D", "warnings"]), "{args:?}");
         let dash = args.iter().position(|a| *a == "--");
         assert!(dash > args.iter().position(|a| *a == "evani-core"), "-D warnings goes after the package list");
+    }
+
+    #[test]
+    fn apps_are_tested_one_command_each_with_their_kits() {
+        let pkgs = vec![
+            pkg("evani-core", "crates/evani-core", &[]),
+            pkg("evani-kit-a", "kits/evani-kit-a", &["evani-core"]),
+            pkg("evani-kit-lone", "kits/evani-kit-lone", &["evani-core"]),
+            pkg("evani-game-a", "apps/game-a", &["evani-kit-a", "evani-core"]),
+            pkg("evani-bench", "apps/bench", &["evani-core"]),
+        ];
+        let s = |v: &[&str]| -> Vec<String> { v.iter().map(|x| (*x).to_string()).collect() };
+        let all = s(&["evani-bench", "evani-core", "evani-game-a", "evani-kit-a", "evani-kit-lone"]);
+        assert_eq!(test_batches(&pkgs, &all), vec![s(&["evani-core", "evani-kit-lone"]), s(&["evani-bench"]), s(&["evani-game-a", "evani-kit-a"])]);
+        assert!(test_batches(&pkgs, &[]).is_empty());
+        assert_eq!(test_batches(&pkgs, &s(&["evani-game-a"])), vec![s(&["evani-game-a"])]);
+        // The kit alone (its app is not chosen) stays in the shared batch.
+        assert_eq!(test_batches(&pkgs, &s(&["evani-kit-a"])), vec![s(&["evani-kit-a"])]);
     }
 
     fn pkg(name: &str, dir: &str, deps: &[&str]) -> Pkg {

@@ -1,0 +1,15 @@
+{
+  "format": "evani-library-contents/1",
+  "about": "Test fixture: the versions compiled into a library build (cargo xtask library build).",
+  "app": "material-view",
+  "build": "a41c700dcf58",
+  "base": "ff8435541a2b3c4d5e6f708192a3b4c5d6e7f809",
+  "engine": { "name": "Evani.Dev", "version": "0.1.0" },
+  "built_at": "2026-11-09T10:30:00Z",
+  "entry": "index.html",
+  "included": ["rocks-pebbles@photoreal#3f9a0c1e2b4d"],
+  "already": ["rocks-medium-rocks@photoreal#0123456789ab"],
+  "in_base": [],
+  "files": [],
+  "total": { "files": 0, "size": 0 }
+}

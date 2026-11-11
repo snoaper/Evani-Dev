@@ -24,7 +24,7 @@ pub use split::Split;
 pub use handle::ModelHandle;
 pub use variant::{Frame, Variant};
 
-pub mod sun; #[cfg(feature = "relief")] pub mod relief; #[cfg(all(feature = "look-surface", not(feature = "relief")))] pub mod surface; #[cfg(all(feature = "material-layers", not(feature = "relief")))] pub mod layers;
+pub mod read; pub mod steps; pub mod swap; pub mod sun; #[cfg(feature = "relief")] pub mod relief; #[cfg(all(feature = "look-surface", not(feature = "relief")))] pub mod surface; #[cfg(all(feature = "material-layers", not(feature = "relief")))] pub mod layers; #[cfg(all(feature = "material-recipes", not(feature = "relief")))] pub mod recipes;
 
 /// Bytes per model vertex: position Unorm16x4 over the part's bounding box,
 /// normal Snorm8x4, tangent Snorm8x4 (w = handedness, +-127), UV Unorm16x2
@@ -170,7 +170,7 @@ pub const SHARED: u8 = u8::MAX;
 pub struct ModelMaterial {
     pub words: [f32; MATERIAL_WORDS],
     /// Base, normal and emissive maps: indices into [`Prepared::textures`].
-    pub maps: [Option<usize>; 3], #[cfg(feature = "relief")] pub relief: relief::Relief, #[cfg(all(feature = "look-surface", not(feature = "relief")))] pub surface: surface::Surface, #[cfg(all(feature = "material-layers", not(feature = "relief")))] pub layers: [f32; evani_material_layers::LAYER_WORDS],
+    pub maps: [Option<usize>; 3], #[cfg(feature = "relief")] pub relief: relief::Relief, #[cfg(all(feature = "look-surface", not(feature = "relief")))] pub surface: surface::Surface, #[cfg(all(feature = "material-layers", not(feature = "relief")))] pub layers: [f32; evani_material_layers::LAYER_WORDS], #[cfg(all(feature = "material-recipes", not(feature = "relief")))] pub recipe: [u32; recipes::BLOCK_WORDS],
 }
 
 /// A model ready for upload.
@@ -362,8 +362,8 @@ fn material(g: &Gltf, m: Option<&Material>, textures: &mut Vec<TexNeed>) -> Mode
     let (o, r, s) = tt.map_or(([0.0; 2], 0.0, [1.0; 2]), |t| (t.offset, t.rotation, t.scale));
     let (sn, cs) = r.sin_cos();
     w[12..15].copy_from_slice(&[cs * s[0], -sn * s[1], o[0]]);
-    w[16..19].copy_from_slice(&[sn * s[0], cs * s[1], o[1]]); #[cfg(feature = "relief")] let rel = relief::material(g, m, textures); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let srf = surface::material(g, m, textures); #[cfg(all(feature = "material-layers", not(feature = "relief")))] let lyr = layers::material(m);
-    ModelMaterial { words: w, maps, #[cfg(feature = "relief")] relief: rel, #[cfg(all(feature = "look-surface", not(feature = "relief")))] surface: srf, #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: lyr }
+    w[16..19].copy_from_slice(&[sn * s[0], cs * s[1], o[1]]); #[cfg(feature = "relief")] let rel = relief::material(g, m, textures); #[cfg(all(feature = "look-surface", not(feature = "relief")))] let srf = surface::material(g, m, textures); #[cfg(all(feature = "material-layers", not(feature = "relief")))] let lyr = layers::material(m); #[cfg(all(feature = "material-recipes", not(feature = "relief")))] let rcp = recipes::material(m); #[cfg(all(feature = "material-recipes-blend", not(feature = "relief")))] recipes::blend_words(m, &rcp, &mut w);
+    ModelMaterial { words: w, maps, #[cfg(feature = "relief")] relief: rel, #[cfg(all(feature = "look-surface", not(feature = "relief")))] surface: srf, #[cfg(all(feature = "material-layers", not(feature = "relief")))] layers: lyr, #[cfg(all(feature = "material-recipes", not(feature = "relief")))] recipe: rcp }
 }
 
 /// Turn a glTF file into upload-ready parts. Drawn: every triangle
@@ -372,103 +372,11 @@ fn material(g: &Gltf, m: Option<&Material>, textures: &mut Vec<TexNeed>) -> Mode
 /// (`extras.evani.lods`) are tagged with that level; the draw picks one
 /// level per instance ([`lod`]).
 pub fn prepare(g: &Gltf) -> Result<Prepared, Error> {
-    let world = g.world_matrices();
-    let hide: Vec<usize> = g.collision.into_iter().collect();
-    let lod_nodes: Vec<Option<usize>> = g.evani.as_ref().map(|e| e.lods.iter().take(usize::from(SHARED)).map(|l| l.node_index).collect()).unwrap_or_default();
-    // `None`: hidden; else the level (or SHARED).
-    let level = |mut n: usize| {
-        let mut lvl = SHARED;
-        for _ in 0..=g.nodes.len() {
-            if hide.contains(&n) {
-                return None;
-            }
-            if lvl == SHARED && let Some(k) = lod_nodes.iter().position(|&l| l == Some(n)) {
-                lvl = k as u8;
-            }
-            match g.parent(n) {
-                Some(p) => n = p,
-                None => return Some(lvl),
-            }
-        }
-        None
-    };
-    let levels = lod_nodes.len();
-    let mut out = Prepared {
-        parts: Vec::new(),
-        materials: Vec::new(),
-        textures: Vec::new(),
-        triangles: 0,
-        lods: match &g.evani {
-            Some(e) if levels > 1 => e.lods.iter().take(levels).map(|l| l.min_screen).collect(),
-            _ => Vec::new(),
-        },
-        lod_triangles: vec![0; levels],
-        lod_parts: vec![0; levels],
-        centre: [0.0; 3],
-        radius: 0.0, #[cfg(feature = "skinning")] bind: Vec::new(),
-        names: Vec::new(),
-        anchors: g.anchors.iter().map(|a| (a.name.clone(), a.world)).collect(),
-    };
-    // A stable insertion sort by name, not the standard sort: a model has a
-    // handful of anchors, and each standard sort costs kilobytes of wasm.
-    for k in 1..out.anchors.len() {
-        let mut j = k;
-        while j > 0 && out.anchors[j].0 < out.anchors[j - 1].0 {
-            out.anchors.swap(j - 1, j);
-            j -= 1;
-        }
-    }
-    let mut mat_of = vec![None; g.materials.len() + 1];
-    for (ni, node) in g.nodes.iter().enumerate() {
-        let Some(mesh) = node.mesh.and_then(|m| g.meshes.get(m).map(|x| (m, x))) else {
-            continue;
-        };
-        let Some(lvl) = level(ni).filter(|_| node.skin.is_none()) else {
-            continue;
-        };
-        for (pi, p) in mesh.1.primitives.iter().enumerate() {
-            let mi = p.material.filter(|&m| m < g.materials.len()).unwrap_or(g.materials.len());
-            let mat = match mat_of[mi] {
-                Some(i) => i,
-                None => {
-                    out.materials.push(material(g, g.materials.get(mi), &mut out.textures));
-                    mat_of[mi] = Some(out.materials.len() - 1);
-                    out.materials.len() - 1
-                }
-            };
-            if let Some(mut pt) = part(g, p, world[ni], mat, [ni, mesh.0, pi])? {
-                let tris = pt.indices.len() as u32 / 3;
-                pt.lod = lvl;
-                if let Some(k) = Some(usize::from(lvl)).filter(|&k| k < levels) {
-                    out.lod_triangles[k] = out.lod_triangles[k].saturating_add(tris);
-                    out.lod_parts[k] += 1;
-                }
-                if lvl == SHARED || lvl == 0 {
-                    out.triangles = out.triangles.saturating_add(tris);
-                }
-                out.parts.push(pt);
-            }
-        }
-    }
-    // The sun cones are not baked here: only the tiers without a shadow map
-    // read them, so the GPU side bakes them over frames when one draws the
-    // model ([`sun::Bake`]); a PC on Medium and up never pays for it.
-    (out.centre, out.radius) = sphere(&out.parts); #[cfg(feature = "skinning")] skin::add(g, &world, &level, &mut mat_of, &mut out)?;
-    // Named nodes: every name on a part's way up to the root, sorted, the
-    // first 32; a part's tags are the places of its own.
-    let names_of = |p: &Part| core::iter::successors(Some(p.source[0]), |&k| g.parent(k)).take(g.nodes.len() + 1).filter_map(|k| g.nodes.get(k)).map(|n| n.name.as_str()).filter(|s| !s.is_empty()).collect::<Vec<_>>();
-    // Sorted and unique by insertion: the same list as sort plus dedup,
-    // without linking a standard sort for strings.
-    for n in out.parts.iter().flat_map(names_of) {
-        if let Err(i) = out.names.binary_search_by(|x| x.as_str().cmp(n)) {
-            out.names.insert(i, n.to_owned());
-        }
-    }
-    out.names.truncate(32);
-    for p in &mut out.parts {
-        p.tags = names_of(p).into_iter().filter_map(|n| out.names.binary_search_by(|x| x.as_str().cmp(n)).ok()).fold(0, |t, b| t | 1 << b);
-    }
-    Ok(out)
+    // The stepped prepare (steps.rs) run to the end; the browser runs the
+    // same steps over frames for a streamed file ([`read`]).
+    let mut s = steps::Steps::new(g);
+    while !s.step(g)? {}
+    s.finish(g)
 }
 
 /// A bounding sphere of every part (model space): the centre of their
@@ -676,7 +584,9 @@ impl Models {
 
     /// The file's bytes arrived: parse and prepare it.
     pub(crate) fn loaded(&mut self, id: ModelId, glb: &[u8]) { #[cfg(feature = "level-groups")] if self.stream.levels.is_held(id) { return; }
-        match Gltf::from_glb(glb).and_then(|g| prepare(&g)) {
+        self.accept(id, Gltf::from_glb(glb).and_then(|g| prepare(&g))); } /// A file's parts, read here or over frames ([`read`]), or why not.
+    pub(crate) fn accept(&mut self, id: ModelId, r: Result<Prepared, Error>) { #[cfg(feature = "level-groups")] if self.stream.levels.is_held(id) { return; }
+        match r {
             Ok(mut p) => {
                 if let Some(e) = self.entries.get_mut(id.0 as usize) {
                     e.names = core::mem::take(&mut p.names);
@@ -1144,3 +1054,28 @@ pub mod skin;
 
 #[cfg(feature = "view-model-models")]
 pub mod vm;
+
+#[cfg(feature = "model-replace")]
+impl Models {
+    /// Swap the bytes of a model added with [`Models::add_glb`] and prepare
+    /// it again: the table keeps one entry, so a viewer that rebuilds a model
+    /// on every edit does not grow it. The old version draws until the new
+    /// one is on the GPU. An unknown id does nothing.
+    pub fn replace_glb(&mut self, id: ModelId, glb: &[u8]) {
+        let Some(e) = self.entries.get_mut(id.0 as usize) else { return };
+        e.glb = Some(glb.into());
+        self.pending.retain(|(at, _)| *at != id);
+        self.loaded(id, glb);
+    }
+}
+
+// Appended (no line above moves, so no game's panic locations change).
+#[cfg(feature = "model-replace")]
+impl Models {
+    /// The bytes of a model made with [`Models::add_glb`] (`None` for a
+    /// fetched file, which the caller reads from its url). Dev tools only,
+    /// such as a geometry check that needs the model's triangles.
+    pub fn glb_bytes(&self, id: ModelId) -> Option<&[u8]> {
+        self.entries.get(id.0 as usize)?.glb.as_deref()
+    }
+}

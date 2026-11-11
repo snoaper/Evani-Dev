@@ -3,7 +3,8 @@
 //!
 //! * Lite and Low ([`Mode::Flat`]): a multiply and an additive draw per five
 //!   surfaces: calm water (tint, body colour, Fresnel sky) and glass, no
-//!   waves, foam or glow.
+//!   waves or foam; leaves, grass and thin surfaces with their back-lit glow
+//!   as on Medium (critic round 1: the same look on every device).
 //! * Medium and VR ([`Mode::Split`]): a multiply draw (what is behind each
 //!   surface: depth fade, glass tint, foam cover) and an additive draw (light
 //!   on top: Fresnel sky, sun glint, foam, the back-lit glow), no copy.
@@ -35,6 +36,17 @@ impl Mode {
         match id {
             "lite" | "low" => Mode::Flat,
             "high" | "ultra" if refraction => Mode::Refract,
+            _ => Mode::Split,
+        }
+    }
+
+    /// The mode for `material.nature.quality` (0 Lite .. 3 High; below 0 is
+    /// "by tier" and is not asked here): the same split as the tiers.
+    pub fn for_quality(level: i32, refraction: bool) -> Mode {
+        match level {
+            ..=1 => Mode::Flat,
+            2 => Mode::Split,
+            _ if refraction => Mode::Refract,
             _ => Mode::Split,
         }
     }
@@ -180,6 +192,16 @@ impl PostEffect for NatureEffect {
         let up = cross(right, fwd);
         let tan = (cam.fov_y_deg.to_radians() * 0.5).tan();
         let aspect = frame.target_size[0] / frame.target_size[1].max(1.0);
+        // A capture's projection jitter moves the image by `j` pixels
+        // (evani_render::shaders::jitter_view_proj): pixel x shows what the
+        // unjittered pixel x - j showed, so the ray is moved the same way.
+        #[cfg(feature = "capture")]
+        let fwd = {
+            let j = st.jitter.get();
+            let kx = 2.0 * j[0] / frame.target_size[0].max(1.0);
+            let ky = -2.0 * j[1] / frame.target_size[1].max(1.0);
+            [0, 1, 2].map(|i| fwd[i] - kx * right[i] * tan * aspect - ky * up[i] * tan)
+        };
         let [inv0, inv1] = inverse_distance(NEAR, FAR);
         #[cfg(feature = "camera-range")]
         let [inv0, inv1] = {

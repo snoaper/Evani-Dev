@@ -13,8 +13,35 @@
 
 use std::path::Path;
 
-/// 10 MB, uncompressed, for a playground's whole shipped folder; Evani.App enforces the same cap on upload.
+/// 10 MB, uncompressed, for a game's (or playground's) whole shipped folder; Evani.App enforces the same cap on upload.
+/// Games only: see [`size_cap`].
 pub const PACKAGE_CAP_BYTES: u64 = 10 * 1024 * 1024;
+
+/// The owner's rule (Chris, 2026-11-11: "the 10mb is only for Games that is it"), in the one line every doc uses.
+pub const CAP_RULE: &str =
+    "The 10 MB download cap applies only to games (and playgrounds, which are game examples); the library, Scenes, viewers and tools have no size cap.";
+
+/// The id prefix that marks a Scene (docs/SCENES.md: a free-fly view of an environment, not a game).
+pub const SCENE_PREFIX: &str = "scene-";
+
+/// The size cap for app `app` with this `evani.toml`: [`PACKAGE_CAP_BYTES`] for a
+/// game or playground, `None` (no cap) for a tool app (`kind = "tool"`: the
+/// material library, viewers) or a Scene (`scene-<name>`). [`CAP_RULE`].
+pub fn size_cap(app: &str, evani_toml: &str) -> Option<u64> {
+    let tool = matches!(crate::appkind::parse(evani_toml), Ok(k) if k.is_tool());
+    (!tool && !app.starts_with(SCENE_PREFIX)).then_some(PACKAGE_CAP_BYTES)
+}
+
+/// Why [`size_cap`] gave no cap, for size lines (`None` when it is capped).
+pub fn uncapped_reason(app: &str, evani_toml: &str) -> Option<&'static str> {
+    if size_cap(app, evani_toml).is_some() {
+        None
+    } else if app.starts_with(SCENE_PREFIX) {
+        Some("a Scene, not a game: no size cap")
+    } else {
+        Some("a tool app (kind = \"tool\": the library, a viewer), not a game: no size cap")
+    }
+}
 
 /// Total size on disk of every file under `dir` (0 when it is missing).
 pub fn dir_bytes(dir: &Path) -> u64 {
@@ -103,6 +130,43 @@ pub fn write_engine_notice(root: &Path, dist: &Path) -> Result<(), String> {
     std::fs::write(dist.join(ENGINE_NOTICE_FILE), engine_notice_text(&lic)).map_err(|e| format!("{ENGINE_NOTICE_FILE}: {e}"))
 }
 
+/// Wording of the retired source-available engine licence (its name, its
+/// short id and the site that hosted its text). The engine is plain MIT
+/// now (docs/LICENSING.md), so none of it may appear in anything a game ships,
+/// in a publish template or in a new-game template. Built with `concat!` so
+/// this guard's own source never contains the wording it hunts for.
+pub const RETIRED_LICENCE_WORDING: [&str; 5] = [
+    concat!("FS", "L-1.1"),
+    concat!("Functional ", "Source License"),
+    concat!("AL", "v2"),
+    concat!("Apache 2.0 ", "future licen"),
+    concat!("fsl", ".software"),
+];
+
+/// The first piece of retired licence wording in `text` (any case), if any.
+pub fn retired_licence_wording(text: &str) -> Option<&'static str> {
+    let low = text.to_ascii_lowercase();
+    RETIRED_LICENCE_WORDING.iter().copied().find(|n| low.contains(&n.to_ascii_lowercase()))
+}
+
+/// The text files a shipped game or publish package carries licence wording in.
+pub const LICENCE_BEARING_FILES: [&str; 6] = [ENGINE_NOTICE_FILE, "README.md", "LICENSE", "build-facts.json", "evani.json", "manifest.json"];
+
+/// The gap when a ship or package folder `dist` still carries retired licence
+/// wording in one of [`LICENCE_BEARING_FILES`].
+pub fn retired_wording_problem(dist: &Path) -> Option<Problem> {
+    for f in LICENCE_BEARING_FILES {
+        let Ok(text) = std::fs::read_to_string(dist.join(f)) else { continue };
+        if let Some(w) = retired_licence_wording(&text) {
+            return Some(Problem {
+                what: format!("{f} still carries the retired source-available licence wording \"{w}\"; the engine and the games made with it are plain MIT now (docs/LICENSING.md)"),
+                fix: format!("Rebuild the package with an engine at or after the MIT licence (`cargo xtask build <id> --ship` writes {ENGINE_NOTICE_FILE}, build-facts.json and the README licence line), and fix any hand-written README, LICENSE or evani.json \"includes\" text to say MIT; docs/LICENSING.md."),
+            });
+        }
+    }
+    None
+}
+
 /// The gap when the package folder `dist` lacks a proper engine notice, or its
 /// README (when it has one) lacks the licence line.
 pub fn notice_problem(app: &str, dist: &Path) -> Option<Problem> {
@@ -115,6 +179,9 @@ pub fn notice_problem(app: &str, dist: &Path) -> Option<Problem> {
             fix,
         });
     };
+    if let Some(p) = retired_wording_problem(dist) {
+        return Some(p);
+    }
     for needle in ["Evani.Dev runtime", "MIT License", ENGINE_COPYRIGHT, "Permission is hereby granted, free of charge", "WITHOUT WARRANTY OF ANY KIND"] {
         if !text.contains(needle) {
             return Some(Problem { what: format!("{ENGINE_NOTICE_FILE} is incomplete or out of date: it lacks \"{needle}\""), fix });
@@ -165,7 +232,7 @@ pub struct Problem {
     pub fix: String,
 }
 
-fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
+pub(crate) fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
     let Ok(rd) = std::fs::read_dir(dir) else { return };
     for e in rd.flatten() {
         let p = e.path();
@@ -181,7 +248,7 @@ fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
 
 /// The code of a Rust file without `//` comments, so a mention in a doc
 /// comment doesn't count as the real thing.
-fn code_only(text: &str) -> String {
+pub(crate) fn code_only(text: &str) -> String {
     text.lines().map(|l| l.find("//").map_or(l, |i| &l[..i])).collect::<Vec<_>>().join("\n")
 }
 
@@ -286,6 +353,26 @@ mod tests {
     }
 
     #[test]
+    fn retired_licence_wording_is_refused_in_a_package() {
+        let w = concat!("FS", "L-1.1-AL", "v2");
+        assert_eq!(retired_licence_wording(&format!("Licensed under {w}.")), Some(RETIRED_LICENCE_WORDING[0]));
+        assert!(retired_licence_wording("Licensed under the MIT licence, with Apache-2.0 credits for Filament.").is_none(), "plain Apache credits are fine");
+        let d = fake_dist("retired-wording", 100);
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        write_engine_notice(&root, &d).unwrap();
+        assert!(notice_problem("demo", &d).is_none());
+        // An evani.json "includes" role that still names the old licence is caught.
+        std::fs::write(d.join("evani.json"), format!("{{\"includes\":[{{\"role\":\"engine ({w}, see ENGINE-LICENSE.txt)\"}}]}}")).unwrap();
+        let p = notice_problem("demo", &d).expect("old wording in evani.json fails");
+        assert!(p.what.contains("evani.json") && p.what.contains("retired"), "{p:?}");
+        // So does a whole old notice, with a readable reason (not just "incomplete").
+        std::fs::remove_file(d.join("evani.json")).unwrap();
+        std::fs::write(d.join(ENGINE_NOTICE_FILE), format!("Evani.Dev runtime. {w}")).unwrap();
+        assert!(notice_problem("demo", &d).unwrap().what.contains("retired"));
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
     fn package_cap_is_ten_mib_on_disk() {
         assert_eq!(PACKAGE_CAP_BYTES, 10_485_760);
         let over = fake_dist("over", PACKAGE_CAP_BYTES + 1);
@@ -297,6 +384,27 @@ mod tests {
         assert!(size_problem("demo", &under.join("missing")).is_none());
         let _ = std::fs::remove_dir_all(&over);
         let _ = std::fs::remove_dir_all(&under);
+    }
+
+    /// Chris 2026-11-11: "the 10mb is only for Games that is it". A game or
+    /// playground over 10 MB is refused; the library (a tool app) and a Scene
+    /// over 10 MB are not.
+    #[test]
+    fn only_games_have_the_size_cap() {
+        let game = "name = \"kart\"\nkit = \"kart\"\nlook = \"toon\"\n";
+        let playground = format!("{game}[playground]\nfree_roam = true\n");
+        let library = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/material-view/evani.toml")).unwrap();
+        assert_eq!(size_cap("kart-racer", game), Some(PACKAGE_CAP_BYTES));
+        assert_eq!(size_cap("kart-racer", &playground), Some(PACKAGE_CAP_BYTES));
+        assert_eq!(size_cap("kart-racer", &format!("kind = \"game\"\n{game}")), Some(PACKAGE_CAP_BYTES));
+        // A broken kind is never a way out of the cap.
+        assert_eq!(size_cap("kart-racer", &format!("kind = \"huge\"\n{game}")), Some(PACKAGE_CAP_BYTES));
+        assert_eq!(size_cap("material-view", &library), None, "the material library has no cap");
+        assert_eq!(size_cap("scene-sunmoon-meadow", &playground), None, "a Scene has no cap");
+        assert!(uncapped_reason("material-view", &library).unwrap().contains("tool"));
+        assert!(uncapped_reason("scene-x", &playground).unwrap().contains("Scene"));
+        assert!(uncapped_reason("kart-racer", &playground).is_none());
+        assert!(CAP_RULE.contains("only to games"));
     }
 
     #[test]

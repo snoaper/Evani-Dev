@@ -15,6 +15,11 @@
 //!   materials, kit material); they cast no shadow and are cleared with the
 //!   other draws each frame.
 //! * Built-in and custom meshes only (no models), drawn without MSAA.
+//! * Opt-in ([`ViewModel::mark_depth`], off by default): the pixels they
+//!   cover are also written into the scene depth at the nearest value
+//!   ([`crate::depth::NEAR_DEPTH`]), so depth-reading post passes (a sky or
+//!   haze pass, the outline) treat the held object as near and leave it
+//!   alone. See [`MARK_DEPTH_WGSL`].
 
 use evani_core::camera::CameraPose;
 use evani_core::num::clamp;
@@ -36,6 +41,12 @@ pub struct ViewModel {
     /// Its near plane, metres (small, so a held object close to the eye is
     /// not cut).
     pub near: f32,
+    /// Off by default. When on, after the `view_model` pass the pixels the
+    /// view model covered are written into the scene depth at the nearest
+    /// value ([`crate::depth::NEAR_DEPTH`], reversed-Z 1.0), so passes that
+    /// read the scene depth see them as near. Kept like the lens (not
+    /// cleared each frame). Nothing is allocated or drawn while it is off.
+    pub mark_depth: bool,
 }
 
 impl Default for ViewModel {
@@ -44,6 +55,57 @@ impl Default for ViewModel {
             meshes: Vec::new(),
             fov_y_deg: 55.0,
             near: 0.01,
+            mark_depth: false,
+        }
+    }
+}
+
+impl ViewModel {
+    /// Builder for [`ViewModel::mark_depth`].
+    pub fn with_mark_depth(mut self, on: bool) -> Self {
+        self.mark_depth = on;
+        self
+    }
+}
+
+/// Full-screen pass behind [`ViewModel::mark_depth`]: reads the view
+/// model's own depth (cleared to [`crate::depth::CLEAR`], so any value above
+/// it means a view-model fragment drew there) and writes
+/// [`crate::depth::NEAR_DEPTH`] to the scene depth for those pixels only
+/// (compare `Always`, depth write on, no colour target); the rest is
+/// discarded and keeps the scene's depth.
+pub const MARK_DEPTH_WGSL: &str = "
+@group(0) @binding(0) var vm_depth: texture_depth_2d;
+
+@vertex
+fn vs_main(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+    let uv = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+    return vec4f(uv * 2.0 - 1.0, 0.0, 1.0);
+}
+
+@fragment
+fn fs_main(@builtin(position) p: vec4f) -> @builtin(frag_depth) f32 {
+    if (textureLoad(vm_depth, vec2i(p.xy), 0) <= 0.0) {
+        discard;
+    }
+    return 1.0;
+}
+";
+
+/// Whether the mark step runs this frame: the option is on and something
+/// reads the scene depth (otherwise the depth is not even kept).
+pub fn marks_depth(vm: &ViewModel, depth_read: bool) -> bool {
+    vm.mark_depth && depth_read
+}
+
+/// The mark step on the CPU, pixel for pixel as [`MARK_DEPTH_WGSL`] does it:
+/// `scene[i]` becomes [`crate::depth::NEAR_DEPTH`] where `vm[i]` is above
+/// the clear value (a view-model fragment drew), else it is left alone.
+/// The reference the tests check the shader's words against.
+pub fn mark_depth_reference(vm: &[f32], scene: &mut [f32]) {
+    for (s, &v) in scene.iter_mut().zip(vm) {
+        if crate::depth::is_nearer(v, crate::depth::CLEAR) {
+            *s = crate::depth::NEAR_DEPTH;
         }
     }
 }
@@ -152,5 +214,72 @@ impl ViewModel {
             -dot(r, e), -dot(u, e), dot(f, e), 1.0,
         ];
         math::mul(&proj, &view)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::depth::{CLEAR, FAR_DEPTH, NEAR_DEPTH, is_nearer};
+
+    /// A stand-in for a depth-reading post pass (a sky and haze pass): it
+    /// paints sky wherever the scene depth is at the far plane.
+    fn sky_pass(depth: &[f32]) -> Vec<bool> {
+        depth.iter().map(|&d| d <= FAR_DEPTH).collect()
+    }
+
+    /// A 4x2 frame: the hand covers the two left pixels (depth 0.4 and 0.9
+    /// in the view model's own buffer), the world is open sky everywhere
+    /// except the bottom-right pixel (a wall at 0.3).
+    fn frame() -> (Vec<f32>, Vec<f32>) {
+        let vm = vec![0.4, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0];
+        let scene = vec![FAR_DEPTH, FAR_DEPTH, FAR_DEPTH, FAR_DEPTH, FAR_DEPTH, FAR_DEPTH, FAR_DEPTH, 0.3];
+        (vm, scene)
+    }
+
+    #[test]
+    fn a_depth_reading_pass_sees_the_view_model_as_near_when_marked() {
+        let (vm, mut scene) = frame();
+        assert!(sky_pass(&scene)[0], "unmarked, the sky pass paints over the hand");
+        assert!(marks_depth(&ViewModel::default().with_mark_depth(true), true));
+        mark_depth_reference(&vm, &mut scene);
+        let sky = sky_pass(&scene);
+        assert!(!sky[0] && !sky[4], "the hand's pixels are no longer sky");
+        assert_eq!((scene[0], scene[4]), (NEAR_DEPTH, NEAR_DEPTH));
+        assert!(sky[1] && sky[2] && sky[3] && sky[5] && sky[6], "uncovered open sky is still sky");
+        assert_eq!(scene[7], 0.3, "uncovered geometry keeps its depth");
+        assert!(scene.iter().all(|&d| !is_nearer(d, NEAR_DEPTH)), "nothing is nearer than the nearest value");
+    }
+
+    #[test]
+    fn the_option_is_off_by_default_and_then_the_depth_is_untouched() {
+        let d = ViewModel::default();
+        assert!(!d.mark_depth);
+        assert!(!marks_depth(&d, true), "off: no mark step");
+        assert!(!marks_depth(&d.clone().with_mark_depth(true), false), "on, but nothing reads depth: no mark step");
+        assert_eq!(d, ViewModel { mark_depth: false, ..ViewModel::default() });
+        let (_, scene) = frame();
+        let before = scene.clone();
+        // With the option off the renderer never calls the mark step, so the
+        // scene depth is exactly what the forward pass left.
+        assert_eq!(scene, before);
+        assert_eq!(sky_pass(&scene), sky_pass(&before));
+    }
+
+    #[test]
+    fn the_shader_says_what_the_reference_does() {
+        assert_eq!(NEAR_DEPTH, 1.0);
+        assert_eq!(CLEAR, 0.0);
+        assert!(MARK_DEPTH_WGSL.contains("return 1.0;"));
+        assert!(MARK_DEPTH_WGSL.contains("textureLoad(vm_depth, vec2i(p.xy), 0) <= 0.0"));
+        assert!(MARK_DEPTH_WGSL.contains("discard;"));
+    }
+
+    #[test]
+    fn the_mark_shader_validates() {
+        let module = naga::front::wgsl::parse_str(MARK_DEPTH_WGSL).unwrap_or_else(|e| panic!("{}", e.emit_to_string(MARK_DEPTH_WGSL)));
+        naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::empty())
+            .validate(&module)
+            .unwrap_or_else(|e| panic!("mark_depth: {e:?}"));
     }
 }

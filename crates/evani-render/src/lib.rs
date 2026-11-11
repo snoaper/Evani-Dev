@@ -24,7 +24,7 @@ pub mod graph; #[cfg(feature = "lights2d")] pub mod lights2d;
 pub mod math;
 pub mod mesh;
 #[cfg(feature = "particles")]
-pub mod particles;
+pub mod particles; #[cfg(feature = "trails")] pub mod trails;
 pub mod place;
 pub mod post;
 pub mod render_path;
@@ -34,7 +34,7 @@ pub mod splice;
 pub mod spline;
 #[cfg(feature = "text")] mod bitmap; #[cfg(any(feature = "text", feature = "msdf"))] // two lines, like before the split: later line numbers (panic locations) stay
 pub mod text; #[cfg(feature = "msdf")] pub mod msdf;
-pub mod world; #[cfg(feature = "point-lights")] pub mod light; #[cfg(feature = "kit-material")] pub mod kit_material; #[cfg(feature = "view-model")] pub mod view_model; #[cfg(any(feature = "shadow-cascades", feature = "pcss"))] mod shadow_ext; #[cfg(feature = "ambient")] mod ambient; #[cfg(feature = "pseudo3d")] pub mod pseudo3d; #[cfg(feature = "camera-range")] pub mod camera_range; #[cfg(any(feature = "hdr-color", feature = "fog-color"))] pub mod color_ext; #[cfg(feature = "prewarm")] pub mod prewarm; #[cfg(feature = "shadow-fit")] pub mod shadow_fit;
+pub mod world; #[cfg(feature = "point-lights")] pub mod light; #[cfg(feature = "kit-material")] pub mod kit_material; #[cfg(feature = "view-model")] pub mod view_model; #[cfg(any(feature = "shadow-cascades", feature = "pcss"))] mod shadow_ext; #[cfg(feature = "ambient")] mod ambient; #[cfg(feature = "hooks")] mod param_hooks; #[cfg(feature = "pseudo3d")] pub mod pseudo3d; #[cfg(feature = "camera-range")] pub mod camera_range; #[cfg(any(feature = "hdr-color", feature = "fog-color"))] pub mod color_ext; #[cfg(feature = "prewarm")] pub mod prewarm; #[cfg(feature = "shadow-fit")] pub mod shadow_fit; #[cfg(feature = "game-passes")] pub mod game_pass; #[cfg(feature = "studio-passes")] pub mod studio_passes;
 
 #[cfg(target_arch = "wasm32")]
 mod gpu;
@@ -198,14 +198,21 @@ pub fn count_draws(world: &RenderWorld, stats: &mut RenderStats) {
 /// it the renderer drops custom-mesh instances, and so does the count).
 /// Decals join their mesh kind's draw.
 pub fn count_draws_with(world: &RenderWorld, lib: Option<&MeshLibrary>, stats: &mut RenderStats) {
+    // One pass over the instances (not one per slot: 256 slots would scan
+    // them 256 times every frame).
+    let mut counts = [0u32; mesh::MESH_SLOTS];
+    for m in world.meshes.iter().chain(&world.decals) {
+        if let Some(c) = counts.get_mut(usize::from(m.mesh.0)) {
+            *c += 1;
+        }
+    }
     let mut draws = 0;
     let mut tris = 0u32;
-    for id in 0..mesh::MESH_SLOTS as u16 {
-        let n = world.meshes.iter().chain(&world.decals).filter(|m| m.mesh.0 == id).count() as u32;
+    for (id, &n) in counts.iter().enumerate() {
         if n > 0 {
-            let per = match lib.and_then(|l| l.get(MeshId(id))) {
+            let per = match lib.and_then(|l| l.get(MeshId(id as u16))) {
                 Some(m) => m.triangles(),
-                None => mesh::triangles_of(MeshId(id)),
+                None => mesh::triangles_of(MeshId(id as u16)),
             };
             draws += 1;
             tris = tris.saturating_add(n.saturating_mul(per));
@@ -303,14 +310,16 @@ impl EngineModule for RenderModule {
 
     fn build(&mut self, ctx: &mut PluginContext) -> Result<(), PluginError> {
         ctx.resource(RenderGraph::standard());
-        ctx.resource(RenderWorld::default()); #[cfg(feature = "models")] ctx.resource(model::Models::default()); #[cfg(feature = "relief")] ctx.world.res_mut::<evani_core::slots::ShaderSlots>().declare(evani_core::slots::MICRO_DETAIL); #[cfg(all(feature = "look-surface", not(feature = "relief")))] { let mut s = ctx.world.res_mut::<evani_core::slots::ShaderSlots>(); s.declare(model::surface::SPECULAR); s.declare(model::surface::SURFACE_PARAMS); } #[cfg(feature = "kit-material")] ctx.resource(kit_material::KitMaterial::default()); #[cfg(feature = "pseudo3d")] pseudo3d::register(ctx)?; #[cfg(all(feature = "material-layers", not(feature = "relief")))] evani_material_layers::register(ctx)?; #[cfg(feature = "char-materials")] evani_material_character::install(ctx)?;
-        ctx.resource(PostEffects::default()); #[cfg(feature = "pcss")] ctx.world.res_mut::<evani_core::slots::ShaderSlots>().declare(shadow_ext::PCSS_PARAMS); #[cfg(feature = "shadow-cascades")] shadow_ext::register(ctx)?; #[cfg(feature = "ambient")] ambient::register(ctx)?; #[cfg(feature = "frustum-cull")] ctx.resource(cull::CullStats::default()); #[cfg(feature = "camera-range")] camera_range::register(ctx)?; #[cfg(feature = "shadow-fit")] shadow_fit::register(ctx)?;
+        ctx.resource(RenderWorld::default()); #[cfg(feature = "models")] ctx.resource(model::Models::default()); #[cfg(feature = "relief")] ctx.world.res_mut::<evani_core::slots::ShaderSlots>().declare(evani_core::slots::MICRO_DETAIL); #[cfg(all(feature = "look-surface", not(feature = "relief")))] { let mut s = ctx.world.res_mut::<evani_core::slots::ShaderSlots>(); s.declare(model::surface::SPECULAR); s.declare(model::surface::SURFACE_PARAMS); } #[cfg(feature = "kit-material")] ctx.resource(kit_material::KitMaterial::default()); #[cfg(feature = "kit-textures")] ctx.resource(kit_textures::KitTextures::default()); #[cfg(feature = "pseudo3d")] pseudo3d::register(ctx)?; #[cfg(all(feature = "material-layers", not(feature = "relief")))] evani_material_layers::register(ctx)?; #[cfg(feature = "char-materials")] evani_material_character::install(ctx)?; #[cfg(all(feature = "material-recipes", not(feature = "relief")))] { evani_material_recipes::params::register(ctx)?; ctx.resource(model::recipes::BlockEdits::default()); }
+        #[cfg(feature = "hooks")]
+        param_hooks::register(ctx);
+        ctx.resource(PostEffects::default()); #[cfg(feature = "pcss")] ctx.world.res_mut::<evani_core::slots::ShaderSlots>().declare(shadow_ext::PCSS_PARAMS); #[cfg(feature = "shadow-cascades")] shadow_ext::register(ctx)?; #[cfg(feature = "ambient")] ambient::register(ctx)?; #[cfg(feature = "frustum-cull")] ctx.resource(cull::CullStats::default()); #[cfg(feature = "camera-range")] camera_range::register(ctx)?; #[cfg(feature = "shadow-fit")] shadow_fit::register(ctx)?; #[cfg(feature = "game-passes")] ctx.resource(game_pass::GamePasses::default()); #[cfg(feature = "studio-passes")] studio_passes::register(ctx)?;
         // The shared particle system drains the core queue from now on.
         #[cfg(feature = "particles")]
         {
             ctx.resource(particles::ParticleSystem::new());
             ctx.world.res_mut::<evani_core::particles::ParticleQueue>().attach();
-        }
+        } #[cfg(feature = "trails")] { ctx.resource(trails::TrailSystem::new()); ctx.world.res_mut::<evani_core::trails::TrailQueue>().attach(); }
         #[cfg(feature = "sprite-art")]
         {
             #[allow(unused_mut)]
@@ -426,9 +435,9 @@ impl EngineModule for RenderModule {
         }
     }
 
-    fn frame(&mut self, world: &mut World) { #[cfg(feature = "importance")] importance::drive(world);
+    fn frame(&mut self, world: &mut World) { #[cfg(feature = "importance")] importance::drive(world); #[cfg(feature = "game-passes")] game_pass::frame(world);
         #[cfg(feature = "particles")]
-        particles::ParticleSystem::frame(world);
+        particles::ParticleSystem::frame(world); #[cfg(feature = "trails")] trails::TrailSystem::frame(world);
         // A build without the 3D path reports a 3D draw once instead of
         // dropping it silently (compiled out with `forward`).
         if !FORWARD_PATH && !self.warned_3d {
@@ -437,7 +446,7 @@ impl EngineModule for RenderModule {
                 .try_res::<particles::ParticleSystem>()
                 .is_some_and(|ps| ps.groups().iter().any(|g| g.key == particles::KEY_WORLD));
             #[cfg(not(feature = "particles"))]
-            let world_particles = false;
+            let world_particles = false; #[cfg(feature = "trails")] let world_particles = world_particles || world.try_res::<trails::TrailSystem>().is_some_and(|t| t.groups().contains(&trails::KEY_WORLD));
             let dropped = dropped_3d(FORWARD_PATH, &world.res::<RenderWorld>(), world_particles);
             if let Some(msg) = dropped {
                 world.res_mut::<ErrorLog>().error(msg);
@@ -645,6 +654,57 @@ mod tests {
         assert_eq!(s.triangles, (2 + custom) * mesh::triangles_of(MeshId::CUBE) + mesh::triangles_of(MeshId::PLANE));
     }
 
+    /// The mesh limit is 248 custom meshes (256 slots less the 8 built-ins):
+    /// all 248 register, pack into their own slots, get their own draw
+    /// range and count as one draw each; the 249th is refused with a clear
+    /// message and changes nothing.
+    #[test]
+    fn two_hundred_forty_eight_custom_meshes_draw_and_the_next_is_refused() {
+        assert_eq!((mesh::MAX_MESHES, mesh::MAX_CUSTOM_MESHES), (256, 248));
+        let mut lib = MeshLibrary::default();
+        let mut w = RenderWorld::default();
+        for k in 0..mesh::MAX_CUSTOM_MESHES {
+            let mut m = mesh::cube();
+            m.vertices[0][0] += k as f32 * 1e-3; // each mesh is its own shape
+            let id = lib.add(m).expect("room for all 248");
+            assert_eq!(usize::from(id.0), mesh::BUILTIN_MESH_COUNT + k);
+            w.draw_mesh(MeshInstance::new(id, [k as f32, 0.0, 0.0]));
+        }
+        assert_eq!(lib.meshes().len(), 248);
+        let cube_tris = mesh::triangles_of(MeshId::CUBE);
+
+        // Draw calls and triangles the renderer would issue.
+        let mut s = RenderStats::default();
+        count_draws_with(&w, Some(&lib), &mut s);
+        let drawn = if cfg!(feature = "meshes") { 248 } else { 0 };
+        assert_eq!((s.draw_calls, s.triangles), (drawn, drawn * cube_tris));
+
+        if cfg!(feature = "meshes") {
+            // Every custom mesh packs into its own slot, up to the last.
+            let mut raw = Vec::new();
+            let mut counts = [0u32; mesh::MESH_SLOTS];
+            shaders::pack_instances(&w.meshes, &mut raw, &mut counts);
+            assert_eq!(raw.len(), 248);
+            assert!(counts[mesh::BUILTIN_MESH_COUNT..].iter().all(|&c| c == 1) && counts[..mesh::BUILTIN_MESH_COUNT].iter().all(|&c| c == 0));
+            // Every slot has its own index range, back to back, in the shared buffers.
+            let b = mesh::mesh_buffers(Some(&lib));
+            let mut next = b.ranges[mesh::BUILTIN_MESH_COUNT - 1].0 + b.ranges[mesh::BUILTIN_MESH_COUNT - 1].1;
+            for k in mesh::BUILTIN_MESH_COUNT..mesh::MESH_SLOTS {
+                assert_eq!(b.ranges[k].0, next, "slot {k}");
+                assert_eq!((b.ranges[k].1, b.tris[k]), (36, cube_tris), "slot {k}");
+                next += b.ranges[k].1;
+            }
+            assert_eq!(b.ib.len(), next as usize * 4);
+        }
+
+        // The 249th is refused: clear error, nothing changes.
+        let rev = lib.revision();
+        let err = lib.try_add(mesh::cube()).unwrap_err().to_string();
+        assert!(err.contains("248") && err.contains("mesh library full"), "{err}");
+        assert!(lib.add(mesh::cube()).is_none());
+        assert_eq!((lib.meshes().len(), lib.revision()), (248, rev));
+    }
+
     /// The guard's message, in both builds: nothing with the 3D path or
     /// with nothing 3D asked for; otherwise what was dropped and the fix.
     #[test]
@@ -686,11 +746,18 @@ mod tests {
 // Textured models (feature `models`, S3-3). Declared after everything else
 // in this file: panic locations (file and line) are in the wasm, so other
 // games' downloads stay byte-identical only if no line above moves.
-#[cfg(feature = "models")]
+#[cfg(any(feature = "models", feature = "kit-textures"))]
 pub mod texture;
 #[cfg(feature = "models")]
 pub mod model; #[cfg(feature = "importance")] pub mod importance;
 #[cfg(feature = "kit-surface")]
-pub mod kit_surface;
+pub mod kit_surface; #[cfg(feature = "kit-textures")] pub mod kit_textures;
 #[cfg(test)]
 mod frame_order_tests;
+// Material swatch balls (feature `swatches`, the studio's material library).
+#[cfg(feature = "swatches")]
+pub mod swatch;
+// Module-drawn world geometry (feature `world-draws`, evani-grass), at the
+// end so no line above moves.
+#[cfg(feature = "world-draws")]
+pub mod world_draw;

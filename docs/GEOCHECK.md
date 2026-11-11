@@ -112,11 +112,11 @@ check could not run. `cargo xtask review` reads `report.json` (its
 
 The library is generic: it reads what a game drew (`RenderWorld` mesh
 instances, in draw order) and its cameras. The runner needs a small adapter
-per game that runs it natively and records frames. Today only `kart-racer`
+per game that runs it natively and records frames. `kart-racer`
 has one (`src/cli/kart.rs`): it runs the title screen's attract race, then a
 one-player race on the autopilot, snapshots the draw list and camera every
 `--every` frames, and supplies the kit's collision limit and a wall-hugging
-bot through the kit's own `kart::step`. Any other app gives a clear error.
+bot through the kit's own `kart::step`. The sandbox has one (`src/cli/sandbox.rs`), and the material viewer one (`src/cli/material_view.rs`): its scenes live in the app crate, so the app's `geocheck_dump` test stages every target-pack moment natively and writes the draw lists, each model's highest-detail triangles (one part per mesh node) and the cameras; every scene is checked as its own world, the procedural sky dome is left out as the backdrop (counted in the notes), and the render phase opens each scene with its capture moment first (`Setup::pre_steps`). Any other app gives a clear error.
 New 3D kits add an adapter alongside (the same shape: record frames, name the
 roles of moving parts, give the collision limit); 2D kits write a scene dump
 for `evani-geocheck-2d` instead.
@@ -149,6 +149,31 @@ runs it in the game's workspace, writing to
 
 With neither, the command is an ERROR naming both. With both, the 2D dump is
 used, as for a game in `apps/`.
+
+### One model (`--model`)
+
+```
+cargo xtask geocheck --model <folder>                 # every <id>.<tier>.glb in the folder
+cargo xtask geocheck --model <folder>/<id>.low.glb    # that model's tier files
+```
+
+Checks one model's tier files outside any game: Evani.Model construct output
+(`cargo xtask model`, docs/MODELGEN_PLAN.md) or any converted model before a
+game takes it. Each file is read through the engine's own reader
+(evani-gltf), and each mesh primitive is split into its pieces (triangles
+joined by a shared edge, positions welded), so planks merged into one draw
+call are still checked one by one. Per tier, on the pieces standing on a
+ground plane at the model's lowest point: overlaps between every pair of
+pieces (each piece is its own object; convex pieces are measured exactly,
+concave ones are surfaces only and counted in the notes), floating per output
+node, mesh validation of every piece, and z-fighting from 36 orbit cameras.
+Moving, camera, collision and the live captures need a game and are reported
+as not run. Tier gain: a note per adjacent tier pair gives the share of the
+model's pixels the higher tier changes at its design view (docs/MODELGEN_PLAN.md
+7.1; WARN under 2%), and `views/closeup.png` shows the top two tiers where
+they differ most. Tags come from a `geocheck.toml` beside the files. The report is
+`.vibedeck/geocheck/model-<id>/` with a picture of every tier as read in
+`views/` (`--no-render` skips them). Exit codes as for a game.
 
 ### 2D games
 

@@ -9,7 +9,9 @@
 //!   review card; a look guard failure; a playground (`[playground]` in
 //!   evani.toml) without free roam, its kit's declaration or its free-roam
 //!   test (docs/PLAYGROUNDS.md); a model with a normal map on a primitive
-//!   without tangents.
+//!   without tangents; the studio's asset, material and style catalogues
+//!   don't agree, or an asset doesn't resolve in some style
+//!   (docs/studio/CONTRACTS.md).
 //! - WARN: no geocheck report; `default` features that don't mirror the
 //!   list; a look guard not approvable here (no record or key); evidence
 //!   older than the game's sources ("re-run"); out-of-date guidance or live
@@ -28,6 +30,7 @@ use std::time::SystemTime;
 use serde_json::{Value, json};
 
 use crate::manifest::{self, Modules};
+use crate::materials;
 use crate::render_paths;
 use crate::reports;
 use crate::targets;
@@ -53,7 +56,8 @@ impl Severity {
 pub struct Issue {
     pub severity: Severity,
     /// `manifest`, `catalog`, `playground`, `geocheck`, `review`,
-    /// `lookguard`, `tests`, `ship`, `guidance`, `mcp`, `modules`, `content`.
+    /// `lookguard`, `tests`, `ship`, `guidance`, `mcp`, `modules`, `content`,
+    /// `materials`, `engine` (the pinned engine version).
     pub area: &'static str,
     pub app: Option<String>,
     pub what: String,
@@ -336,12 +340,22 @@ fn check_game(root: &Path, g: &Game, cat: &Catalog, trust: &evani_lookguard::ver
     check_catalog(&m, app, shown, cat, out);
     check_render_path(root, app, &m, out);
     check_forward(root, app, &m, &cargo, &kit_dir, &kit_shown, out);
-    check_modules(root, g, &m, &kit_dir, out);
+    let scan = check_modules(root, g, &m, &kit_dir, out);
     let kit_cargo = std::fs::read_to_string(kit_dir.join("Cargo.toml")).unwrap_or_default();
+    check_ground_textures(root, g, &cargo, &kit_cargo, &kit_dir, out);
+    check_materials(root, &g.home, app, &m, &cargo, &scan, out);
+    check_shaders(app, &m, &cargo, text.as_deref().unwrap_or_default(), out);
     for (sev, what, fix) in material_problems(root, shown, &kit_shown, &m, &cargo, &kit_cargo) {
         out.push(Issue::new(sev, "manifest", a, what, fix, "README.md"));
     }
+    for p in crate::game_passes::problems(&kit_dir, &kit_shown, &kit_cargo) {
+        out.push(Issue::new(Severity::Error, "game passes", a, p.what, p.fix, "docs/GAME_PASSES.md"));
+    }
     let evani_toml = text.as_deref().unwrap_or_default();
+    // The engine version the game pins (docs/ENGINE_PACK.md 4.4).
+    for (sev, what, fix) in crate::engine_version::pin_problems(root, evani_toml, g.is_outside(), shown, arg) {
+        out.push(Issue::new(sev, "engine", a, what, fix, "docs/ENGINE_PACK.md"));
+    }
     let playground = if g.is_outside() {
         crate::playground::problems_in(&kit_dir, &dir.join("src"), &format!("{shown}/evani.toml"), &m.kit, evani_toml)
     } else {
@@ -350,7 +364,11 @@ fn check_game(root: &Path, g: &Game, cat: &Catalog, trust: &evani_lookguard::ver
     for p in playground {
         out.push(Issue::new(Severity::Error, "playground", a, p.what, p.fix, "docs/PLAYGROUNDS.md"));
     }
-    if crate::playground::parse(evani_toml).ok().flatten().is_some() {
+    for p in crate::appkind::problems(root, app, &m.kit, text.as_deref().unwrap_or_default()) {
+        out.push(Issue::new(Severity::Error, "app kind", a, p.what, p.fix, "DECISIONS.md"));
+    }
+    // The 10 MB cap is for games only (playground::CAP_RULE): not the library or a Scene.
+    if crate::playground::parse(evani_toml).ok().flatten().is_some() && crate::playground::size_cap(app, evani_toml).is_some() {
         let dist = g.home.join("target").join("evani-sizes").join(format!("{app}-ship"));
         if let Some(p) = crate::playground::size_problem(app, &dist) {
             out.push(Issue::new(Severity::Warn, "playground", a, format!("last ship build: {}", p.what), p.fix, "docs/PLAYGROUNDS.md"));
@@ -363,6 +381,23 @@ fn check_game(root: &Path, g: &Game, cat: &Catalog, trust: &evani_lookguard::ver
     check_look_guard(root, app, &m, trust, out);
     if full {
         check_full(root, g, &m, &cargo, &kit_dir, out);
+    }
+}
+
+/// Kit texture sets (evani-render `kit-textures`, TopGun W3): see [`crate::groundtex`].
+fn check_ground_textures(root: &Path, g: &Game, app_cargo: &str, kit_cargo: &str, kit_dir: &Path, out: &mut Vec<Issue>) {
+    let on = [app_cargo, kit_cargo].iter().any(|c| c.contains("kit-textures"));
+    let mut tiers: Vec<String> = std::fs::read_dir(root.join("assets").join("tiers"))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| e.path().file_stem().and_then(|s| s.to_str()).map(str::to_string))
+        .collect();
+    tiers.sort();
+    let wgsl = if on { crate::groundtex::wgsl_bytes(kit_dir) } else { 0 };
+    let mem = crate::groundtex::tier_memory(&root.join("assets").join("tiers"));
+    for p in crate::groundtex::problems(&g.dir.join("assets"), &format!("{}/assets", g.shown), &tiers, on, wgsl, &mem) {
+        out.push(Issue::new(if p.error { Severity::Error } else { Severity::Warn }, "modules", Some(&g.id), p.what, p.fix, "docs/GROUND_TEXTURES.md"));
     }
 }
 
@@ -646,7 +681,7 @@ fn module_problems(shown: &str, arg: &str, m: &Modules, scan: &AssetScan) -> Vec
 
 /// Model, skin and font files must match the `models`, `anim` and `ui`
 /// modules (docs/STAGE3_PLAN.md section 4).
-fn check_modules(root: &Path, g: &Game, m: &Modules, kit_dir: &Path, out: &mut Vec<Issue>) {
+fn check_modules(root: &Path, g: &Game, m: &Modules, kit_dir: &Path, out: &mut Vec<Issue>) -> AssetScan {
     let app = g.id.as_str();
     let dirs = [g.dir.clone(), kit_dir.to_path_buf()];
     // Paths in messages are from the game's home (the engine root for apps/).
@@ -671,6 +706,41 @@ fn check_modules(root: &Path, g: &Game, m: &Modules, kit_dir: &Path, out: &mut V
         }
     }
     check_model_files(&g.home, Some(app), &scan.models, out);
+    scan
+}
+
+/// `[materials]` (docs/materials/BATCH1_BUILD_PLAN.md 2.2): the names in the
+/// list are real, the app crate's features turn on what they stand for, and
+/// every shipped model's catalogue materials (`extras.evani_material` /
+/// `evani_recipe`) are for recipes the game lists, and still match their row.
+fn check_materials(root: &Path, home: &Path, app: &str, m: &Modules, cargo: &str, scan: &AssetScan, out: &mut Vec<Issue>) {
+    let a = Some(app);
+    let docs = "docs/materials/BATCH1_BUILD_PLAN.md";
+    for (what, fix) in m.materials.unknown() {
+        out.push(Issue::new(Severity::Error, "materials", a, what, fix.replace("apps/<game>", &format!("apps/{app}")), docs));
+    }
+    for (s, what, fix) in materials::cargo_problems(app, &m.materials, cargo) {
+        out.push(Issue::new(s, "materials", a, what, fix, docs));
+    }
+    let cat = materials::load_catalog(root);
+    for rel in scan.models.iter().filter(|r| shipped_model(r)) {
+        // Model paths are from the game's home (the engine root for apps/).
+        let Some(doc) = std::fs::read(home.join(rel)).ok().and_then(|b| gltf_json(&b)) else { continue };
+        for (s, what, fix) in materials::model_problems(rel, &doc, &m.materials, cat.as_ref()) {
+            out.push(Issue::new(s, "materials", a, what, fix.replace("apps/<game>", &format!("apps/{app}")), docs));
+        }
+    }
+}
+
+/// The material shader budget (docs/materials/SHADER_BUDGET.md): each
+/// material's shader under 60 KB, and at most 12 of them for a game (64 for
+/// a tool app).
+fn check_shaders(app: &str, m: &Modules, cargo: &str, evani_toml: &str, out: &mut Vec<Issue>) {
+    let tool = crate::appkind::parse(evani_toml).is_ok_and(crate::appkind::AppKind::is_tool);
+    let style = cargo.contains("evani-render/material-recipe-style");
+    for (s, what, fix) in crate::shaders::problems(app, &m.materials, tool, style) {
+        out.push(Issue::new(s, "shaders", Some(app), what, fix, "docs/materials/SHADER_BUDGET.md"));
+    }
 }
 
 /// Converter inputs and scratch: the untouched master (`<id>.master.glb`)
@@ -945,18 +1015,70 @@ fn tail(text: &str, n: usize) -> String {
     lines[lines.len().saturating_sub(n)..].join(" | ")
 }
 
-fn run_cmd(root: &Path, args: &[&str]) -> Result<(), String> {
+/// A failed command's output, shortened: each test panic's message first
+/// (the line after `panicked at`, with the test's name), then the last `n`
+/// lines. A test that prints a line per model before it fails buried the
+/// one that failed under the ones that passed (char-head.glb under
+/// proof-crate.glb's lines, 2026-10-26).
+fn failure(text: &str, n: usize) -> String {
+    let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
+    let panics: Vec<String> = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.contains("panicked at"))
+        .filter_map(|(i, l)| {
+            let test = l.split('\'').nth(1).unwrap_or("a test");
+            lines.get(i + 1).map(|m| format!("{test} panicked: {}", m.trim()))
+        })
+        .collect();
+    if panics.is_empty() { tail(text, n) } else { format!("{} || {}", panics.join(" || "), tail(text, n)) }
+}
+
+
+/// Why a `--full` step did not pass.
+#[derive(Debug)]
+enum StepFail {
+    /// It ran and failed: the tail of its output.
+    Failed(String),
+    /// It printed nothing for the stall limit and was stopped
+    /// (`crate::watch`): what happened, and its own `fix:`.
+    Stalled { what: String, fix: String },
+}
+
+impl StepFail {
+    /// The issue for this failure: `failed` builds the step's usual issue from
+    /// the failure text; a stall keeps its area and docs but says it stalled
+    /// and carries the stall's own fix (not "make the tests pass").
+    fn into_issue(self, failed: impl FnOnce(String) -> Issue) -> Issue {
+        match self {
+            StepFail::Failed(e) => failed(e),
+            StepFail::Stalled { what, fix } => {
+                let mut issue = failed(what);
+                issue.what = issue.what.replacen(" fails", " stalled", 1);
+                issue.fix = fix;
+                issue
+            }
+        }
+    }
+}
+
+fn run_cmd(root: &Path, args: &[&str]) -> Result<(), StepFail> {
     // Same work as ever; the children just run at below-normal priority with
-    // capped test threads (the shared PC stays usable).
+    // capped test threads (the shared PC stays usable). Watched: a heartbeat
+    // line every minute while it runs, and a stall limit instead of a hang.
     let limits = crate::quick::Limits::full(&crate::quick::Caps::detect());
-    let t = std::time::Instant::now();
-    let result = match crate::quick::cargo_command(root, args, limits).output() {
-        Ok(o) if o.status.success() => Ok(()),
-        Ok(o) => Err(tail(&format!("{}\n{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr)), 12)),
-        Err(e) => Err(e.to_string()),
-    };
-    eprintln!("  full: `cargo {}` took {:.1}s", args.iter().take(3).copied().collect::<Vec<_>>().join(" "), t.elapsed().as_secs_f64());
-    result
+    let shown = format!("cargo {}", args.join(" "));
+    match crate::watch::run_watched_stderr(&mut crate::quick::cargo_command(root, args, limits), &shown) {
+        Ok(r) => {
+            eprintln!("  full: `cargo {}` took {:.1}s", args.iter().take(3).copied().collect::<Vec<_>>().join(" "), r.elapsed.as_secs_f64());
+            match &r.stalled {
+                Some(s) => Err(StepFail::Stalled { what: crate::watch::stall_what(s), fix: crate::watch::stall_fix(&shown, s) }),
+                None if r.success() => Ok(()),
+                None => Err(StepFail::Failed(failure(&r.text(), 12))),
+            }
+        }
+        Err(e) => Err(StepFail::Failed(e.to_string())),
+    }
 }
 
 fn check_full(root: &Path, g: &Game, m: &Modules, cargo_toml: &str, kit_dir: &Path, out: &mut Vec<Issue>) {
@@ -970,19 +1092,21 @@ fn check_full(root: &Path, g: &Game, m: &Modules, cargo_toml: &str, kit_dir: &Pa
     // The game's own tests run in its workspace; the ship build is the
     // engine's xtask (an outside game is built with --app-dir).
     if let Err(e) = run_cmd(&g.home, &["test", "--quiet", "-p", &pkg, "-p", &kit]) {
-        out.push(Issue::new(Severity::Error, "tests", a, format!("`cargo test -p {pkg} -p {kit}` fails: {e}"), "Make the failing tests pass; don't delete or weaken them.", "docs/KIT_PROCESS.md"));
+        out.push(e.into_issue(|e| Issue::new(Severity::Error, "tests", a, format!("`cargo test -p {pkg} -p {kit}` fails: {e}"), "Make the failing tests pass; don't delete or weaken them.", "docs/KIT_PROCESS.md")));
     }
     let dir = g.dir.to_string_lossy();
     let build: Vec<&str> = if g.is_outside() { vec!["xtask", "build", "--app-dir", &dir, "--ship"] } else { vec!["xtask", "build", app, "--ship"] };
     if let Err(e) = run_cmd(root, &build) {
-        out.push(Issue::new(
-            Severity::Error,
-            "ship",
-            a,
-            format!("`cargo xtask build {arg} --ship` fails: {e}"),
-            "A ship build must hold only what evani.toml lists and no dev-only code; follow the build's own message.",
-            "README.md",
-        ));
+        out.push(e.into_issue(|e| {
+            Issue::new(
+                Severity::Error,
+                "ship",
+                a,
+                format!("`cargo xtask build {arg} --ship` fails: {e}"),
+                "A ship build must hold only what evani.toml lists and no dev-only code; follow the build's own message.",
+                "README.md",
+            )
+        }));
     }
 }
 
@@ -1005,14 +1129,41 @@ fn check_format_tests(root: &Path, out: &mut Vec<Issue>) {
         args.extend_from_slice(extra);
         let shown = args.join(" ");
         if let Err(e) = run_cmd(root, &args) {
-            out.push(Issue::new(
-                Severity::Error,
-                "formats",
-                None,
-                format!("`cargo {shown}` fails: {e}"),
-                format!("A file the format document allows no longer reads the same. Fix the reader (or the writer that made the fixture) until `cargo {shown}` passes; don't edit the fixtures or loosen the comparison to pass."),
-                docs,
-            ));
+            out.push(e.into_issue(|e| {
+                Issue::new(
+                    Severity::Error,
+                    "formats",
+                    None,
+                    format!("`cargo {shown}` fails: {e}"),
+                    format!("A file the format document allows no longer reads the same. Fix the reader (or the writer that made the fixture) until `cargo {shown}` passes; don't edit the fixtures or loosen the comparison to pass."),
+                    docs,
+                )
+            }));
+        }
+    }
+}
+
+/// The Asset & Style Studio's own crates. No game lists them as its app or
+/// kit, so without this their tests never ran in `--full` (a stale studio
+/// test sat unseen on the studio branch until a package merge found it).
+const STUDIO_TESTS: [&str; 2] = ["evani-studio", "evani-style-geo"];
+
+fn check_studio_tests(root: &Path, out: &mut Vec<Issue>) {
+    for krate in STUDIO_TESTS {
+        if !root.join("crates").join(krate).join("Cargo.toml").is_file() {
+            continue;
+        }
+        if let Err(e) = run_cmd(root, &["test", "--quiet", "-p", krate]) {
+            out.push(e.into_issue(|e| {
+                Issue::new(
+                    Severity::Error,
+                    "studio",
+                    None,
+                    format!("`cargo test --quiet -p {krate}` fails: {e}"),
+                    format!("A studio contract no longer holds (catalogues, records, sources or shapes). Fix the code, or update a test whose expectation a landed work package changed on purpose, until `cargo test -p {krate}` passes; don't delete or loosen a test to pass."),
+                    "docs/studio/CONTRACTS.md",
+                )
+            }));
         }
     }
 }
@@ -1034,8 +1185,19 @@ fn check_format_tests(root: &Path, out: &mut Vec<Issue>) {
 /// the model stage does, its micro-detail fades below 1.5 px, and only its
 /// parallax step count is tier-dependent (fine on High and Ultra, 2 steps
 /// elsewhere), so the relief reads the same on every device.
+/// The material viewer's exact sun casts (`sun-exact`, critic round 4: torn
+/// patches on the shader ball's creases on Low) keep its hero models from
+/// drawing dark what the shadow map lights (`close_surfaces_do_not_tear_the_baked_sun`;
+/// only that test, as the games' models are checked without the feature),
+/// and bake time-sliced (`sun_exact_chunks`: a Lite to Low switch stalled the
+/// viewer 332 ms when the casts ran in one step; the sliced bake writes the
+/// one-go bytes, shows its coarse cones first and keeps every step near the
+/// frame's budget).
+/// The shipped bake's cost on every model Lite or Low draws
+/// (`sun_bake_cost_on_shipped_models`: memory, frames and the largest
+/// step; it failed unseen for a day, on the bust, while in no list).
 /// `(crate, cargo args after -p, document)`.
-const LOOK_PARITY_TESTS: [(&str, &[&str], &str); 7] = [
+const LOOK_PARITY_TESTS: [(&str, &[&str], &str); 10] = [
     ("evani-render", &["--features", "models,shadows", "--test", "model_wgsl"], "docs/STAGE3_PLAN.md"),
     ("evani-render", &["--features", "relief,shadows", "--test", "relief_wgsl"], "docs/MODEL_FORMAT.md"),
     // The forward shader's own tests with each soft-shadow feature on: `pcss`
@@ -1050,6 +1212,9 @@ const LOOK_PARITY_TESTS: [(&str, &[&str], &str); 7] = [
     // Shadow fit (`shadow-fit`): its tests (and the shadow plan's with the
     // fit hooks compiled in) only build with the feature on.
     ("evani-render", &["--features", "shadow-fit", "--lib"], "README.md"),
+    ("evani-render", &["--features", "models,shadows,sun-exact", "--test", "model_wgsl", "close_surfaces_do_not_tear_the_baked_sun"], "docs/STAGE3_PLAN.md"),
+    ("evani-render", &["--features", "models,shadows,sun-exact", "--test", "sun_exact_chunks"], "docs/STAGE3_PLAN.md"),
+    ("evani-render", &["--features", "models", "--test", "sun_bake_cost"], "docs/STAGE3_PLAN.md"),
 ];
 
 fn check_look_parity_tests(root: &Path, out: &mut Vec<Issue>) {
@@ -1061,14 +1226,16 @@ fn check_look_parity_tests(root: &Path, out: &mut Vec<Issue>) {
         args.extend_from_slice(extra);
         let shown = args.join(" ");
         if let Err(e) = run_cmd(root, &args) {
-            out.push(Issue::new(
-                Severity::Error,
-                "look-parity",
-                None,
-                format!("`cargo {shown}` fails: {e}"),
-                format!("An engine shader no longer validates, or shades differently on tiers without the shadow map, or a model's baked self-shadow no longer matches its cast shadow (Lite and Low would not look like the PC). Fix the shader until `cargo {shown}` passes; don't loosen the test."),
-                docs,
-            ));
+            out.push(e.into_issue(|e| {
+                Issue::new(
+                    Severity::Error,
+                    "look-parity",
+                    None,
+                    format!("`cargo {shown}` fails: {e}"),
+                    format!("An engine shader no longer validates, or shades differently on tiers without the shadow map, or a model's baked self-shadow no longer matches its cast shadow (Lite and Low would not look like the PC). The panic names the model, LOD level, sun and the parts most apart. Fix the shader or the bake (crates/evani-render/src/model/sun.rs) until `cargo {shown}` passes; don't loosen the test or reshape the model to dodge it."),
+                    docs,
+                )
+            }));
         }
     }
 }
@@ -1089,14 +1256,16 @@ fn check_net_tests(root: &Path, out: &mut Vec<Issue>) {
         }
         let args = ["test", "--quiet", "-p", krate];
         if let Err(e) = run_cmd(root, &args) {
-            out.push(Issue::new(
-                Severity::Error,
-                "netcode",
-                None,
-                format!("`cargo {}` fails (tests/{test}/ and the unit tests): {e}", args.join(" ")),
-                "The multiplayer core no longer steps the same on every peer, decodes a packet differently, or lets a client drift from the referee. Fix the netcode (or the game step the failing sync test names) until the tests pass; don't loosen them.",
-                docs,
-            ));
+            out.push(e.into_issue(|e| {
+                Issue::new(
+                    Severity::Error,
+                    "netcode",
+                    None,
+                    format!("`cargo {}` fails (tests/{test}/ and the unit tests): {e}", args.join(" ")),
+                    "The multiplayer core no longer steps the same on every peer, decodes a packet differently, or lets a client drift from the referee. Fix the netcode (or the game step the failing sync test names) until the tests pass; don't loosen them.",
+                    docs,
+                )
+            }));
         }
     }
 }
@@ -1112,14 +1281,16 @@ fn check_converter_tests(root: &Path, out: &mut Vec<Issue>) {
     }
     let args = ["test", "--quiet", "-p", "evani-convert", "--", "--test-threads=2"];
     if let Err(e) = run_cmd(root, &args) {
-        out.push(Issue::new(
-            Severity::Error,
-            "converter",
-            None,
-            format!("`cargo {}` fails: {e}", args.join(" ")),
-            "The model converter writes files the engine or the Khronos validator would refuse, or no longer the same bytes. Fix the converter until the tests pass; don't loosen them. A tool problem names its own fix (`cargo xtask doctor --fix`).",
-            "docs/MODEL_FORMAT.md",
-        ));
+        out.push(e.into_issue(|e| {
+            Issue::new(
+                Severity::Error,
+                "converter",
+                None,
+                format!("`cargo {}` fails: {e}", args.join(" ")),
+                "The model converter writes files the engine or the Khronos validator would refuse, or no longer the same bytes. Fix the converter until the tests pass; don't loosen them. A tool problem names its own fix (`cargo xtask doctor --fix`).",
+                "docs/MODEL_FORMAT.md",
+            )
+        }));
     }
 }
 
@@ -1165,6 +1336,76 @@ fn blender_addon_isolation_in(root: &Path, dirs: &[PathBuf], out: &mut Vec<Issue
     }
 }
 
+/// The engine and its games are plain MIT (docs/LICENSING.md). The retired
+/// source-available wording (see `playground::RETIRED_LICENCE_WORDING`) must not
+/// come back through a template, a doc, a manifest or a ship folder: scan the
+/// engine's own text files (not DECISIONS.md, which records history) and every
+/// game's ship folder (`apps/<id>/dist`). A publish staging folder
+/// (`publish/<id>`) is a warning here and a hard failure in `package-check`.
+fn check_retired_licence_wording(root: &Path, out: &mut Vec<Issue>) {
+    use crate::playground::retired_licence_wording;
+    fn walk(dir: &Path, root: &Path, hits: &mut Vec<(String, &'static str)>) {
+        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        for e in rd.flatten() {
+            let p = e.path();
+            let name = e.file_name().to_string_lossy().into_owned();
+            if p.is_dir() {
+                if !matches!(name.as_str(), "target" | "node_modules" | "dist" | ".git" | ".vibedeck" | ".evani") {
+                    walk(&p, root, hits);
+                }
+            } else if name != "DECISIONS.md"
+                && name != "package-lock.json"
+                && matches!(p.extension().and_then(|x| x.to_str()), Some("rs" | "md" | "json" | "toml" | "txt" | "html" | "js" | "mjs" | "wgsl" | "yml" | "yaml"))
+                && let Ok(t) = std::fs::read_to_string(&p)
+                && let Some(w) = retired_licence_wording(&t)
+            {
+                hits.push((p.strip_prefix(root).unwrap_or(&p).to_string_lossy().replace('\\', "/"), w));
+            }
+        }
+    }
+    let mut hits = Vec::new();
+    for d in ["crates", "kits", "looks", "apps", "tools", "catalog", "docs", "assets"] {
+        walk(&root.join(d), root, &mut hits);
+    }
+    for f in ["LICENSE", "README.md", "AGENTS.md", "CLAUDE.md", "THIRD_PARTY_NOTICES.md", "Cargo.toml"] {
+        if let Ok(t) = std::fs::read_to_string(root.join(f))
+            && let Some(w) = retired_licence_wording(&t)
+        {
+            hits.push((f.to_string(), w));
+        }
+    }
+    if !hits.is_empty() {
+        hits.sort();
+        let list = hits.iter().take(8).map(|(f, w)| format!("{f} (\"{w}\")")).collect::<Vec<_>>().join(", ");
+        let more = if hits.len() > 8 { format!(" and {} more", hits.len() - 8) } else { String::new() };
+        out.push(Issue::new(
+            Severity::Error,
+            "licence",
+            None,
+            format!("retired source-available licence wording is back in the engine's own files: {list}{more}"),
+            "Evani.Dev and the games made with it are plain MIT (docs/LICENSING.md). Reword the file to say MIT (a template, doc or manifest), or regenerate it from the root LICENSE.",
+            "docs/LICENSING.md",
+        ));
+    }
+    // Ship folders (`build --ship`) and publish staging folders.
+    let mut stale = |dir: &Path, sev: Severity, what: &str| {
+        if let Some(p) = crate::playground::retired_wording_problem(dir) {
+            let shown = dir.strip_prefix(root).unwrap_or(dir).to_string_lossy().replace('\\', "/");
+            out.push(Issue::new(sev, "licence", None, format!("{what} {shown}: {}", p.what), p.fix, "docs/LICENSING.md"));
+        }
+    };
+    if let Ok(rd) = std::fs::read_dir(root.join("apps")) {
+        for e in rd.flatten() {
+            stale(&e.path().join("dist"), Severity::Error, "ship folder");
+        }
+    }
+    if let Ok(rd) = std::fs::read_dir(root.join("publish")) {
+        for e in rd.flatten() {
+            stale(&e.path(), Severity::Warn, "publish staging folder");
+        }
+    }
+}
+
 // ---- the whole project ----------------------------------------------------------
 
 /// Run the check on the project at `root`.
@@ -1188,13 +1429,21 @@ pub fn run(root: &Path, opts: &Options) -> Report {
     check_model_files(root, None, &scan_assets(root, &[root.join("assets").join("models")]).models, &mut issues);
     if opts.full {
         check_format_tests(root, &mut issues);
+        check_studio_tests(root, &mut issues);
         check_look_parity_tests(root, &mut issues);
         check_converter_tests(root, &mut issues);
         check_net_tests(root, &mut issues);
     }
+    // Construct recipes whose model files are older than the recipe.
+    for p in crate::construct::problems(root) {
+        issues.push(Issue::new(Severity::Error, "construct", None, p.what, p.fix, "docs/MODELGEN_PLAN.md"));
+    }
     check_size_targets(root, &mut issues);
+    check_reference_cameras(root, &mut issues);
+    check_studio(root, &mut issues);
     check_guide_size(root, &mut issues);
     check_blender_addon_isolation(root, &mut issues);
+    check_retired_licence_wording(root, &mut issues);
     if !opts.skip_guidance {
         let d = crate::doctor::doctor(root, targets::Options::default());
         let lines = d.lines();
@@ -1237,6 +1486,64 @@ pub fn run_game(root: &Path, g: &Game, opts: &Options) -> Report {
         "README.md",
     ));
     Report { apps: vec![g.id.clone()], issues }
+}
+
+/// The Asset & Style Studio's catalogues (docs/studio/CONTRACTS.md): the
+/// asset catalogue, materials' `belongs_on` and the styles' `studio` blocks
+/// parse and agree, and every asset resolves in every style (no
+/// "unavailable" end state). Styles still waiting for a geometry generator
+/// are a note until the style matrix (WP9) makes them errors.
+fn check_studio(root: &Path, issues: &mut Vec<Issue>) {
+    if !root.join(evani_studio::ASSETS_PATH).is_file() {
+        return;
+    }
+    const DOCS: &str = "docs/studio/CONTRACTS.md";
+    let c = match evani_studio::Catalogs::load(root) {
+        Ok(c) => c,
+        Err(e) => {
+            issues.push(Issue::new(Severity::Error, "studio", None, e, "Fix catalog/assets/assets.json, the `belongs_on` fields in catalog/materials/materials.json or the `studio` blocks in kits/evani-kit-material-view/data/styles.json as the message says.", DOCS));
+            return;
+        }
+    };
+    if let Err(problems) = evani_studio::check::coverage(&c) {
+        for p in problems {
+            issues.push(Issue::new(Severity::Error, "studio", None, p.what, p.fix, DOCS));
+        }
+    }
+    // Every ready asset loads on every device tier with its regions, thin
+    // parts and thumbnail (WP2; errors become tools).
+    for (what, fix) in evani_style_geo::source::asset_problems(root, &c) {
+        issues.push(Issue::new(Severity::Error, "studio", None, what, fix, DOCS));
+    }
+    let gaps = evani_studio::check::gaps(&c);
+    if !gaps.is_empty() {
+        let list: Vec<String> = gaps.iter().map(|(s, k, _)| format!("{s} {}", k.name())).collect();
+        issues.push(Issue::new(
+            Severity::Note,
+            "studio",
+            None,
+            format!("{} style(s) wait for a geometry generator: {}", gaps.len(), list.join(", ")),
+            "Built by the studio's geometry package (docs/studio/WORK_PACKAGES.md, WP3); `generator_version` in crates/evani-studio/src/geo.rs turns non-zero as each lands.",
+            DOCS,
+        ));
+    }
+}
+
+/// The per-asset reference cameras in `catalog/procedural/references.json`
+/// (the Evani.commons server's view 0 for object-judged items): only the
+/// five known values, each inside the range Evani.App's seed script accepts.
+fn check_reference_cameras(root: &Path, issues: &mut Vec<Issue>) {
+    let Ok(text) = std::fs::read_to_string(root.join("catalog").join("procedural").join("references.json")) else { return };
+    for p in crate::reference_cameras::problems(&text) {
+        issues.push(Issue::new(
+            Severity::Error,
+            "catalog",
+            None,
+            p,
+            "Set the asset's `realism.camera` in catalog/procedural/library.json to keys cam_yaw_deg (-360..360), cam_pitch_deg (-10..85), cam_dist_scale (0.3..3), sun_yaw_deg (-360..360), sun_pitch_deg (5..89), then run tools/procedural/gen_library.py.",
+            "docs/ASSET_STUDIO_GUIDE.md",
+        ));
+    }
 }
 
 /// The per-tier download targets in `catalog/tiers.json` (S7-1): every tier
@@ -1390,7 +1697,7 @@ pub fn hook(input: &str, fallback_root: &Path) -> (i32, String) {
         return (0, String::new());
     }
     let session: String = v.get("session_id").and_then(Value::as_str).unwrap_or("none").chars().filter(char::is_ascii_alphanumeric).take(64).collect();
-    let counter = root.join(".evani/check").join(format!("hook-{session}.count"));
+    let counter = crate::state_dir(&root).join("check").join(format!("hook-{session}.count"));
     let n: u32 = std::fs::read_to_string(&counter).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(0);
     if n >= MAX_BLOCKS {
         return (0, String::new());
@@ -1409,8 +1716,35 @@ mod tests {
         Options { skip_guidance: true, ..Options::default() }
     }
 
+    #[test]
+    fn a_stalled_full_step_says_so_with_its_own_fix() {
+        let usual = |e: String| Issue::new(Severity::Error, "tests", Some("demo"), format!("`cargo test -p demo` fails: {e}"), "Make the failing tests pass; don't delete or weaken them.", "docs/KIT_PROCESS.md");
+        let failed = StepFail::Failed("assertion failed".into()).into_issue(usual);
+        assert_eq!(failed.what, "`cargo test -p demo` fails: assertion failed");
+        assert!(failed.fix.starts_with("Make the failing tests pass"));
+
+        let s = crate::watch::Stall { quiet: std::time::Duration::from_secs(1200), last_line: "Blocking waiting for file lock on package cache".into() };
+        let fail = StepFail::Stalled { what: crate::watch::stall_what(&s), fix: crate::watch::stall_fix("cargo test --quiet -p demo", &s) };
+        let stalled = fail.into_issue(usual);
+        assert!(stalled.what.starts_with("`cargo test -p demo` stalled: stopped after 20m00s"), "{}", stalled.what);
+        assert!(stalled.fix.contains("CARGO_HOME") && stalled.fix.contains("`cargo test --quiet -p demo`") && !stalled.fix.contains("Make the failing tests pass"), "{}", stalled.fix);
+        assert_eq!((stalled.area, stalled.docs, stalled.severity), ("tests", "docs/KIT_PROCESS.md", Severity::Error));
+    }
+
     fn errors(r: &Report) -> Vec<String> {
         r.issues.iter().filter(|i| i.severity == Severity::Error).map(|i| format!("{}: {}", i.area, i.what)).collect()
+    }
+
+    #[test]
+    fn a_failed_test_leads_with_its_panic() {
+        // A test that prints a passing line per model, then fails on one.
+        let mut out: Vec<String> = (0..20).map(|i| format!("model-{i}.glb, sandbox sun: lit 90.0% with a shadow map, 91.0% baked")).collect();
+        out.insert(5, "thread 'baked_sun_draws_no_smear_on_any_model' (300972) panicked at crates\\evani-render\\tests\\model_wgsl.rs:642:17:".into());
+        out.insert(6, "char-head.glb level 0, sandbox sun: lit 35.3% with a shadow map, 50.0% baked".into());
+        let f = failure(&out.join("\n"), 12);
+        assert!(f.starts_with("baked_sun_draws_no_smear_on_any_model panicked: char-head.glb level 0, sandbox sun: lit 35.3% with a shadow map, 50.0% baked || "), "{f}");
+        assert!(f.ends_with("model-19.glb, sandbox sun: lit 90.0% with a shadow map, 91.0% baked"), "the tail stays: {f}");
+        assert_eq!(failure("error: could not compile\nsecond line", 12), "error: could not compile | second line", "without a panic, the tail as before");
     }
 
     #[test]
@@ -1771,6 +2105,30 @@ live = true
     }
 
     #[test]
+    fn retired_licence_wording_cannot_come_back() {
+        let root = crate::testutil::fake_engine("check-retired-wording");
+        let w = concat!("FS", "L-1.1-AL", "v2");
+        let mut issues = Vec::new();
+        crate::write_file(&root.join("tools/evani-guide/src/scaffold.rs"), "// MIT, with Filament (Apache-2.0) credits\n").unwrap();
+        crate::write_file(&root.join("DECISIONS.md"), &format!("history: it used to be {w}\n")).unwrap();
+        check_retired_licence_wording(&root, &mut issues);
+        assert!(issues.is_empty(), "plain Apache credits and DECISIONS.md history are fine: {:?}", issues.iter().map(|i| &i.what).collect::<Vec<_>>());
+        // A new-game template that writes the old wording fails.
+        crate::write_file(&root.join("tools/evani-guide/src/scaffold.rs"), &format!("const LIC: &str = \"engine: {w}\";\n")).unwrap();
+        check_retired_licence_wording(&root, &mut issues);
+        assert_eq!(issues.len(), 1);
+        assert!(matches!(issues[0].severity, Severity::Error) && issues[0].what.contains("scaffold.rs") && issues[0].fix.contains("MIT"), "{}", issues[0].what);
+        // So does a game's ship folder.
+        issues.clear();
+        crate::write_file(&root.join("tools/evani-guide/src/scaffold.rs"), "// clean\n").unwrap();
+        crate::write_file(&root.join("apps/demo/dist/ENGINE-LICENSE.txt"), &format!("Evani.Dev runtime, {w}\n")).unwrap();
+        check_retired_licence_wording(&root, &mut issues);
+        assert_eq!(issues.len(), 1);
+        assert!(matches!(issues[0].severity, Severity::Error) && issues[0].what.contains("apps/demo/dist"), "{}", issues[0].what);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn hook_scope_and_blocking() {
         let root = crate::testutil::fake_engine("check-hook");
         let file = root.join("kits/evani-kit-demo/src/lib.rs");
@@ -1850,6 +2208,106 @@ live = true
             assert_eq!(draws.is_some(), style == "3d", "{kit}: {draws:?}");
             assert_eq!(forward_problem(&format!("kits/evani-kit-{kit}"), Some(style), draws.as_deref(), &cargo, "", &[]), None, "{kit}");
         }
+    }
+
+    fn material_issues(r: &Report) -> Vec<&Issue> {
+        r.issues.iter().filter(|i| i.area == "materials").collect()
+    }
+
+    const WOOD_BLOCK: &str = "0400000000000000000000000000000000000000000000000000000000000000";
+
+    /// `[materials]`: unknown names, the app crate's features, and the models'
+    /// blocks against the list (docs/materials/BATCH1_BUILD_PLAN.md 2.2).
+    #[test]
+    fn the_materials_list_is_checked() {
+        let root = crate::testutil::fake_engine("check-materials");
+        let toml_path = root.join("apps/demo/evani.toml");
+        let cargo_path = root.join("apps/demo/Cargo.toml");
+        let (toml, cargo) = (std::fs::read_to_string(&toml_path).unwrap(), std::fs::read_to_string(&cargo_path).unwrap());
+        assert!(material_issues(&run(&root, &opts())).is_empty(), "a game with no [materials] has nothing to say");
+
+        // An unknown recipe: named, with the valid names in the fix.
+        crate::write_file(&toml_path, &format!("{toml}
+[materials]
+recipes = [\"woood\"]
+")).unwrap();
+        let r = run(&root, &opts());
+        let m = material_issues(&r);
+        assert_eq!(m.len(), 1, "{}", r.text(false, Severity::Note));
+        assert_eq!(m[0].severity, Severity::Error);
+        assert!(m[0].what.contains("`woood`") && m[0].fix.contains("wood") && m[0].fix.contains("apps/demo/evani.toml"), "{:?}", m[0]);
+
+        // A real recipe, but the app crate has no feature for it: the exact lines to add.
+        crate::write_file(&toml_path, &format!("{toml}
+[materials]
+recipes = [\"wood\"]
+")).unwrap();
+        let r = run(&root, &opts());
+        let m = material_issues(&r);
+        assert_eq!(m.len(), 2, "{}", r.text(false, Severity::Note));
+        assert!(m.iter().all(|i| i.severity == Severity::Error && i.fix.contains("recipe-wood = [\"material-recipes\", \"evani-material-recipes/recipe-wood\"]")), "{m:?}");
+        assert!(m.iter().any(|i| i.what.contains("`material-recipes`")) && m.iter().any(|i| i.what.contains("`recipe-wood`")));
+        // The generic crate check does not say it a second time.
+        assert!(!r.issues.iter().any(|i| i.area == "manifest" && i.what.contains("asks for `recipe-wood`")), "{}", r.text(false, Severity::Note));
+
+        // With the features wired, and `default` mirroring the list, it is clean.
+        let wired = cargo
+            .replace("default = [\"bloom\", \"physics-simple\", \"live\"]", "default = [\"bloom\", \"physics-simple\", \"live\", \"models\", \"material-recipes\", \"recipe-wood\"]")
+            .replace("[dependencies]", "models = []
+material-recipes = [\"models\", \"evani-render/material-recipes\", \"dep:evani-material-recipes\"]
+recipe-wood = [\"material-recipes\", \"evani-material-recipes/recipe-wood\"]
+
+[dependencies]
+evani-material-recipes = { workspace = true, optional = true }");
+        crate::write_file(&cargo_path, &wired).unwrap();
+        let r = run(&root, &opts());
+        assert!(material_issues(&r).is_empty(), "{}", r.text(false, Severity::Note));
+        assert!(r.passes(false), "{}", r.text(false, Severity::Note));
+
+        // A model whose wood block the game does not list is an error; listing it clears it.
+        let model = format!("{{\"materials\":[{{\"name\":\"plank\",\"extras\":{{\"evani_recipe\":\"{WOOD_BLOCK}\"}}}}]}}");
+        std::fs::create_dir_all(root.join("apps/demo/assets")).unwrap();
+        std::fs::write(root.join("apps/demo/assets/hut.glb"), glb(&model)).unwrap();
+        crate::write_file(&toml_path, &toml.replace("[modules]", "[modules]
+models = true")).unwrap();
+        let r = run(&root, &opts());
+        let m = material_issues(&r);
+        assert_eq!(m.len(), 1, "{}", r.text(false, Severity::Note));
+        assert!(m[0].what.contains("hut.glb") && m[0].what.contains("doesn't list `wood`") && m[0].fix.contains("Add \"wood\""), "{:?}", m[0]);
+        crate::write_file(&toml_path, &format!("{toml}
+[materials]
+recipes = [\"wood\"]
+")).unwrap();
+        let r = run(&root, &opts());
+        assert!(material_issues(&r).is_empty(), "{}", r.text(false, Severity::Note));
+
+        // A block that does not decode is an error even when listed.
+        std::fs::write(root.join("apps/demo/assets/hut.glb"), glb(&model.replace(WOOD_BLOCK, "xyz"))).unwrap();
+        let r = run(&root, &opts());
+        let m = material_issues(&r);
+        assert_eq!(m.len(), 1, "{}", r.text(false, Severity::Note));
+        assert!(m[0].what.contains("64-character hex") && m[0].fix.contains("convert"), "{:?}", m[0]);
+    }
+
+    /// A game listing `cloth` gets the recipe stage's cloth only (weaves,
+    /// patterns, and since B4-P3b its sheen and fuzz): no layers family.
+    #[test]
+    fn cloth_maps_to_its_recipe_only() {
+        let m = Modules::parse("name = \"d\"
+kit = \"demo\"
+look = \"basic\"
+[materials]
+recipes = [\"cloth\"]
+").unwrap();
+        assert_eq!(m.features(), ["models", "material-recipes", "recipe-cloth"]);
+        let w = Modules::parse("name = \"d\"
+kit = \"demo\"
+look = \"basic\"
+[materials]
+recipes = [\"wood\"]
+conditions = [\"wet\"]
+").unwrap();
+        assert_eq!(w.features(), ["models", "material-recipes", "recipe-wood", "cond-wet"]);
     }
 
     /// `--full`'s look-parity run names a test file, features and a document

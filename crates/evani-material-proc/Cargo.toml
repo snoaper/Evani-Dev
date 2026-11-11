@@ -20,6 +20,21 @@ default = []
 # `render.light.direction` unless `sky.follow_light` is off. Without it the
 # shader carries no sky code.
 sky = []
+# Clouds down to the horizon (src/sky.rs `CloudHorizon`): four more live
+# params (`sky.cloud_horizon_*`) set where the clouds fade in over the
+# horizon, how much the cloud layer curves away and how far the haze hides
+# it, for games whose cameras look mostly at the skyline. They sit in one
+# more header record (8), so the layout and the sky code change only with
+# this feature; without it both are exactly as before.
+sky-horizon = ["sky"]
+# The sun and moon at their true apparent size (src/discs.rs,
+# shaders/sky_discs.wgsl): a limb-darkened sun disc with its aureole, and a
+# moon lit by the sun (its phase, crescent to full, follows from where the
+# two stand in the sky) with earthshine and faint maria, and the low sun's
+# warmth on the sky near the horizon. Six more header records (14-19) and
+# live params `sky.disc_*` / `sky.moon_*` / `sky.horizon_warm*`; off
+# (`sky.discs` false) the dome draws its own sun disc and sky as before.
+sky-discs = ["sky-horizon"]
 # Relief surfaces (src/relief, shaders/relief*.wgsl): baked brick, cobble,
 # tile and plank relief with wet, puddle and moss layers, lit through
 # evani-render's opt-in `kit-surface` hook (bent normal, roughness, GGX sun

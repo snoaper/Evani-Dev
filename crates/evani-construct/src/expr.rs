@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq)]
-enum T {
+pub(crate) enum T {
     Num(f64),
     Id(String),
     Op(char),
@@ -15,7 +15,7 @@ enum T {
     Comma,
 }
 
-fn lex(s: &str) -> Result<Vec<T>, String> {
+pub(crate) fn lex(s: &str) -> Result<Vec<T>, String> {
     let c: Vec<char> = s.chars().collect();
     let mut out = Vec::new();
     let mut i = 0;

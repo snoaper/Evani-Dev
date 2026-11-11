@@ -1,0 +1,411 @@
+[package]
+name = "evani-proc-field"
+description = "Evani.Dev procedural library proof: places the procedural assets its evani.toml lists, so builds with none, one asset and one category show what each adds"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# `[modules] procedural = [..]` in evani.toml turns on `procedural` (the
+# library crate, optional) and `procedural-<part>` per listed category or
+# asset, each forwarding to evani-procedural-lib's feature of that name.
+[features]
+default = ["procedural", "procedural-terrain-rolling-hills"]
+procedural = ["dep:evani-procedural-lib", "evani-kit-proc-field/procedural"]
+procedural-terrain-rolling-hills = ["procedural", "evani-procedural-lib/terrain-rolling-hills"]
+procedural-geometry-cube-cuboid = ["procedural", "evani-procedural-lib/geometry-cube-cuboid"]
+procedural-geometry-icosphere = ["procedural", "evani-procedural-lib/geometry-icosphere"]
+procedural-geometry-uv-sphere = ["procedural", "evani-procedural-lib/geometry-uv-sphere"]
+procedural-geometry-bevelled-box = ["procedural", "evani-procedural-lib/geometry-bevelled-box"]
+procedural-geometry = ["procedural", "evani-procedural-lib/geometry"]
+procedural-terrain = ["procedural", "evani-procedural-lib/terrain"]
+procedural-rocks-medium-rocks = ["procedural", "evani-procedural-lib/rocks-medium-rocks"]
+procedural-trees = ["procedural", "evani-procedural-lib/trees"]
+procedural-trees-oak-trees = ["procedural", "evani-procedural-lib/trees-oak-trees"]
+procedural-buildings-castles = ["procedural", "evani-procedural-lib/buildings-castles"]
+procedural-city = ["procedural", "evani-procedural-lib/city"]
+procedural-vehicles-sedans = ["procedural", "evani-procedural-lib/vehicles-sedans"]
+procedural-animals = ["procedural", "evani-procedural-lib/animals"]
+# The realism parity scene (procedural realism round 8; docs/PROCEDURAL.md
+# "Applying a realism material in a game"): the cast-concrete cube in the
+# engine's realism studio, with the look, recipes, light and shadow
+# features the Material library builds, so a game's picture can be held
+# against the library's (tools/procedural/parity.mjs). Dev only: the gating
+# proof's builds never list it, so they are unchanged.
+wall = [
+    "procedural", "procedural-geometry-cube-cuboid", "evani-kit-proc-field/wall",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-plaster", "evani-material-recipes/cond-dust",
+]
+# The faceted ball's live scene (the live faceted-ball session, 2026-11-04):
+# the library's faceted concrete ball in the same realism studio, under its
+# reference picture's camera and light, with the cube and the granite ball as
+# switchable subjects (the before-and-after proof). Dev only, as `wall`.
+facet = [
+    "procedural", "procedural-geometry-icosphere", "procedural-geometry-cube-cuboid", "procedural-geometry-uv-sphere", "evani-kit-proc-field/facet",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-stone", "evani-material-recipes/cond-dust",
+]
+# The granite ball scene (the live granite session): the granite ball, with
+# the sandstone column and the concrete cube for the before/after no-change
+# proof, in the same studio as `wall`. Dev only: the gating proof never lists it.
+granite = [
+    "procedural", "procedural-geometry-cube-cuboid", "evani-procedural-lib/geometry-uv-sphere", "evani-procedural-lib/geometry-cylinder", "evani-kit-proc-field/granite",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-stone", "evani-material-recipes/cond-dust",
+]
+# The live oak block (dev only; the gating proof never lists it): the
+# library's solid-oak bevelled box in the same studio, lit and framed as its
+# reference picture, its wood tuned live with `live` (kits' src/oak.rs).
+oak = [
+    "procedural", "procedural-geometry-bevelled-box", "evani-kit-proc-field/oak",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-wood",
+]
+# The concrete garden cone scene (the live cone session): the cone, with the
+# concrete cube, the sandstone column and the granite ball for the
+# before/after no-change proof, in the same studio as `wall`. Dev only: the
+# gating proof never lists it.
+cone = [
+    "procedural", "procedural-geometry-cube-cuboid", "evani-procedural-lib/geometry-cone", "evani-procedural-lib/geometry-cylinder", "evani-procedural-lib/geometry-uv-sphere", "evani-kit-proc-field/cone",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-stone", "evani-material-recipes/cond-dust", "evani-material-recipes/cond-mud",
+]
+# The live control API (dev only; ship builds never list it): with `wall`, the
+# concrete cube tuned live (schema_get, param_set, capture_frame).
+# The concrete cube's live scene (the Asset Studio cube session,
+# 2026-11-05): the library's cube under its reference picture's camera and
+# light, the faceted ball scene's floor pass under it, with the cone, the
+# faceted ball and the granite ball as switchable subjects (the before-and-
+# after proof). Dev only, as `wall`.
+cube = [
+    "procedural", "procedural-geometry-cube-cuboid", "procedural-geometry-icosphere", "procedural-geometry-uv-sphere", "evani-procedural-lib/geometry-cone", "evani-kit-proc-field/cube",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-stone", "evani-material-recipes/cond-dust",
+]
+# The oak trees scene (the Asset Studio oak session, column 8): the
+# library's photoreal oaks, a group of three, lit and framed as their
+# reference picture, with the catalogue's oak bark and oak leaf and the
+# cut-out recipe that cuts the leaf sprays (a game lists "bark", "foliage"
+# and "cutout" in `[materials] recipes`). Dev only: the gating proof never
+# lists it.
+oaktree = [
+    "procedural", "procedural-trees-oak-trees", "evani-kit-proc-field/oaktree",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/material-recipes-cut", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-bark", "evani-material-recipes/recipe-foliage", "evani-material-recipes/cutout",
+]
+# The distance fog's neutral staging (Asset Studio column 74, 2026-11-11): grey
+# blocks on flat grey ground, the library's distance fog; in the oak trees
+# scene's slot. Dev only.
+fogstage = ["oaktree", "evani-procedural-lib/sky-distance-fog", "evani-kit-proc-field/fogstage"]
+# Every volumetric air effect on the same neutral staging (1.5.45): the fog's
+# scene with the seven other staged assets built in too; the kit's
+# `kit.proc_field.fogstage_subject` picks one (0 the fog, 1 ground mist,
+# 2 dust storms, 3 cloud layers, 4 volumetric-looking clouds, 5 smoke,
+# 6 steam, 7 dust clouds). Dev only.
+airstage = [
+    "fogstage",
+    "evani-procedural-lib/sky-ground-mist",
+    "evani-procedural-lib/sky-dust-storms",
+    "evani-procedural-lib/sky-cloud-layers",
+    "evani-procedural-lib/sky-volumetric-looking-clouds",
+    "evani-procedural-lib/effects-smoke",
+    "evani-procedural-lib/effects-steam",
+    "evani-procedural-lib/effects-dust-clouds",
+]
+# The pebbles' scene (the Asset Studio pebbles session, 2026-11-05): the
+# library's pebbles under their reference picture's camera and light, the
+# faceted ball scene's floor pass under them. Dev only, as `wall`.
+pebbles = [
+    "procedural", "evani-procedural-lib/rocks-pebbles", "evani-kit-proc-field/pebbles",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-stone",
+]
+# The medium rocks' scene (the Asset Studio medium rocks session, column
+# 23, 2026-11-07): the library's medium rocks under their reference
+# picture's camera and light, in the pebbles' scene slot (it turns the
+# pebbles' scene on for its modules and floor pass). Dev only, as `wall`.
+mrocks = ["pebbles", "evani-procedural-lib/rocks-medium-rocks", "evani-kit-proc-field/mrocks"]
+# The jagged rock formation's scene (the Asset Studio jagged rock
+# formations session, column 24, 2026-11-07): the library's jagged rock
+# formation under its reference picture's camera and light, in the
+# pebbles' scene slot (it turns the pebbles' scene on for its modules and
+# floor pass). Dev only, as `wall`.
+jrocks = ["pebbles", "evani-procedural-lib/rocks-jagged-rock-formations", "evani-kit-proc-field/jrocks", "evani-fx/vignette"]
+# The rounded river rocks' scene (the Asset Studio rounded river rocks
+# session, column 25, 2026-11-07): the library's rounded river rocks under
+# their reference picture's camera and light, in the pebbles' scene slot
+# (it turns the pebbles' scene on for its modules and floor pass). Dev
+# only, as `wall`.
+rrocks = ["pebbles", "evani-procedural-lib/rocks-rounded-river-rocks", "evani-kit-proc-field/rrocks", "evani-fx/vignette"]
+# The rock pile's scene (the Asset Studio rock piles session, column 26,
+# 2026-11-08): the library's rock pile under its reference picture's camera
+# and light, in the pebbles' scene slot (it turns the pebbles' scene on for
+# its modules and floor pass). Dev only, as `wall`.
+rpiles = ["pebbles", "evani-procedural-lib/rocks-rock-piles", "evani-kit-proc-field/rpiles"]
+loam = [
+    "pebbles",
+    "evani-procedural-lib/material-soil-dark-loam",
+    "evani-kit-proc-field/loam",
+    "evani-fx/vignette",
+    "evani-material-recipes/recipe-ground",
+]
+snowpowder = [
+    "pebbles",
+    "evani-procedural-lib/material-snow-fresh-powder",
+    "evani-kit-proc-field/snowpowder",
+    "evani-fx/vignette",
+    "evani-material-recipes/recipe-ice",
+]
+# The volumetric clouds' scene (the Asset Studio clouds session,
+# 2026-11-06): the library's cumulus, drawn by its own ray-marched volume
+# (four game passes the procedural module hosts), under its reference
+# picture's camera and light against a flat grey sky. Dev only, as `wall`.
+clouds = [
+    "procedural", "evani-procedural-lib/sky-volumetric-looking-clouds", "evani-kit-proc-field/clouds",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film",
+    "dep:evani-fx",
+    "evani-render/look-surface", "evani-render/hooks",
+]
+# The shoreline's scene (the Asset Studio shorelines session, 2026-11-05):
+# the library's shoreline under its reference picture's camera and light,
+# its water drawn by the nature pass (the library hosts it), the faceted ball
+# scene's floor pass under it. Dev only, as `wall`.
+shore = [
+    "procedural", "evani-procedural-lib/water-shorelines", "evani-kit-proc-field/shore",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-ground", "evani-material-recipes/recipe-stone",
+]
+# The canyons' scene (the Asset Studio canyons session, column 12,
+# 2026-11-06): the library's canyons under their reference picture's camera
+# and light, the faceted ball scene's floor pass under them. Dev only, as
+# `wall`.
+canyon = [
+    "procedural", "evani-procedural-lib/terrain-canyons", "evani-kit-proc-field/canyon",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-ground", "evani-material-recipes/recipe-stone",
+]
+# The office building's scene (the Asset Studio office buildings session,
+# column 13, 2026-11-06): the library's office building under its reference
+# picture's camera and light, its glazing drawn by the see-through pass over
+# real lit interiors, the faceted ball scene's floor pass under it. Dev only,
+# as `wall`.
+office = [
+    "procedural", "evani-procedural-lib/buildings-office-buildings", "evani-kit-proc-field/office",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/material-recipes-blend", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-stone", "evani-material-recipes/recipe-metal", "evani-material-recipes/recipe-glass",
+    "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-glow", "evani-material-recipes/recipe-foliage", "evani-material-recipes/recipe-ground",
+]
+# The townhouses' scene (the Asset Studio townhouses session, column 37,
+# 2026-11-08): the library's terrace of townhouses under its reference
+# picture's camera and light, in the office building's slot (its modules,
+# its floor pass), with the brick, paint, cloth and wood recipes. Dev only,
+# as `wall`.
+townhouse = [
+    "office", "evani-procedural-lib/buildings-townhouses", "evani-kit-proc-field/townhouse",
+    "evani-material-recipes/recipe-masonry", "evani-material-recipes/recipe-paint", "evani-material-recipes/recipe-cloth", "evani-material-recipes/recipe-wood",
+]
+# The NPC body variations' scene (the Asset Studio full NPC body variations
+# session, column 22, 2026-11-07): the library's line-up of people under its
+# reference picture's camera and light, the faceted ball scene's floor pass
+# under it. Dev only, as `wall`.
+npc = [
+    "procedural", "evani-procedural-lib/humans-full-npc-body-variations", "evani-kit-proc-field/npc",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows", "evani-fx/vignette",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-stone", "evani-material-recipes/recipe-plaster", "evani-material-recipes/recipe-cloth",
+]
+# The rivers' scene (the Asset Studio rivers session, column 20,
+# 2026-11-07): the library's river valley outdoors, under the photoreal
+# look's daylight preset layered over the film look (the sky dome's `sky`
+# material, as the Material library), its water drawn by the nature pass and
+# its bank grass by evani-grass (the library hosts both). Dev only, as `wall`.
+river = [
+    "procedural", "evani-kit-proc-field/river",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-look-photoreal",
+    "dep:evani-fx", "evani-fx/shadows",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/material-recipes-cut", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-ground", "evani-material-recipes/recipe-stone", "evani-material-recipes/recipe-foliage",
+    "evani-material-recipes/recipe-bark", "evani-material-recipes/cutout",
+]
+# The mountains' scene (the Asset Studio mountains session, column 19,
+# 2026-11-07): the library's mountain massif at real scale (3.2 km, its
+# summit 1.2 km up), seen from the air and from a player at its foot, the
+# camera's far plane raised for it (`camera-range`). Dev only, as `wall`.
+mountain = [
+    "procedural", "evani-procedural-lib/terrain-mountains", "evani-kit-proc-field/mountain",
+    "dep:evani-look-stylizedpbr", "evani-look-stylizedpbr/film", "evani-look-stylizedpbr/pcss", "evani-look-stylizedpbr/gtao",
+    "dep:evani-fx", "evani-fx/shadows", "evani-fx/camera-range",
+    "evani-render/models", "evani-render/look-surface", "evani-render/material-recipes", "evani-render/ibl", "evani-render/gtao",
+    "evani-render/pcss-stable", "evani-render/shadow-cascades", "evani-render/studio-sky", "evani-render/contact-shadows", "evani-render/hooks",
+    "evani-render/camera-range",
+    "dep:evani-material-recipes", "evani-material-recipes/recipe-ground", "evani-material-recipes/recipe-stone",
+    "evani-material-recipes/recipe-foliage", "evani-material-recipes/recipe-ice", "evani-material-recipes/cond-dust",
+    # Round 3: the shrubs' leaf sprays round the player are cut-out cards.
+    "evani-material-recipes/cutout",
+]
+# The scree slopes' scene (the Asset Studio scree slopes session, column 27,
+# 2026-11-08): the library's scree slope from a player standing on it, under
+# its reference picture's camera and light, the library's mountain massif
+# across the valley, in the mountains scene's slot (it turns the mountains'
+# scene on for its modules and raised far plane). Dev only, as `wall`.
+scree = ["mountain", "evani-procedural-lib/rocks-scree-slopes", "evani-kit-proc-field/scree"]
+# The rolling hills' scene (the Asset Studio rolling hills session, column
+# 28, 2026-11-08): the library's rolling hills at a walker's scale, running
+# on to the horizon, from a standing player's eye under a mid-morning sun
+# and a light haze, the hills' own meadow grass round the player, in the
+# mountains scene's slot (as `scree`). Dev only, as `wall`.
+hills = ["mountain", "procedural-terrain-rolling-hills", "evani-procedural-lib/hills-grass", "evani-kit-proc-field/hills"]
+# The short grass's scene (the Asset Studio short grass session, column 68,
+# 2026-11-10): the library's short grass (evani-grass's lawn kind) as a
+# grazed pasture, from a standing player's eye in a level field under a
+# mid-morning sun, its blades round the player and its carpet on to the
+# horizon, in the rolling hills scene's slot (as `hills`). Dev only, as `wall`.
+sgrass = [
+    "hills",
+    "evani-procedural-lib/vegetation-short-grass",
+    "evani-kit-proc-field/sgrass",
+]
+# The caves' scene (the Asset Studio caves session, column 29, 2026-11-08):
+# the library's limestone cave passage from a player standing just inside
+# its mouth and looking deeper in, lit only by the daylight at the mouth
+# (the library's entrance lights, drawn as point lights), in the mountains
+# scene's slot (as `hills`). Dev only, as `wall`.
+cave = ["mountain", "evani-procedural-lib/terrain-caves", "evani-kit-proc-field/cave", "evani-render/point-lights"]
+# The dynamic sky dome's scene (the Asset Studio sky dome session, column
+# 21, 2026-11-07): the library's sky dome (evani-material-proc's Preetham
+# dome and clouds, with its horizon part) started with its photoreal recipe,
+# from a standing player's eye over a meadow and far hills, under the
+# photoreal look's daylight preset (its `sky` material), the haze an HDR
+# horizon colour (`hdr-color`). Dev only: the gating proof never lists it.
+skydome = [
+    "procedural", "evani-procedural-lib/sky-dynamic-sky-dome", "evani-kit-proc-field/skydome",
+    "dep:evani-look-photoreal",
+    "evani-render/hooks", "evani-render/hdr-color",
+]
+# The sun and moon discs' scene (Asset Studio column 38, 2026-11-08): the
+# library's sun and moon discs (the dome's `sky-discs` part) with their
+# photoreal recipe, a golden hour seen from a standing player's eye over dark
+# fields and a far tree line, in the sky dome scene's slot. Dev only.
+sunmoon = ["skydome", "evani-procedural-lib/sky-sun-and-moon-discs", "evani-kit-proc-field/sunmoon"]
+live = ["dep:evani-live", "evani-render/hooks", "evani-render/capture", "evani-procedural-lib?/capture"]
+# Models (needed by the material library; off unless evani.toml lists one).
+models = ["dep:evani-gltf", "evani-core/texture-budget", "evani-render/models", "evani-live?/models"]
+# The material library (Evani.Materials, 2026-11-03: "the material library
+# in everything"): the same lines as the sandbox's, so this game can list any
+# catalogue recipe or condition in evani.toml `[materials]`.
+# `[materials]` in evani.toml (P10b, docs/materials/BATCH1_BUILD_PLAN.md 2.2):
+# `recipes` and `conditions` map to these. `material-recipes` brings the recipe
+# stage; `recipe-<name>` and `cond-<layer>` add one recipe or layer each;
+# `material-layers` (cloth), `char-materials` (skin, hair, eye) and
+# `material-nature` (water, glass, foliage, thin) are the families. All off
+# unless listed, so a game that lists none downloads none of it. `cargo xtask
+# check` names any of these lines a game is missing.
+material-recipes = ["models", "evani-render/material-recipes", "dep:evani-material-recipes"]
+recipe-metal = ["material-recipes", "evani-material-recipes/recipe-metal"]
+recipe-paint = ["material-recipes", "evani-material-recipes/recipe-paint"]
+recipe-plastic = ["material-recipes", "evani-material-recipes/recipe-plastic"]
+recipe-wood = ["material-recipes", "evani-material-recipes/recipe-wood"]
+recipe-wood-layouts = ["material-recipes", "evani-material-recipes/recipe-wood-layouts"]
+recipe-organic-food = ["material-recipes", "evani-material-recipes/recipe-organic-food"]
+# Cut-out holes (batch 3 B3-P2; `"cutout"` in `[materials] recipes`): grates,
+# chain-link, wire mesh and lattice, and the hole-aware shadow pipeline.
+material-cutout = ["material-recipes", "evani-render/material-recipes-cut"]
+# The see-through pass (batch 3 B3-P3; `"blend"` in `[materials] recipes`):
+# glass, smoke, steam, fire and holograms drawn blended, sorted far to near;
+# `"refraction"` adds the copy frosted, wavy and block glass bend and blur.
+material-blend = ["material-recipes", "evani-render/material-recipes-blend"]
+material-refract = ["material-blend", "evani-render/material-recipes-refract"]
+recipe-glass = ["material-recipes", "evani-material-recipes/recipe-glass"]
+recipe-bark = ["material-recipes", "evani-material-recipes/recipe-bark"]
+recipe-stone = ["material-recipes", "evani-material-recipes/recipe-stone"]
+recipe-masonry = ["material-recipes", "evani-material-recipes/recipe-masonry"]
+recipe-plaster = ["material-recipes", "evani-material-recipes/recipe-plaster"]
+recipe-ground = ["material-recipes", "evani-material-recipes/recipe-ground"]
+recipe-cloth = ["material-recipes", "evani-material-recipes/recipe-cloth"]
+recipe-leather = ["material-recipes", "evani-material-recipes/recipe-leather"]
+recipe-fur = ["material-recipes", "evani-material-recipes/recipe-fur"]
+recipe-feather = ["material-recipes", "evani-material-recipes/recipe-feather"]
+recipe-scales = ["material-recipes", "evani-material-recipes/recipe-scales"]
+recipe-hide = ["material-recipes", "evani-material-recipes/recipe-hide"]
+recipe-keratin = ["material-recipes", "evani-material-recipes/recipe-keratin"]
+recipe-thin = ["material-recipes", "evani-material-recipes/recipe-thin"]
+recipe-organic = ["material-recipes", "evani-material-recipes/recipe-organic"]
+recipe-ceramic = ["material-recipes", "evani-material-recipes/recipe-ceramic"]
+recipe-gem = ["material-recipes", "evani-material-recipes/recipe-gem"]
+recipe-ice = ["material-recipes", "evani-material-recipes/recipe-ice"]
+recipe-fire = ["material-recipes", "evani-material-recipes/recipe-fire"]
+recipe-glow = ["material-recipes", "evani-material-recipes/recipe-glow"]
+recipe-foliage = ["material-recipes", "evani-material-recipes/recipe-foliage"]
+cond-wet = ["material-recipes", "evani-material-recipes/cond-wet"]
+cond-mud = ["material-recipes", "evani-material-recipes/cond-mud"]
+cond-dust = ["material-recipes", "evani-material-recipes/cond-dust"]
+cond-snow = ["material-recipes", "evani-material-recipes/cond-snow"]
+cond-wear = ["material-recipes", "evani-material-recipes/cond-wear"]
+cond-oxide = ["material-recipes", "evani-material-recipes/cond-oxide"]
+cond-growth = ["material-recipes", "evani-material-recipes/cond-growth"]
+cond-blood = ["material-recipes", "evani-material-recipes/cond-blood"]
+material-layers = ["models", "evani-render/material-layers"]
+char-materials = ["models", "evani-render/char-materials"]
+material-nature = ["models", "dep:evani-material-nature"]
+
+[dependencies]
+evani-core.workspace = true
+evani-render.workspace = true
+evani-kit-proc-field.workspace = true
+evani-look-basic.workspace = true
+evani-procedural-lib = { workspace = true, optional = true }
+evani-look-stylizedpbr = { workspace = true, optional = true }
+# The rivers' and the sky dome's scenes only (the daylight preset and its
+# sky material).
+evani-look-photoreal = { workspace = true, optional = true }
+evani-fx = { workspace = true, optional = true }
+evani-material-recipes = { workspace = true, optional = true }
+evani-live = { workspace = true, optional = true }
+evani-gltf = { workspace = true, optional = true }
+evani-material-nature = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = ["Window", "Location", "Document"] }
+
+[lints]
+workspace = true

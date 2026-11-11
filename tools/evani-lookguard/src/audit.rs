@@ -13,8 +13,18 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Map, Value, json};
 
+/// `<root>/.evani/look-guard/audit.jsonl`, or under `EVANI_STATE_DIR` when
+/// it is set (an installed engine pack is read-only; docs/ENGINE_PACK.md).
 pub fn path(root: &Path) -> PathBuf {
-    root.join(".evani").join("look-guard").join("audit.jsonl")
+    path_from(root, std::env::var_os("EVANI_STATE_DIR").as_deref())
+}
+
+pub fn path_from(root: &Path, state: Option<&std::ffi::OsStr>) -> PathBuf {
+    let base = match state.filter(|v| !v.is_empty()) {
+        Some(s) => PathBuf::from(s),
+        None => root.join(".evani"),
+    };
+    base.join("look-guard").join("audit.jsonl")
 }
 
 const ZERO: &str = "0000000000000000000000000000000000000000000000000000000000000000";

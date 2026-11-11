@@ -1,0 +1,18 @@
+{
+  "format": "evani-library/1",
+  "stage": "live",
+  "rev": 7,
+  "published_at": "2026-11-09T09:00:00Z",
+  "min_app": "0.5.3",
+  "cache": { "state": "offline", "saved_at": "2026-11-09T09:15:00Z", "checked_at": "2026-11-10T18:00:00Z" },
+  "assets": [
+    {
+      "id": "rocks-pebbles@photoreal", "asset": "rocks-pebbles", "style": "photoreal", "name": "Pebbles",
+      "category": "rocks", "area": "official",
+      "version": "3f9a0c1e2b4d", "content_hash": "sha256:9a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9", "server_score": 4.0,
+      "score_categories": null,
+      "author": "@pebblemaker", "approved_at": "2026-11-09T08:12:00Z", "approved_by": "@snoaper",
+      "state": "in-library", "reference": null
+    }
+  ]
+}

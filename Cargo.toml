@@ -30,11 +30,14 @@ members = [
     "apps/2d-platformer",
     "apps/bench",
     "tools/xtask",
+    "tools/evani-reqcheck",
+    "tools/evani-cargo-xtask",
     "tools/evani-live-bridge",
     "tools/evani-lookguard",
     "tools/evani-geocheck",
     "tools/evani-geocheck-2d",
     "tools/evani-guide",
+    "crates/evani-construct",
     "crates/evani-model",
     "tools/evani-model",
     "tools/model-bench-ref",
@@ -44,10 +47,14 @@ members = [
     "kits/evani-kit-tactical-fps",
     "kits/evani-kit-top-down-action-adventure",
     "kits/evani-kit-base-building-rts",
+    "kits/evani-kit-material-view",
+    "kits/evani-kit-scene-sunmoon-meadow",
     "apps/model-view",
     "apps/tactical-fps",
     "apps/top-down-action-adventure",
     "apps/base-building-rts",
+    "apps/material-view",
+    "apps/scene-sunmoon-meadow",
     "looks/evani-look-photoreal",
     "crates/evani-combat",
     "crates/evani-material-proc",
@@ -55,6 +62,12 @@ members = [
     "crates/evani-material-layers",
     "crates/evani-material-character",
     "crates/evani-material-nature",
+    "crates/evani-material-recipes",
+    "crates/evani-studio",
+    "crates/evani-style-geo",
+    "crates/evani-grass",
+    "crates/evani-procedural",
+    "crates/evani-procedural-lib",
 ]
 
 [workspace.package]
@@ -107,18 +120,27 @@ evani-kit-2d-platformer = { path = "kits/evani-kit-2d-platformer" }
 evani-look-pixel16 = { path = "looks/evani-look-pixel16" }
 evani-look-pixelhd = { path = "looks/evani-look-pixelhd" }
 evani-look-stylizedpbr = { path = "looks/evani-look-stylizedpbr" }
+evani-construct = { path = "crates/evani-construct" }
 evani-model = { path = "crates/evani-model" }
 evani-kit-model-view = { path = "kits/evani-kit-model-view" }
 evani-kit-tactical-fps = { path = "kits/evani-kit-tactical-fps" }
 evani-look-photoreal = { path = "looks/evani-look-photoreal" }
 evani-kit-top-down-action-adventure = { path = "kits/evani-kit-top-down-action-adventure" }
 evani-kit-base-building-rts = { path = "kits/evani-kit-base-building-rts" }
+evani-kit-material-view = { path = "kits/evani-kit-material-view" }
+evani-kit-scene-sunmoon-meadow = { path = "kits/evani-kit-scene-sunmoon-meadow" }
 evani-combat = { path = "crates/evani-combat" }
 evani-material-proc = { path = "crates/evani-material-proc" }
 evani-material-layers = { path = "crates/evani-material-layers" }
 evani-destruct = { path = "crates/evani-destruct" }
 evani-material-character = { path = "crates/evani-material-character" }
 evani-material-nature = { path = "crates/evani-material-nature" }
+evani-material-recipes = { path = "crates/evani-material-recipes" }
+evani-studio = { path = "crates/evani-studio" }
+evani-style-geo = { path = "crates/evani-style-geo" }
+evani-grass = { path = "crates/evani-grass" }
+evani-procedural = { path = "crates/evani-procedural" }
+evani-procedural-lib = { path = "crates/evani-procedural-lib" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
@@ -145,6 +167,18 @@ opt-level = 1
 [profile.dev.package.evani-geocheck]
 opt-level = 3
 
+# `cargo xtask engine-pack` hashes and gzip-sizes about 1 GB per pack
+# (docs/ENGINE_PACK.md); unoptimised that takes ~9 minutes.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.miniz_oxide]
+opt-level = 3
+
 # Evani.Model meshes and checks millions of field samples per compile.
 [profile.dev.package.evani-model]
+opt-level = 3
+
+# The construct back end builds and checks every piece of a model.
+[profile.dev.package.evani-construct]
 opt-level = 3

@@ -29,3 +29,11 @@ Evani.Dev is a light, low-bandwidth, high-capability browser game engine in Rust
 - The engine rules (data lives in `catalog/` and is never contradicted, all content is original, build-time on/off is sacred, `cargo xtask check` clean before hand-over) are in the engine block in AGENTS.md, imported above. They moved there so every Evani.Dev user gets them; they still apply here in full. If the catalog is wrong, say so in the hand-over.
 - One kit per session. Stop after the hand-over; never start the next kit on your own.
 - Commit after each step of the kit process.
+
+## Scenes on Evani.app (fly-around)
+
+Chris's rule (2026-11-08): "Make it a rule that all Scenes become scenes in Evani.app website that you can free roam with like a flying thing". He also said: "playgrounds are game examples, Scenes are things like the sun, moon and meadow". So a Scene is its own kind on Evani.app, not a playground.
+
+- Every scene the studio makes (a whole environment: a landscape, sky, water, terrain, meadow or biome item in Asset Studio, not a single object such as a rock, tree or building) gets a matching Scene on Evani.app that you free-roam with a free-flying camera and no character.
+- It is built from the scene's best round, needs no goals, timer or fail state, works on keys/mouse and on touch, and has no size cap; the 10 MB cap is for games only. The 10 MB download cap applies only to games (and playgrounds, which are game examples); the library, Scenes, viewers and tools have no size cap.
+- It is never uploaded without Chris's click on the publish card. How: `docs/SCENES.md`.

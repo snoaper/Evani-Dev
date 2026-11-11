@@ -6,6 +6,7 @@
 //! cargo xtask sizes [<app>]                       full / no bloom / no fx / no live table
 //! cargo xtask size-report [<app>..] [--modules]   ship build raw/gzip/brotli per file + wasm-opt proof (see size_report.rs)
 //! cargo xtask features <app> [--ship]             print the Cargo features evani.toml maps to
+//! cargo xtask library build [--out <dir>]          the Evani Library: material-view's ship build + its version stamp (library.rs)
 //! cargo xtask package-check <folder> [<app>]      a publish folder must carry ENGINE-LICENSE.txt (the engine's MIT notice; build --ship writes it); with <app>, the full publish preflight
 //! cargo xtask publish <app> [--dry-run] [--serve]  ship build -> checked package in publish/<app>/, size report, diff vs live (see publish.rs)
 //! cargo xtask bench [--tier ..]                    GPU bench of apps/bench in headless Chrome (see bench.rs)
@@ -39,14 +40,22 @@ mod bench;
 mod blender_addon;
 mod build_facts;
 mod checks;
+mod commons;
+mod construct;
 mod critic;
+mod engine_pack;
+mod engines;
 mod fonts;
 mod kitchecks;
+mod library;
 mod model_import;
 mod netlog;
 mod review;
 mod publish;
 mod size_report;
+mod smoothness;
+mod style_bake;
+mod start_view;
 mod tier_report;
 mod bytes;
 mod importance;
@@ -75,10 +84,23 @@ pub struct Manifest {
     pub models: bool,
     pub anim: bool,
     pub ui: bool,
+    /// `[modules] grass = true`: evani-grass (the app's `grass` feature).
+    pub grass: bool,
     /// `[modules] nature = [..]` / `proc = [..]`: the material modules and
     /// their parts (evani_guide::manifest::MATERIAL_MODULES; `None`: off).
     pub nature: Option<Vec<String>>,
     pub proc: Option<Vec<String>>,
+    /// `[modules] procedural = [..]`: the procedural library's categories
+    /// and assets (evani-procedural-lib; docs/PROCEDURAL.md; `None`: off).
+    pub procedural: Option<Vec<String>>,
+    /// Optional `[materials] recipes = [..]` / `conditions = [..]` (the material
+    /// catalogue's recipes and condition layers): each maps to app features
+    /// (evani_guide::materials). A non-empty list implies `models`.
+    pub materials: evani_guide::materials::Listed,
+    /// Optional `[modules] materials = ["layers", ..]`: the material families
+    /// the game ships (see [`MATERIAL_FAMILIES`]); each turns on the app
+    /// feature `material-<family>`. Empty for every game that lists none.
+    pub material_families: Vec<String>,
     /// Optional `[review] try = [..]`: what a reviewer should try in the demo
     /// (`cargo xtask review` puts it on the card). Never a Cargo feature.
     pub review_try: Vec<String>,
@@ -253,6 +275,37 @@ fn review_fields(v: &toml::Value) -> Result<ReviewFields, String> {
     Ok(ReviewFields { tries: strings("try")?, moments, hud: strings("hud")?, world_edge, video, internal_resolution, showcase_extra, phone_dpr })
 }
 
+/// The material families `[modules] materials` may list. Each maps to the
+/// app crate feature `material-<family>`.
+pub const MATERIAL_FAMILIES: [&str; 7] = ["styles", "layers", "characters", "nature", "playground", "catalogue", "studio"];
+
+fn materials_field(modules: Option<&toml::Table>) -> Result<Vec<String>, String> {
+    let Some(v) = modules.and_then(|m| m.get("materials")) else {
+        return Ok(Vec::new());
+    };
+    let err = || {
+        format!(
+            "evani.toml: `modules.materials` must be a list of material families ({})",
+            MATERIAL_FAMILIES.join(", ")
+        )
+    };
+    let list = v.as_array().ok_or_else(err)?;
+    let mut out: Vec<String> = Vec::new();
+    for e in list {
+        let name = e.as_str().ok_or_else(err)?;
+        if !MATERIAL_FAMILIES.contains(&name) {
+            return Err(format!(
+                "evani.toml: unknown material family `{name}` ({})",
+                MATERIAL_FAMILIES.join(", ")
+            ));
+        }
+        if !out.iter().any(|x| x == name) {
+            out.push(name.to_string());
+        }
+    }
+    Ok(out)
+}
+
 impl Manifest {
     pub fn parse(text: &str) -> Result<Self, String> {
         let t: toml::Table = text.parse().map_err(|e| format!("evani.toml: {e}"))?;
@@ -290,13 +343,15 @@ impl Manifest {
             },
         };
         for key in modules.into_iter().flat_map(|m| m.keys()) {
-            if !matches!(key.as_str(), "physics" | "net" | "xr" | "live" | "models" | "anim" | "ui" | "nature" | "proc") {
+            if !matches!(key.as_str(), "physics" | "net" | "xr" | "live" | "models" | "anim" | "ui" | "grass" | "nature" | "proc" | "procedural" | "materials") {
                 return Err(format!(
-                    "evani.toml: unknown module `{key}` (physics, net, xr, live, models, anim, ui, nature, proc)"
+                    "evani.toml: unknown module `{key}` (physics, net, xr, live, models, anim, ui, grass, nature, proc, procedural, materials)"
                 ));
             }
         }
         let anim = bool_field(modules, "anim")?;
+        let materials = evani_guide::materials::Listed::parse(&t)?;
+        materials.validate()?;
         let review = match t.get("review") {
             None => ReviewFields::default(),
             Some(v) => review_fields(v)?,
@@ -310,11 +365,15 @@ impl Manifest {
             net: bool_field(modules, "net")?,
             xr: bool_field(modules, "xr")?,
             live: bool_field(modules, "live")?,
-            models: bool_field(modules, "models")? || anim,
+            models: bool_field(modules, "models")? || anim || materials.is_active(),
             anim,
             ui: bool_field(modules, "ui")?,
+            grass: bool_field(modules, "grass")?,
             nature: evani_guide::manifest::parts(modules, "nature")?,
             proc: evani_guide::manifest::parts(modules, "proc")?,
+            procedural: evani_guide::manifest::parts(modules, "procedural")?,
+            materials,
+            material_families: materials_field(modules)?,
             review_try: review.tries,
             review_moments: review.moments,
             review_hud: review.hud,
@@ -345,12 +404,16 @@ impl Manifest {
             (self.models, "models"),
             (self.anim, "anim"),
             (self.ui, "ui"),
+            (self.grass, "grass"),
         ] {
             if on {
                 f.push(name.to_string());
             }
         }
         f.extend(evani_guide::manifest::material_features(self.nature.as_deref(), self.proc.as_deref()));
+        f.extend(evani_guide::manifest::procedural_features(self.procedural.as_deref()));
+        f.extend(self.materials.features());
+        f.extend(self.material_families.iter().map(|m| format!("material-{m}")));
         f
     }
 
@@ -380,18 +443,20 @@ impl Manifest {
             m.physics = None;
             out.push(("physics".to_string(), m));
         }
-        for name in ["net", "xr", "live", "models", "anim", "ui"] {
+        for name in ["net", "xr", "live", "models", "anim", "ui", "grass"] {
             let mut m = self.clone();
             let flag = match name {
                 "net" => &mut m.net,
                 "xr" => &mut m.xr,
                 "models" => {
-                    // No models means no animation either.
+                    // No models means no animation and no catalogue materials either.
                     m.anim = false;
+                    m.materials = evani_guide::materials::Listed::default();
                     &mut m.models
                 }
                 "anim" => &mut m.anim,
                 "ui" => &mut m.ui,
+                "grass" => &mut m.grass,
                 _ => &mut m.live,
             };
             if *flag {
@@ -400,20 +465,38 @@ impl Manifest {
             }
         }
         // The material modules: each part off, then the whole module.
-        for key in ["nature", "proc"] {
-            let parts = if key == "nature" { &self.nature } else { &self.proc };
-            let Some(parts) = parts else { continue };
-            for p in parts {
+        // (The procedural library the same way: each listed category or
+        // asset off, then the whole library.)
+        fn list_of<'a>(m: &'a mut Manifest, key: &str) -> &'a mut Option<Vec<String>> {
+            match key {
+                "nature" => &mut m.nature,
+                "proc" => &mut m.proc,
+                _ => &mut m.procedural,
+            }
+        }
+        for key in ["nature", "proc", "procedural"] {
+            let mut probe = self.clone();
+            let Some(parts) = list_of(&mut probe, key).clone() else { continue };
+            for p in &parts {
                 let mut m = self.clone();
-                let list = if key == "nature" { &mut m.nature } else { &mut m.proc };
-                if let Some(l) = list {
+                if let Some(l) = list_of(&mut m, key) {
                     l.retain(|x| x != p);
                 }
                 out.push((format!("{key}.{p}"), m));
             }
             let mut m = self.clone();
-            *(if key == "nature" { &mut m.nature } else { &mut m.proc }) = None;
+            *list_of(&mut m, key) = None;
             out.push((key.to_string(), m));
+        }
+        if self.materials.is_active() {
+            let mut m = self.clone();
+            m.materials = evani_guide::materials::Listed::default();
+            out.push(("materials".to_string(), m));
+        }
+        for fam in &self.material_families {
+            let mut m = self.clone();
+            m.material_families.retain(|x| x != fam);
+            out.push((format!("material-{fam}"), m));
         }
         out
     }
@@ -429,8 +512,12 @@ impl Manifest {
             models: false,
             anim: false,
             ui: false,
+            grass: false,
             nature: None,
             proc: None,
+            procedural: None,
+            materials: evani_guide::materials::Listed::default(),
+            material_families: Vec::new(),
             ..self.clone()
         }
     }
@@ -726,11 +813,27 @@ pub fn ship_guard(app: &str, s: &BuildSize) -> Result<(), String> {
 
 // ---- building -------------------------------------------------------------------
 
+/// The engine folder: `EVANI_ENGINE_ROOT`, else the pack's `engine/` when
+/// this program runs prebuilt from an engine pack's `tools/bin/`, else the
+/// checkout it was compiled in (engine_pack.rs, docs/ENGINE_PACK.md).
 fn workspace_root() -> PathBuf {
-    let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    here.ancestors()
-        .nth(2)
-        .map_or(here.clone(), Path::to_path_buf)
+    let env = std::env::var_os(engine_pack::ENGINE_ROOT_VAR);
+    let exe = std::env::current_exe().ok();
+    engine_pack::engine_root_from(env.as_deref(), exe.as_deref(), &compiled_root())
+}
+
+/// The checkout this program was compiled in.
+fn compiled_root() -> PathBuf {
+    let here = PathBuf::from(env!("EVANI_COMPILED_DIR"));
+    here.ancestors().nth(2).map_or(here.clone(), Path::to_path_buf)
+}
+
+/// The engine when it was named (`EVANI_ENGINE_ROOT`) or found from an engine
+/// pack, not just the checkout this was compiled in: the guidance commands
+/// then use it instead of the project above the working folder.
+fn explicit_root() -> Option<PathBuf> {
+    let w = workspace_root();
+    (w != compiled_root()).then_some(w)
 }
 
 /// Cargo's target folder: `CARGO_TARGET_DIR` when set (a relative one is
@@ -792,6 +895,13 @@ impl AppDir {
 }
 
 fn load_app(name: &str) -> Result<AppDir, String> {
+    if evani_guide::engine_version::pack_dir_of(&workspace_root()).is_some() {
+        return Err(format!(
+            "{} is an installed engine pack, which is read-only, so its example game `{name}` isn't built here
+  fix: make your own copy with `new-game <id> --app-dir <folder>` and use `--app-dir <folder>/apps/<id>`",
+            workspace_root().display()
+        ));
+    }
     let dir = workspace_root().join("apps").join(name);
     let text = std::fs::read_to_string(dir.join("evani.toml"))
         .map_err(|e| format!("{}: {e}", dir.join("evani.toml").display()))?;
@@ -842,8 +952,20 @@ fn load_app_dir_with(dir: &Path, rules: bool) -> Result<AppDir, String> {
     if !evani_guide::scaffold::valid_id(&manifest.name) {
         return Err(format!("ERROR: {}: name `{}` is not a game id (lowercase letters, digits and single `-`)", dir.join("evani.toml").display(), manifest.name));
     }
+    // A game is built only by the engine it pins (docs/ENGINE_PACK.md 4.4);
+    // `check --app-dir` reports it with the rest of the gate instead.
+    let shown = dir.display().to_string();
+    let arg = format!("--app-dir {shown}");
+    if rules && let Some(e) = evani_guide::engine_version::refuse_other_engine(&workspace_root(), &text, &shown, &arg) {
+        return Err(e);
+    }
     let root = app_dir::workspace_root_of(&dir);
-    app_dir::check_engine(&dir, &root, &workspace_root())?;
+    app_dir::check_engine(&dir, &root, &workspace_root()).map_err(|e| {
+        // The same engine version in another folder (a renamed pack, a game
+        // moved from another PC): relinking is the fix.
+        let same = evani_guide::engine_version::pin(&text).ok().flatten().is_none_or(|v| v == evani_guide::engine_version::running(&workspace_root()));
+        if same { format!("{e}\n  or, if that engine is this version in another folder: `cargo xtask relink {arg}`") } else { e }
+    })?;
     let kit_dir = app_dir::kit_dir(&dir, &root, &manifest.kit, &workspace_root())?;
     Ok(AppDir {
         name: manifest.name.clone(),
@@ -941,11 +1063,21 @@ fn trunk_build(app: &AppDir, variant: &str, m: &Manifest) -> Result<BuildSize, S
         all.extend(app_dir::extra_rustflags(e, &workspace_root(), false).0);
         cmd.env(WASM_RUSTFLAGS_ENV, all.join(" "));
     }
-    let out = cmd.output().map_err(|e| {
+    // Watched: a heartbeat line every minute (a ship build of a big game is
+    // several minutes of rustc), and a stall limit instead of a silent hang.
+    let label = format!("trunk build {} ({variant})", app.name);
+    let out = evani_guide::watch::run_watched_stderr(&mut cmd, &label).map_err(|e| {
         format!("cannot run trunk ({e}); install it with `cargo install trunk --locked`")
     })?;
-    if !out.status.success() {
-        let log = String::from_utf8_lossy(&out.stderr);
+    if let Some(s) = &out.stalled {
+        return Err(format!(
+            "trunk build {variant}: {}\n  fix: {}",
+            evani_guide::watch::stall_what(s),
+            evani_guide::watch::stall_fix(&evani_guide::watch::command_line(&cmd), s)
+        ));
+    }
+    if !out.success() {
+        let log = out.text(); // trunk writes its own errors to stdout
         let tail: Vec<&str> = log.lines().rev().take(25).collect();
         let tail: Vec<&str> = tail.into_iter().rev().collect();
         return Err(format!(
@@ -1071,7 +1203,8 @@ fn print_render_paths(app: &AppDir) {
     }
 }
 
-/// A playground's shipped folder must fit the package cap; prints the total either way.
+/// A game playground's shipped folder must fit the package cap; prints the total either way.
+/// The cap is for games only (`pg::CAP_RULE`): the library (a tool app) and Scenes print their size, uncapped.
 fn playground_size_guard(app: &AppDir) -> Result<(), String> {
     use evani_guide::playground as pg;
     let text = std::fs::read_to_string(app.dir.join("evani.toml")).map_err(|e| e.to_string())?;
@@ -1079,13 +1212,18 @@ fn playground_size_guard(app: &AppDir) -> Result<(), String> {
         return Ok(());
     }
     let dist = app.sizes_dir().join(format!("{}-ship", app.name));
-    println!(
-        "  playground package: {} of {} cap (whole ship folder, uncompressed)",
-        pg::mb(pg::dir_bytes(&dist)),
-        pg::mb(pg::PACKAGE_CAP_BYTES)
-    );
-    if let Some(p) = pg::size_problem(&app.name, &dist) {
-        return Err(format!("{}: ERROR: {}\n  fix: {}", app.name, p.what, p.fix));
+    match pg::uncapped_reason(&app.name, &text) {
+        Some(why) => println!("  package: {} (whole ship folder, uncompressed; {why})", pg::mb(pg::dir_bytes(&dist))),
+        None => {
+            println!(
+                "  playground package: {} of {} cap (whole ship folder, uncompressed)",
+                pg::mb(pg::dir_bytes(&dist)),
+                pg::mb(pg::PACKAGE_CAP_BYTES)
+            );
+            if let Some(p) = pg::size_problem(&app.name, &dist) {
+                return Err(format!("{}: ERROR: {}\n  fix: {}", app.name, p.what, p.fix));
+            }
+        }
     }
     // The runtime is MIT: every package carries its copyright and permission notice.
     pg::write_engine_notice(&workspace_root(), &dist)?;
@@ -1118,6 +1256,28 @@ fn cmd_package_check(dir: &str, app: &str) -> Result<(), String> {
         return Err(format!("{dir}: the publish preflight failed ({failed} check(s))"));
     }
     Ok(())
+}
+
+/// `cargo xtask library build|check` (library.rs): the Evani Library, made from
+/// material-view's ship build.
+fn cmd_library(args: &[String]) -> Result<(), String> {
+    let build = |modules: bool| -> Result<PathBuf, String> {
+        let app = load_app(library::APP)?;
+        build_app(&app, true, modules)?;
+        Ok(app.sizes_dir().join(format!("{}-ship", app.name)))
+    };
+    let guard = |dir: &Path| -> Result<String, String> {
+        let s = measure(dir)?;
+        ship_guard(library::APP, &s)?;
+        Ok(format!(
+            "code download {} gzip (wasm {}, js {}, html {}); ship guard: no live module, no dev-only code",
+            kb(s.total_gz()),
+            kb(s.wasm_gz),
+            kb(s.js_gz),
+            kb(s.html_raw)
+        ))
+    };
+    library::cmd_library(&workspace_root(), args, &library::Tools { build: &build, guard: &guard })
 }
 
 fn cmd_build(app_name: &str, ship: bool, diff: bool) -> Result<(), String> {
@@ -1193,6 +1353,22 @@ fn build_app(app: &AppDir, ship: bool, diff: bool) -> Result<(), String> {
     if std::fs::write(&path, json).is_ok() {
         println!("\nreport: {}", path.display());
     }
+    if app.external.is_some() {
+        pin_after_build(&app.dir)?;
+    }
+    Ok(())
+}
+
+/// A game outside the engine without an `[engine] version` is pinned to the
+/// engine that first builds it (docs/ENGINE_PACK.md 4.4).
+fn pin_after_build(dir: &Path) -> Result<(), String> {
+    let path = dir.join("evani.toml");
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    if evani_guide::engine_version::pin(&text)?.is_none() {
+        let v = evani_guide::engine_version::running(&workspace_root());
+        std::fs::write(&path, evani_guide::engine_version::set_pin(&text, &v)).map_err(|e| format!("{}: {e}", path.display()))?;
+        println!("pinned {} to engine {v} (its first build with this engine)", path.display());
+    }
     Ok(())
 }
 
@@ -1261,7 +1437,7 @@ fn cmd_live(args: &[String]) -> Result<(), String> {
     }
     let port = value("--port").unwrap_or(port);
     let hot = !args.iter().any(|a| a == "--no-hot");
-    run_bridge(&game, &port, hot, &extra)
+    run_bridge(&["--game".into(), game], &port, hot, &extra)
 }
 
 /// `live`'s defaults and extra bridge arguments. `--models [<folder>]` is
@@ -1272,8 +1448,12 @@ fn live_args(args: &[String]) -> (String, String, Vec<String>) {
     let Some(i) = args.iter().position(|a| a == "--models") else {
         return ("sandbox".into(), "8096".into(), Vec::new());
     };
-    let folder = args.get(i + 1).filter(|f| !f.starts_with("--")).cloned().unwrap_or_else(|| ".evani/model".into());
-    let extra = vec!["--session".into(), ".evani/live/model/session.json".into(), "--models".into(), folder];
+    // A read-only engine pack keeps them under EVANI_STATE_DIR (absolute);
+    // a checkout under its own `.evani/` (relative to the engine root).
+    let state = std::env::var_os(evani_guide::STATE_DIR_VAR).filter(|v| !v.is_empty()).map(PathBuf::from);
+    let under = |rel: &str, fallback: &str| state.as_ref().map_or_else(|| fallback.to_string(), |s| s.join(rel).display().to_string());
+    let folder = args.get(i + 1).filter(|f| !f.starts_with("--")).cloned().unwrap_or_else(|| under("model", ".evani/model"));
+    let extra = vec!["--session".into(), under("live/model/session.json", ".evani/live/model/session.json"), "--models".into(), folder];
     ("apps/model-view".into(), "8097".into(), extra)
 }
 
@@ -1283,7 +1463,36 @@ fn live_args(args: &[String]) -> (String, String, Vec<String>) {
 /// gets by default; without it the game is built with Trunk only.
 fn cmd_dev(args: &[String]) -> Result<(), String> {
     let (game, port, hot) = dev_args(args)?;
-    run_bridge(&game, &port, hot, &dev_extra(args))
+    run_bridge(&["--game".into(), game], &port, hot, &dev_extra(args))
+}
+
+/// `cargo xtask live|dev --app-dir <folder> [--port <P>] [--hot|--no-hot]`: the
+/// same `serve` for a game outside the engine folder. The bridge builds it
+/// with Trunk in the game's own workspace and rebuilds it when its sources
+/// change or the page is reloaded (LIVE_API.md 10.5); there is no live code
+/// swapping for it, so `--hot` is accepted and changes nothing.
+fn cmd_live_app_dir(dir: &Path, args: &[String]) -> Result<(), String> {
+    let (port, extra) = live_app_dir_args(args)?;
+    // The bridge runs in the engine folder: give it a path that doesn't depend on that.
+    let dir = std::path::absolute(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    run_bridge(&["--app-dir".into(), dir.display().to_string()], &port, false, &extra)
+}
+
+/// `(port, extra bridge arguments)` for `live|dev --app-dir`: `--port <P>`,
+/// else the next free port from 8096 (as for an in-tree game).
+fn live_app_dir_args(args: &[String]) -> Result<(String, Vec<String>), String> {
+    let mut port = None;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--port" => port = Some(it.next().cloned().ok_or("--port needs a value")?),
+            "--hot" | "--no-hot" => {}
+            "--game" | "--models" => return Err(format!("{a} does not go with --app-dir (the game is the folder; model mode and --game are in-tree only)")),
+            s => return Err(format!("live|dev --app-dir: unknown argument {s}")),
+        }
+    }
+    let extra = if port.is_some() { Vec::new() } else { vec!["--any-port".to_string()] };
+    Ok((port.unwrap_or_else(|| "8096".into()), extra))
 }
 
 /// `dev` without `--port` moves to a free port when 8096 is taken (2.6).
@@ -1354,26 +1563,33 @@ fn cmd_dx_install(args: &[String]) -> Result<(), String> {
     }
 }
 
-fn run_bridge(game: &str, port: &str, hot: bool, extra: &[String]) -> Result<(), String> {
+/// `which`: the bridge's `--game <name>` or `--app-dir <folder>`.
+fn run_bridge(which: &[String], port: &str, hot: bool, extra: &[String]) -> Result<(), String> {
     port.parse::<u16>().map_err(|_| format!("bad --port {port}"))?;
     let root = workspace_root();
-    let status = Command::new(env!("CARGO"))
-        .args(["build", "-j", "4", "-p", "evani-live-bridge"])
-        .current_dir(&root)
-        .status()
-        .map_err(|e| format!("cargo build: {e}"))?;
-    if !status.success() {
-        return Err("evani-live-bridge did not build".into());
-    }
-    let exe = root
-        .join("target")
-        .join("debug")
-        .join(format!("evani-live-bridge{}", std::env::consts::EXE_SUFFIX));
+    let exe_name = format!("evani-live-bridge{}", std::env::consts::EXE_SUFFIX);
+    // An installed engine pack carries the bridge prebuilt and is read-only:
+    // never build into it (docs/ENGINE_PACK.md 2).
+    let exe = match evani_guide::engine_version::pack_dir_of(&root) {
+        Some(pack) => pack.join("tools").join("bin").join(&exe_name),
+        None => {
+            let status = Command::new(env!("CARGO"))
+                .args(["build", "-j", "4", "-p", "evani-live-bridge"])
+                .current_dir(&root)
+                .status()
+                .map_err(|e| format!("cargo build: {e}"))?;
+            if !status.success() {
+                return Err("evani-live-bridge did not build".into());
+            }
+            cargo_target_dir().join("debug").join(&exe_name)
+        }
+    };
     let mut cmd = Command::new(exe);
     cmd.arg("serve")
         .arg("--root")
         .arg(&root)
-        .args(["--port", port, "--game", game])
+        .args(["--port", port])
+        .args(which)
         .args(extra);
     if !hot {
         cmd.arg("--no-hot");
@@ -1393,6 +1609,25 @@ fn run_bridge(game: &str, port: &str, hot: bool, extra: &[String]) -> Result<(),
 /// (`cargo run -p evani-geocheck -- <app> [options]`, see docs/GEOCHECK.md).
 /// Fails when the report has untagged issues or the check could not run.
 fn cmd_geocheck(args: &[String]) -> Result<(), String> {
+    // One model outside any game: `cargo xtask geocheck --model <folder|file>`.
+    if let Some(i) = args.iter().position(|a| a == "--model") {
+        let here = std::env::current_dir().map_err(|e| e.to_string())?;
+        let mut fixed = args.to_vec();
+        if let Some(p) = fixed.get_mut(i + 1) {
+            *p = here.join(&*p).to_string_lossy().into_owned();
+        }
+        let status = Command::new(env!("CARGO"))
+            .args(["run", "-p", "evani-geocheck", "--"])
+            .args(&fixed)
+            .current_dir(workspace_root())
+            .status()
+            .map_err(|e| format!("cargo run -p evani-geocheck: {e}"))?;
+        return match status.code() {
+            Some(0) => Ok(()),
+            Some(1) => Err("geocheck: untagged geometry issues in the model (see .vibedeck/geocheck/model-<id>/report.md)".into()),
+            _ => Err(format!("geocheck could not run ({status})")),
+        };
+    }
     let Some(app) = args.first().filter(|a| !a.starts_with("--")) else {
         return Err(usage());
     };
@@ -1601,12 +1836,13 @@ fn cmd_convert(args: &[String]) -> Result<(), String> {
                     fixed.push(v.clone());
                 }
             }
-            "--out" | "--gate-pairs" | "--calibration" | "--calibration-result" => {
+            "--out" | "--app-dir" | "--gate-pairs" | "--calibration" | "--calibration-result" | "--materials" => {
                 fixed.push(a.clone());
                 if let Some(v) = it.next() {
                     fixed.push(here.join(v).to_string_lossy().into_owned());
                 }
             }
+            "textures" if fixed.is_empty() => fixed.push(a.clone()),
             f if f.starts_with('-') => fixed.push(a.clone()),
             f => fixed.push(here.join(f).to_string_lossy().into_owned()),
         }
@@ -1627,7 +1863,8 @@ fn cmd_convert(args: &[String]) -> Result<(), String> {
 
 fn usage() -> String {
     format!(
-        "usage:\n  cargo xtask build <app> [--ship] [--no-diff]\n  cargo xtask build|features|render-paths|manifest|check|geocheck|netlog|review|critic|size-report --app-dir <game app folder> [..]   (a game outside the engine folder)\n  cargo xtask render-paths <app>\n  cargo xtask sizes [<app>]\n  cargo xtask features <app> [--ship]\n  cargo xtask live [--game <app>] [--port <P>] [--no-hot] [--models [<folder>]]\n  cargo xtask dev [--hot] <app> [--port <P>]\n  cargo xtask dx-install [--print]\n  cargo xtask geocheck <app> [--no-render] [--port 8095] [--title-s 40] [--race-s 30] [--every 6] [--highlights 40] [--keep-raw] [--zfight [--report-only] [--sample N]]\n  cargo xtask package-check <folder> [<app>]\n  cargo xtask convert <file.glb|.gltf|.blend|<name>.<tier>.glb> [--id <id>] [--look <look> [--snap-palette]] [--min-distance <m>] [--tiers low,medium,high,ultra] [--clip-error <m>] [--out <folder>] [--keep-work]\n  cargo xtask blender-addon [--test]   (builds the Blender add-on zip under target/blender-addon; --test runs it in a headless Blender)\n  cargo xtask manifest <app>   (writes assets/models/stream.json: tier, priority, group per file)\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+        "usage:\n  cargo xtask build <app> [--ship] [--no-diff]\n  cargo xtask build|features|render-paths|manifest|check|geocheck|netlog|smoothness|review|critic|size-report|publish|relink|upgrade-engine --app-dir <game app folder> [..]   (a game outside the engine folder)\n  cargo xtask render-paths <app>\n  cargo xtask sizes [<app>]\n  cargo xtask features <app> [--ship]\n  cargo xtask live [--game <app>] [--port <P>] [--no-hot] [--models [<folder>]]\n  cargo xtask dev [--hot] <app> [--port <P>]\n  cargo xtask live|dev --app-dir <game app folder> [--port <P>]   (a game outside the engine folder: Trunk build, rebuilt when its sources change or the page reloads)\n  cargo xtask dx-install [--print]\n  cargo xtask geocheck <app> [--no-render] [--port 8095] [--title-s 40] [--race-s 30] [--every 6] [--highlights 40] [--keep-raw] [--zfight [--report-only] [--sample N]]\n  cargo xtask package-check <folder> [<app>]\n  cargo xtask convert <file.glb|.gltf|.blend|<name>.<tier>.glb> [--id <id>] [--look <look> [--snap-palette]] [--min-distance <m>] [--tiers low,medium,high,ultra] [--clip-error <m>] [--materials <map.json>] [--out <folder>] [--keep-work]\n  cargo xtask blender-addon [--test]   (builds the Blender add-on zip under target/blender-addon; --test runs it in a headless Blender)\n  cargo xtask manifest <app>   (writes assets/models/stream.json: tier, priority, group per file)\n  cargo xtask convert-textures <layers.json> --out <app>/assets | --app-dir <app> [--force]   (kit-textures layers; unchanged layers are skipped: Kaiser mips, Toksvig, AH + NRA, ASTC/BC7/RGBA KTX2 per tier size, kit-textures.json)\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+        construct::usage(),
         netlog::usage(),
         bytes::usage(),
         importance::usage(),
@@ -1636,9 +1873,14 @@ fn usage() -> String {
         model_import::usage(),
         size_report::usage(),
         publish::usage(),
+        commons::usage(),
+        library::usage(),
         bench::usage(),
+        smoothness::usage(),
         review::usage(),
-        critic::usage()
+        critic::usage(),
+        engine_pack::usage(),
+        engines::usage()
     )
 }
 
@@ -1673,15 +1915,23 @@ fn run(args: &[String]) -> Result<(), String> {
         Some("dx-install") => cmd_dx_install(&args[1..]),
         Some("geocheck") => cmd_geocheck(&args[1..]),
         Some("convert") => cmd_convert(&args[1..]),
+        Some("convert-textures") => cmd_convert(&[&["textures".to_string()][..], &args[1..]].concat()),
         Some("blender-addon") => blender_addon::cmd_blender_addon(&args[1..], &workspace_root()),
         Some("size-report") => size_report::cmd_size_report(&args[1..]),
         Some("publish") => publish::cmd_publish(&args[1..]),
         Some("model-import") => model_import::cmd_model_import(&args[1..], &workspace_root()),
+        Some("style-bake") => style_bake::cmd_style_bake(&args[1..]),
         Some("manifest") => cmd_manifest(positional.first().ok_or_else(usage)?),
+        Some("model") => construct::cmd_model(args, &workspace_root(), &cmd_manifest),
         Some("netlog") => netlog::cmd_netlog(&args[1..]),
+        Some("smoothness") => smoothness::cmd_smoothness(&args[1..]),
         Some("bytes") => bytes::cmd_bytes(&args[1..]),
         Some("importance") => importance::cmd_importance(&args[1..]),
         Some("fonts") => fonts::cmd_fonts(&args[1..], &workspace_root()),
+        Some("engine-pack") => engine_pack::cmd_engine_pack(&workspace_root(), &args[1..]),
+        Some("commons") => commons::cmd_commons(&workspace_root(), &args[1..]),
+        Some("library") => cmd_library(&args[1..]),
+        Some("engines") => engines::cmd_engines(&workspace_root(), &args[1..]),
         Some("sizes") => cmd_sizes(positional.first().map_or("sandbox", |s| s.as_str())),
         Some("features") => {
             let app = load_app(positional.first().ok_or_else(usage)?)?;
@@ -1702,8 +1952,46 @@ fn run(args: &[String]) -> Result<(), String> {
 fn run_app_dir(dir: &Path, args: &[String]) -> Result<(), String> {
     let flag = |f: &str| args.iter().any(|a| a == f);
     let cmd = args.first().map(String::as_str);
+    // Texture layers (W3d): the converter reads the game's layers.json and
+    // writes its assets; an explicit layers.json may follow.
+    if cmd == Some("convert-textures") {
+        let abs = if dir.is_absolute() { dir.to_path_buf() } else { std::env::current_dir().map_err(|e| e.to_string())?.join(dir) };
+        let mut a = vec!["textures".to_string(), "--app-dir".to_string(), abs.to_string_lossy().into_owned()];
+        a.extend(args[1..].iter().cloned());
+        return cmd_convert(&a);
+    }
     if let Some(e) = app_dir::positionals(&args[args.len().min(1)..], app_dir::value_options(cmd.unwrap_or(""))).first() {
         return Err(format!("`{e}`: with --app-dir the game is the folder; give no game id"));
+    }
+    // Engine versions: these don't load the game (its engine link may be
+    // the thing being fixed). The live bridge resolves the game itself.
+    match cmd {
+        Some("live" | "dev") => return cmd_live_app_dir(dir, &args[1..]),
+        Some("relink") => return engines::cmd_relink(&workspace_root(), dir),
+        Some("upgrade-engine") => {
+            let root = workspace_root();
+            let shot = start_view::ShotOpts {
+                shot_ms: match engines::value(args, "--shot-ms")? {
+                    Some(v) => v.parse().ok().filter(|ms| (500..=120_000).contains(ms)).ok_or_else(|| format!("--shot-ms {v}: milliseconds, 500 to 120000"))?,
+                    None => 5000,
+                },
+                chrome: engines::value(args, "--chrome")?,
+            };
+            let build_and_check = |copy: &Path| -> Result<PathBuf, String> {
+                build_app(&load_app_dir(copy)?, true, false)?;
+                let app = load_app_dir_with(copy, false)?;
+                let ext = app.external.as_ref().ok_or("upgrade-engine: not a game outside the engine")?;
+                let game = evani_guide::check::Game::outside(&app.name, &app.dir, &ext.root, &ext.kit_dir);
+                match evani_guide::cli::check_game(&workspace_root(), &game, &[]) {
+                    0 => Ok(app.sizes_dir().join(format!("{}-ship", app.name))),
+                    _ => Err("`check` on the copy is not clean (the report is above)".into()),
+                }
+            };
+            let shoot = |dist: &Path, id: &str, out: &Path| start_view::capture(&root, dist, id, out, &shot);
+            let tools = engines::UpgradeTools { build_and_check: &build_and_check, build_with_pack: &engines::build_with_pack, shoot: &shoot };
+            return engines::cmd_upgrade(&root, dir, &args[1..], &tools);
+        }
+        _ => {}
     }
     if cmd == Some("check") {
         // A folder that can't be read as a game is the gate's first ERROR.
@@ -1737,23 +2025,42 @@ fn run_app_dir(dir: &Path, args: &[String]) -> Result<(), String> {
         Some("manifest") => manifest_in(&app.dir, &app.dir.display().to_string()),
         Some("geocheck") => geocheck_app_dir(&app, &args[1..]),
         Some("netlog") => netlog::cmd_netlog_app(&app, &args[1..]),
+        Some("smoothness") => smoothness::cmd_smoothness_app(&app, &args[1..]),
         Some("review") => review::cmd_review_app(&app, &args[1..]),
         Some("critic") => critic::cmd_critic_app(&app, &args[1..]),
         Some("size-report") => size_report::cmd_size_report_app(&app, &args[1..]),
-        Some(other) => Err(format!("`cargo xtask {other}` does not take --app-dir yet; it takes: build (--ship), features, render-paths, manifest, check, geocheck, netlog, review, critic, size-report")),
+        Some("publish") => publish::cmd_publish_app(&app, &args[1..]),
+        Some(other) => Err(format!("`cargo xtask {other}` does not take --app-dir yet; it takes: build (--ship), features, render-paths, manifest, check, geocheck, netlog, smoothness, review, critic, size-report, convert-textures, publish, live, dev, relink, upgrade-engine")),
         None => Err(usage()),
     }
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut args: Vec<String> = std::env::args().skip(1).collect();
+    // Run as Cargo's external subcommand (`cargo xtask ...` finds the pack's
+    // `cargo-xtask`, which starts this program as `evani xtask ...`).
+    if args.first().is_some_and(|a| a == "xtask") {
+        args.remove(0);
+    }
+    // `evani --version` (or -V): the engine pack version this command belongs
+    // to, the same pin `new-game` reports as "pinned to engine <v>".
+    if matches!(args.first().map(String::as_str), Some("--version" | "-V")) {
+        println!("{}", evani_guide::engine_version::version_line(&workspace_root()));
+        return ExitCode::SUCCESS;
+    }
     // The AI guidance commands live in evani-guide (shared with its small
     // binary, which the Claude Code Stop hook runs).
     // `check --app-dir` is resolved here (the game's workspace, kit and
     // engine, as for build), then runs evani-guide's check on that game.
+    // `doctor --requirements`: the build requirements checker (the same code
+    // as the pack's prebuilt evani-reqcheck; docs/ENGINE_PACK.md).
+    if args.first().is_some_and(|a| a == "doctor") && args.iter().any(|a| a == "--requirements") {
+        let rest: Vec<String> = args[1..].iter().filter(|a| *a != "--requirements").cloned().collect();
+        std::process::exit(evani_reqcheck::cli(&rest));
+    }
     let check_app_dir = args.first().is_some_and(|a| a == "check") && app_dir::has_arg(&args);
     if !check_app_dir && matches!(args.first().map(String::as_str), Some("init-ai" | "doctor" | "check" | "new-game" | "catalog" | "ai-eval")) {
-        std::process::exit(evani_guide::cli::run(&args));
+        std::process::exit(evani_guide::cli::run_in(explicit_root().as_deref(), &args));
     }
     match run(&args) {
         Ok(()) => ExitCode::SUCCESS,
@@ -1877,6 +2184,134 @@ mod tests {
         assert_eq!(js_without_func_numbers(b"__wasm_bindgen_func_elem_7_3"), js_without_func_numbers(b"__wasm_bindgen_func_elem_918_3"));
     }
 
+    /// One plain HTTP GET to the live bridge: `(status line, body)`.
+    fn http_get(port: u16, path: &str) -> Option<(String, String)> {
+        use std::io::{Read, Write};
+        let mut s = std::net::TcpStream::connect(("127.0.0.1", port)).ok()?;
+        s.set_read_timeout(Some(std::time::Duration::from_secs(30))).ok()?;
+        write!(s, "GET {path} HTTP/1.1\r\nHost: localhost:{port}\r\nConnection: close\r\n\r\n").ok()?;
+        let mut raw = Vec::new();
+        s.read_to_end(&mut raw).ok()?;
+        let text = String::from_utf8_lossy(&raw).into_owned();
+        let (head, body) = text.split_once("\r\n\r\n")?;
+        Some((head.lines().next()?.to_string(), body.to_string()))
+    }
+
+    /// The bridge's build phase (`phase`) from `/live/status`.
+    fn build_phase(port: u16) -> Option<String> {
+        let (_, body) = http_get(port, "/live/status")?;
+        let v: serde_json::Value = serde_json::from_str(&body).ok()?;
+        v["phase"].as_str().map(str::to_string)
+    }
+
+    /// Wait (until `secs` pass) for the bridge's build phase to be `want`.
+    fn wait_phase(port: u16, want: &str, secs: u64) -> bool {
+        let end = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+        while std::time::Instant::now() < end {
+            if build_phase(port).as_deref() == Some(want) {
+                return true;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        false
+    }
+
+    /// The whole of the request-10 fix against the real bridge and Trunk:
+    /// `serve --app-dir` on a throwaway game outside the engine folder builds it,
+    /// rebuilds it after a source edit, and rebuilds on a page reload that finds
+    /// the build out of date. Three debug wasm builds (minutes). Run by hand:
+    /// `EVANI_APPDIR_TEST_DIR=<scratch>\evani-appdir-test cargo test -p evani-xtask -- --ignored app_dir_live_rebuilds`.
+    #[test]
+    #[ignore = "real Trunk builds (minutes); run by hand for the --app-dir live rebuild proof"]
+    fn app_dir_live_rebuilds_on_change_and_reload() {
+        let engine = workspace_root();
+        let base = std::env::var_os("EVANI_APPDIR_TEST_DIR").map_or_else(std::env::temp_dir, PathBuf::from);
+        let game_root = base.join(format!("live-rebuild-{}", std::process::id()));
+        let app_dir = out_of_tree_fixture(&engine, "match-3", &game_root);
+        assert!(!app_dir.starts_with(&engine), "the game must live outside the engine folder");
+        // The bridge logs outside the game folder: a file it writes there would count as a source change.
+        let log_path = base.join(format!("{}.bridge.log", game_root.file_name().unwrap().to_string_lossy()));
+        let status = Command::new(env!("CARGO")).args(["build", "-p", "evani-live-bridge"]).current_dir(&engine).status().unwrap();
+        assert!(status.success());
+        let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| engine.join("target"), PathBuf::from);
+        let exe = target.join("debug").join(format!("evani-live-bridge{}", std::env::consts::EXE_SUFFIX));
+        let log = std::fs::File::create(&log_path).unwrap();
+        let mut child = Command::new(exe)
+            .args(["serve", "--root"])
+            .arg(&engine)
+            .args(["--port", "8230", "--any-port", "--app-dir"])
+            .arg(&app_dir)
+            .current_dir(&engine)
+            .stdin(std::process::Stdio::null())
+            .stderr(log)
+            .spawn()
+            .unwrap();
+        let unique = game_root.file_name().unwrap().to_string_lossy().into_owned();
+        let port = (|| {
+            let end = std::time::Instant::now() + std::time::Duration::from_secs(60);
+            while std::time::Instant::now() < end {
+                for p in std::iter::once(8230).chain(8098..8140) {
+                    if http_get(p, "/live/status").is_some_and(|(_, b)| b.contains("\"app_dir\"") && b.contains(&unique)) {
+                        return Some(p);
+                    }
+                }
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+            None
+        })();
+        let proof = std::panic::catch_unwind(|| {
+            let port = port.expect("the bridge answered /live/status for this game");
+            // 1. The first build.
+            assert!(wait_phase(port, "idle", 1500), "first build finished");
+            // Cargo may rewrite the fixture's Cargo.lock during that build: one more quick rebuild, then it rests.
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            assert!(wait_phase(port, "idle", 1500), "the game settled");
+            let (_, first) = http_get(port, "/").unwrap();
+            assert!(first.contains(".wasm") || first.contains(".js"), "the built page is served: {first}");
+            let wasm = |dir: &Path| -> Vec<u8> {
+                let mut v: Vec<_> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "wasm")).collect();
+                v.sort();
+                std::fs::read(v.first().expect("a wasm in dist")).unwrap()
+            };
+            let dist = game_root.join("target").join("evani-live").join("match-3").join("dist");
+            let wasm_before = wasm(&dist);
+            // 2. An edit to the app's Rust source: the watcher rebuilds (building, then idle) with no request.
+            let main_rs = app_dir.join("src").join("main.rs");
+            let src = std::fs::read_to_string(&main_rs).unwrap();
+            let marker = |n: u32| src.replacen("evani_core::web::run(build_app());", &format!("evani_core::web::run(build_app());\n    let _ = core::hint::black_box(\"evani-rebuild-probe-{n}\");"), 1);
+            assert_ne!(marker(1), src, "the edit applies");
+            std::fs::write(&main_rs, marker(1)).unwrap();
+            assert!(wait_phase(port, "building", 60), "a source edit started a rebuild without any request");
+            assert!(wait_phase(port, "idle", 1500), "the rebuild finished");
+            let wasm_after = wasm(&dist);
+            assert_ne!(wasm_before, wasm_after, "the served build has the edit");
+            assert!(wasm_after.windows(21).any(|w| w == b"evani-rebuild-probe-1"), "the edit is in the served wasm");
+            // 3. An edit, then a page reload straight away: the reload starts the rebuild and gets the holding page.
+            std::fs::write(&main_rs, marker(2)).unwrap();
+            let (status, held) = http_get(port, "/").unwrap();
+            assert!(status.contains("200"), "{status}");
+            assert!(held.contains("Building the game"), "the reload found the build stale and rebuilt: {held}");
+            assert!(wait_phase(port, "idle", 1500), "the reload's rebuild finished");
+            assert!(wasm(&dist).windows(21).any(|w| w == b"evani-rebuild-probe-2"), "the reload's build has the second edit");
+            // 4. Nothing changed: no further build.
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            assert_eq!(build_phase(port).as_deref(), Some("idle"), "an unchanged game is left alone");
+        });
+        // The bridge and the Trunk and cargo under it: the whole tree, by the bridge's PID.
+        let _ = Command::new("taskkill").args(["/T", "/F", "/PID", &child.id().to_string()]).output();
+        let _ = child.kill();
+        let _ = child.wait();
+        if proof.is_err() {
+            eprintln!("bridge log:\n{}", std::fs::read_to_string(&log_path).unwrap_or_default());
+        }
+        if proof.is_ok() {
+            let _ = std::fs::remove_dir_all(&game_root);
+        } else {
+            eprintln!("the game and its bridge.log are kept in {}, the log is {}", game_root.display(), log_path.display());
+        }
+        proof.unwrap();
+    }
+
     /// The same shipped game built inside (`apps/match-3`) and outside the
     /// engine folder (`--app-dir`, laid out as `apps/match-3` in its own
     /// workspace) ships the same code. Not byte for byte: Cargo hashes a path
@@ -1939,7 +2374,7 @@ mod tests {
         // A game id may not be given beside --app-dir; unsupported commands say so.
         let a = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
         assert!(run(&a(&["build", "match-3", "--app-dir", &app_dir.to_string_lossy()])).unwrap_err().contains("give no game id"));
-        assert!(run(&a(&["publish", "--app-dir", &app_dir.to_string_lossy()])).unwrap_err().contains("does not take --app-dir yet"));
+        assert!(run(&a(&["bench", "--app-dir", &app_dir.to_string_lossy()])).unwrap_err().contains("does not take --app-dir yet"));
         run(&a(&["features", "--ship", "--app-dir", &app_dir.to_string_lossy()])).unwrap();
         // check, geocheck and netlog take it; option values are not game ids.
         let dir = app_dir.to_string_lossy().into_owned();
@@ -2066,6 +2501,41 @@ live = true
     }
 
     #[test]
+    fn material_families_map_to_features_and_sizes() {
+        let toml = "name = \"v\"\nkit = \"k\"\nlook = \"l\"\n[modules]\nmaterials = [\"layers\", \"nature\", \"layers\"]\n";
+        let m = Manifest::parse(toml).unwrap();
+        assert_eq!(m.material_families, ["layers", "nature"], "duplicates fold");
+        assert_eq!(m.features(), ["material-layers", "material-nature"]);
+        let names: Vec<String> = m.without_each().into_iter().map(|(n, _)| n).collect();
+        assert_eq!(names, ["material-layers", "material-nature"]);
+        assert!(m.base().material_families.is_empty());
+        let none = Manifest::parse(SANDBOX).unwrap();
+        assert!(none.material_families.is_empty(), "a game that lists none ships none");
+        let bad = Manifest::parse("name = \"v\"\nkit = \"k\"\nlook = \"l\"\n[modules]\nmaterials = [\"marble\"]\n");
+        assert!(bad.unwrap_err().contains("unknown material family `marble`"));
+        assert!(Manifest::parse("name = \"v\"\nkit = \"k\"\nlook = \"l\"\n[modules]\nmaterials = true\n").is_err());
+    }
+
+    /// Every game's `[modules] materials` names a family the build knows, and
+    /// each family has its `material-<family>` feature in the viewer app (the
+    /// studio's `studio` was listed before the build knew it: only the ship
+    /// build caught it).
+    #[test]
+    fn every_listed_material_family_is_known_and_has_its_feature() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let viewer = std::fs::read_to_string(root.join("apps/material-view/Cargo.toml")).unwrap();
+        for f in MATERIAL_FAMILIES {
+            assert!(viewer.contains(&format!("\nmaterial-{f} = ")), "apps/material-view has no `material-{f}` feature");
+        }
+        for e in std::fs::read_dir(root.join("apps")).unwrap().flatten() {
+            let Ok(toml) = std::fs::read_to_string(e.path().join("evani.toml")) else { continue };
+            if let Err(err) = Manifest::parse(&toml) {
+                assert!(!err.contains("material family"), "{}: {err}", e.path().display());
+            }
+        }
+    }
+
+    #[test]
     fn maps_manifest_to_features() {
         let m = Manifest::parse(SANDBOX).unwrap();
         assert_eq!(
@@ -2116,6 +2586,49 @@ live = true
         assert!(all.base().features().is_empty());
         // The ship build keeps them (only `live` is dev-only).
         assert_eq!(all.clone().ship().features(), ["models", "anim", "ui"]);
+    }
+
+    #[test]
+    fn maps_materials_to_features() {
+        let with = |mods: &str| format!("name = \"g\"
+kit = \"k\"
+look = \"basic\"
+{mods}
+");
+        // A game listing `cloth` gets the recipe stage's cloth alone (weave,
+        // patterns, sheen and fuzz since B4-P3b), no layers family, no conditions.
+        let m = Manifest::parse(&with("[materials]
+recipes = [\"cloth\"]")).unwrap();
+        assert_eq!(m.features(), ["models", "material-recipes", "recipe-cloth"]);
+        assert!(!m.features().iter().any(|f| f.starts_with("cond-")));
+        // Recipes the new crate serves, with conditions: `models` comes first (they ride in models).
+        let m = Manifest::parse(&with("[modules]
+ui = true
+[materials]
+recipes = [\"wood\", \"fur\", \"skin\"]
+conditions = [\"wet\", \"snow\"]")).unwrap();
+        assert_eq!(m.features(), ["models", "ui", "material-recipes", "recipe-wood", "recipe-fur", "cond-wet", "cond-snow", "char-materials"]);
+        // Each variant is one switch: materials off keeps models; models off drops materials too.
+        let names: Vec<String> = m.without_each().into_iter().map(|(n, _)| n).collect();
+        assert_eq!(names, ["models", "ui", "materials"]);
+        let all = m.without_each();
+        assert_eq!(all[0].1.features(), ["ui"], "no models means no materials");
+        assert_eq!(all[2].1.features(), ["models", "ui"]);
+        assert!(m.base().features().is_empty());
+        // The ship build keeps them.
+        assert_eq!(m.clone().ship().features(), m.features());
+        // Nothing listed: nothing on.
+        assert!(Manifest::parse(&with("[materials]
+recipes = []")).unwrap().features().is_empty());
+        // An unknown recipe or condition stops the build, naming what is allowed.
+        let e = Manifest::parse(&with("[materials]
+recipes = [\"woood\"]")).unwrap_err();
+        assert!(e.contains("woood") && e.contains("not a recipe"), "{e}");
+        let e = Manifest::parse(&with("[materials]
+conditions = [\"hail\"]")).unwrap_err();
+        assert!(e.contains("hail") && e.contains("not a condition"), "{e}");
+        assert!(Manifest::parse(&with("[materials]
+styles = []")).is_err());
     }
 
     #[test]
@@ -2344,6 +2857,25 @@ evani-look-basic = "1"
         // A free port when 8096 is taken, unless a port was asked for.
         assert_eq!(dev_extra(&a("--hot kart-racer")), a("--any-port"));
         assert!(dev_extra(&a("sandbox --port 8160")).is_empty());
+    }
+
+    #[test]
+    fn live_and_dev_take_app_dir() {
+        let a = |s: &str| s.split_whitespace().map(String::from).collect::<Vec<_>>();
+        // A free port when 8096 is taken, unless one was asked for; --hot is accepted.
+        assert_eq!(live_app_dir_args(&a("")).unwrap(), ("8096".into(), a("--any-port")));
+        assert_eq!(live_app_dir_args(&a("--hot")).unwrap(), ("8096".into(), a("--any-port")));
+        assert_eq!(live_app_dir_args(&a("--port 8160 --no-hot")).unwrap(), ("8160".into(), Vec::new()));
+        assert!(live_app_dir_args(&a("--port")).is_err());
+        assert!(live_app_dir_args(&a("--game sandbox")).unwrap_err().contains("does not go with --app-dir"));
+        assert!(live_app_dir_args(&a("--models")).is_err());
+        assert!(live_app_dir_args(&a("sandbox")).unwrap_err().contains("unknown argument"));
+        // The launcher accepts the command; a game id beside the folder is refused as for the others.
+        let dir = std::env::temp_dir().join("evani-no-such-game");
+        let d = dir.to_string_lossy().into_owned();
+        assert!(run(&a(&format!("live sandbox --app-dir {d}"))).unwrap_err().contains("give no game id"));
+        assert!(run(&a(&format!("dev --hot sandbox --app-dir {d}"))).unwrap_err().contains("give no game id"));
+        assert!(!run(&a(&format!("live --port 8160 --app-dir {d}"))).unwrap_err().contains("give no game id"), "--port's value is not a game id");
     }
 
     #[test]

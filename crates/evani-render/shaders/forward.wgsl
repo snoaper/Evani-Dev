@@ -120,6 +120,15 @@ fn blob_vis(world: vec3<f32>, n: vec3<f32>) -> f32 {
         return 1.0;
     }
     var occ = 0.0;
+    // Without a shadow map a blob that carries its object's height
+    // (`RenderWorld::draw_blob_cast`: w = radius + 16 * height in 5 cm
+    // steps) also casts: the disc swept away from the sun over the length
+    // the object's shadow would have, fading along it. With a shadow map
+    // only the disc stays (the map casts).
+    let sun = frame.light_dir.xyz;
+    let flat_sun = length(sun.xz);
+    let cast_on = frame.shadow.x < 0.5 && flat_sun > 0.02;
+    let away = -sun.xz / max(flat_sun, 1e-4);
     for (var i = 0u; i < count; i = i + 1u) {
         let b = frame.blobs[i];
         let h = world.y - b.y;
@@ -127,14 +136,19 @@ fn blob_vis(world: vec3<f32>, n: vec3<f32>) -> f32 {
         if (h < -0.25 || h > 0.3) {
             continue;
         }
-        let r = max(b.w, 1e-3);
+        let k = floor(b.w / 16.0);
+        let r = max(b.w - 16.0 * k, 1e-3);
+        let len = select(0.0, min(k * 0.05 * flat_sun / max(sun.y, 0.25), 8.0), cast_on);
         let dxz = world.xz - b.xz;
-        let d2 = dot(dxz, dxz);
-        if (d2 >= r * r) {
+        let t = clamp(dot(dxz, away) / max(len, 1e-4), 0.0, 1.0) * select(0.0, 1.0, len > 0.0);
+        let q = dxz - away * (len * t);
+        let rr = r * (1.0 - 0.3 * t);
+        let d2 = dot(q, q);
+        if (d2 >= rr * rr) {
             continue;
         }
-        let d = sqrt(d2) / r;
-        let o = (1.0 - smoothstep(0.45, 1.0, d)) * (1.0 - smoothstep(0.04, 0.3, h));
+        let d = sqrt(d2) / rr;
+        let o = (1.0 - smoothstep(0.45, 1.0, d)) * (1.0 - smoothstep(0.04, 0.3, h)) * (1.0 - 0.45 * t);
         occ = max(occ, o);
     }
     return 1.0 - occ * up * frame.blob_info.y;

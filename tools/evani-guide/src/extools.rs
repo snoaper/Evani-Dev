@@ -109,13 +109,46 @@ pub fn pin(name: &str) -> Option<&'static Pin> {
     PINS.iter().find(|p| p.name == name)
 }
 
+/// Set by Evani.App to an engine pack's `tools/convert` folder: the pinned
+/// tools are read from there instead of `<root>/.evani/bin`
+/// (docs/ENGINE_PACK.md).
+pub const TOOLS_DIR_VAR: &str = "EVANI_TOOLS_DIR";
+
 pub fn bin_dir(root: &Path) -> PathBuf {
-    root.join(BIN_DIR)
+    bin_dir_from(root, std::env::var_os(TOOLS_DIR_VAR).as_deref())
 }
 
-/// The program's path inside `.evani/bin/` (it may not exist).
+/// [`bin_dir`] with the variable's value given.
+pub fn bin_dir_from(root: &Path, var: Option<&std::ffi::OsStr>) -> PathBuf {
+    match var.filter(|v| !v.is_empty()) {
+        Some(v) => PathBuf::from(v),
+        None => root.join(BIN_DIR),
+    }
+}
+
+/// Where an optional tool (Blender) goes when the engine is an installed
+/// pack: the pack's own `tools/convert` is read-only and never carries it
+/// (GPL, about 400 MB), so `doctor --fix --blender` puts the pinned download
+/// in the per-user `<EVANI_STATE_DIR>/tools/` (docs/ENGINE_PACK.md 4.11).
+pub const OPTIONAL_DIR: &str = "tools";
+
+/// The folder `p` is installed in: [`bin_dir`], except an optional tool
+/// while the pack's tools folder is in use (`EVANI_TOOLS_DIR`).
+pub fn dir_for(root: &Path, p: &Pin) -> PathBuf {
+    dir_for_from(root, p, std::env::var_os(TOOLS_DIR_VAR).as_deref(), std::env::var_os(crate::STATE_DIR_VAR).as_deref())
+}
+
+/// [`dir_for`] with the variables' values given.
+pub fn dir_for_from(root: &Path, p: &Pin, tools: Option<&std::ffi::OsStr>, state: Option<&std::ffi::OsStr>) -> PathBuf {
+    match tools.filter(|v| !v.is_empty()) {
+        Some(_) if p.optional => crate::state_dir_from(root, state).join(OPTIONAL_DIR),
+        _ => bin_dir_from(root, tools),
+    }
+}
+
+/// The program's path inside its tools folder (it may not exist).
 pub fn exe_path(root: &Path, p: &Pin) -> PathBuf {
-    bin_dir(root).join(p.dir).join(p.exe)
+    dir_for(root, p).join(p.dir).join(p.exe)
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -127,8 +160,8 @@ fn sha256_file(p: &Path) -> Result<String, String> {
     std::fs::read(p).map(|b| sha256_hex(&b)).map_err(|e| format!("{}: {e}", p.display()))
 }
 
-fn read_record(root: &Path) -> Value {
-    std::fs::read_to_string(bin_dir(root).join(RECORD)).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_else(|| json!({}))
+fn read_record(dir: &Path) -> Value {
+    std::fs::read_to_string(dir.join(RECORD)).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_else(|| json!({}))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -145,7 +178,7 @@ pub fn state(root: &Path, p: &Pin) -> ToolState {
     if !exe.is_file() {
         return ToolState::Missing;
     }
-    let rec = read_record(root);
+    let rec = read_record(&dir_for(root, p));
     let r = &rec[p.name];
     if r["version"].as_str() != Some(p.version) {
         return ToolState::Changed(format!("installed {} is not the pinned {}", r["version"].as_str().unwrap_or("(unrecorded)"), p.version));
@@ -163,7 +196,7 @@ pub fn locate(root: &Path, name: &str) -> Result<PathBuf, String> {
     match state(root, p) {
         ToolState::Current => Ok(exe_path(root, p)),
         ToolState::Missing => {
-            let fix = if p.optional { format!("fix: run `cargo xtask doctor --fix --{}` (installs {} {} into .evani/bin)", p.name, p.name, p.version) } else { FIX.to_string() };
+            let fix = if p.optional { format!("fix: run `cargo xtask doctor --fix --{}` (downloads the pinned {} {}, checks its SHA-256 and installs it into {})", p.name, p.name, p.version, dir_for(root, p).display()) } else { FIX.to_string() };
             Err(format!("{} {} is not installed ({} missing)\n{fix}", p.name, p.version, exe_path(root, p).display()))
         }
         ToolState::Changed(why) => Err(format!("{} in .evani/bin is not the pinned version: {why}\n{FIX}", p.name)),
@@ -218,9 +251,9 @@ fn npm() -> &'static str {
 /// Install one pin (download, check, unpack, record).
 pub fn install_one(root: &Path, p: &Pin) -> Result<(), String> {
     if !cfg!(all(windows, target_arch = "x86_64")) && p.source != Source::Npm {
-        return Err(format!("{}: no pinned download for this platform yet (only Windows x64); install {} {} yourself into {}", p.name, p.name, p.version, bin_dir(root).join(p.dir).display()));
+        return Err(format!("{}: no pinned download for this platform yet (only Windows x64); install {} {} yourself into {}", p.name, p.name, p.version, dir_for(root, p).join(p.dir).display()));
     }
-    let bin = bin_dir(root);
+    let bin = dir_for(root, p);
     let dl = bin.join("downloads");
     std::fs::create_dir_all(&dl).map_err(|e| e.to_string())?;
     let dir = bin.join(p.dir);
@@ -268,7 +301,7 @@ pub fn install_one(root: &Path, p: &Pin) -> Result<(), String> {
     if !exe.is_file() {
         return Err(format!("{}: installed, but {} is not there", p.name, exe.display()));
     }
-    let mut rec = read_record(root);
+    let mut rec = read_record(&bin);
     rec[p.name] = json!({
         "version": p.version,
         "licence": p.licence,
@@ -309,6 +342,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn in_a_pack_blender_goes_to_the_per_user_state_folder() {
+        let root = Path::new("/pack/engine");
+        let (b, g) = (pin("blender").unwrap(), pin("gltfpack").unwrap());
+        let tools = Some(std::ffi::OsStr::new("/pack/tools/convert"));
+        let state = Some(std::ffi::OsStr::new("/data/state"));
+        // A pack: the bundled helpers from the read-only pack, Blender from the user's state.
+        assert_eq!(dir_for_from(root, g, tools, state), PathBuf::from("/pack/tools/convert"));
+        assert_eq!(dir_for_from(root, b, tools, state), PathBuf::from("/data/state").join(OPTIONAL_DIR));
+        // A checkout: everything in .evani/bin as before.
+        assert_eq!(dir_for_from(root, b, None, state), root.join(BIN_DIR));
+        assert_eq!(dir_for_from(root, g, None, None), root.join(BIN_DIR));
+    }
+
+    #[test]
     fn missing_tool_names_the_fix() {
         let r = crate::testutil::temp_root("extools");
         let e = locate(&r, "gltfpack").unwrap_err();
@@ -340,5 +387,13 @@ mod tests {
                 _ => assert!(p.sha256.len() == 64 && p.url.contains(p.version), "{}", p.name),
             }
         }
+    }
+
+    #[test]
+    fn engine_pack_tools_dir_overrides_dot_evani_bin() {
+        let root = Path::new("C:/engine");
+        assert_eq!(bin_dir_from(root, None), root.join(".evani/bin"));
+        assert_eq!(bin_dir_from(root, Some(std::ffi::OsStr::new(""))), root.join(".evani/bin"));
+        assert_eq!(bin_dir_from(root, Some(std::ffi::OsStr::new("D:/pack/tools/convert"))), PathBuf::from("D:/pack/tools/convert"));
     }
 }

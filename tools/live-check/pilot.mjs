@@ -24,6 +24,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { waitDevToolsUrl } from './devtools-port.mjs';
 
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
@@ -218,15 +219,7 @@ async function main() {
     );
     chromeExited = false;
     chrome.on('exit', () => (chromeExited = true));
-    let wsUrl = null;
-    for (let i = 0; i < 200 && !wsUrl && !chromeExited; i++) {
-      const f = join(profile, 'DevToolsActivePort');
-      if (existsSync(f)) {
-        const [p, path] = readFileSync(f, 'utf8').trim().split(/\r?\n/);
-        if (p && path) wsUrl = `ws://127.0.0.1:${p}${path}`;
-      }
-      if (!wsUrl) await sleep(100);
-    }
+    let wsUrl = await waitDevToolsUrl(profile, { exited: () => chromeExited });
     if (!wsUrl) throw new Error('Chrome did not start');
     cdp = await Cdp.connect(wsUrl);
     const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });

@@ -26,6 +26,11 @@ live = ["evani-core/focus", "render"]
 # it none of this code is in the build and every kart is drawn from primitives.
 models = ["render", "evani-render/models"]
 
+# Renders the music to WAV files to listen to (src/music.rs).
+[[example]]
+name = "music_wavs"
+required-features = ["render"]
+
 [dependencies]
 # The `touch` feature is the on-screen controls layer (README "Touch controls"):
 # it sets the same actions the keys do, and only this game's download has it.

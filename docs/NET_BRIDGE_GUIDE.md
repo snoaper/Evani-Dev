@@ -202,7 +202,7 @@ Host tick 50 ms (`n = 3`), two players (peers 1 and 2), six bots in the referee,
 | Handshake | Game sends `Hello` (`0x10`) as `data`. | Relays it: `input(1, bytes)`. | Answers `Welcome` (`0x20`: peer, tick, seed, snapshot interval) in peer 1's next view. |
 | Countdown | Game draws the grid and the lights from snapshots; inputs are sent but the race state ignores throttle until "go". | Every 50 ms: relay inputs, `step(3)`, send each view. | Counts down inside the state; every snapshot carries the countdown. Nothing special on the wire. |
 | Racing | Each frame: read keys or touch, predict own kart, every 2 to 3 ticks send an `Input` (`0x11`) with the newest frames plus any the referee has not acked. | Relays. | Uses each peer's input for its tick, or repeats the last one; bots think; steps; sends `Snapshot` (`0x21`) every 3 ticks. |
-| Correction | A snapshot's checksum differs from the predicted tick: the game replays from it. No message. | | |
+| Correction | A snapshot's checksum differs from the predicted tick: the game replays from it, and draws the change eased over a few frames, never as a jump (the sync layer, docs/NET_SYNC.md). No message. | | |
 | Watcher | Watcher page gets `hello` with `role:"spectator"`; draws from the spectator view; sends nothing. | Sends the spectator view each step. | One spectator view per step. |
 | A player drops | | Roster changes: `leave(2)`. | Removes peer 2; with `seat_bot_on_leave` a bot finishes kart 2. |
 | Finish | Game shows the results screen drawn from the state. | Calls `results()` and stores the official result. | Finishing order and times from its own run. |

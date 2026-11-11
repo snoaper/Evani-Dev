@@ -1,0 +1,57 @@
+# The procedural library's gating proof (evani-procedural-lib): a small game
+# kept outside the engine's workspace, the way the grass proof is, that
+# places every procedural asset its evani.toml lists. Built with none, one
+# asset and one category, it shows a disabled asset adds no bytes
+# (docs/PROCEDURAL.md "Proof of gating"). The engine crates are path
+# dependencies of this checkout.
+#
+#   cargo xtask build --app-dir examples/proc-field/apps/proc-field
+
+[workspace]
+resolver = "3"
+members = ["apps/proc-field", "apps/commons-render", "kits/evani-kit-proc-field"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+publish = false
+
+# The engine's exact pins, so Cargo unifies them.
+[workspace.dependencies]
+wasm-bindgen = "=0.2.129"
+web-sys = "=0.3.106"
+evani-core = { path = "../../crates/evani-core" }
+evani-render = { path = "../../crates/evani-render" }
+evani-procedural = { path = "../../crates/evani-procedural" }
+evani-procedural-lib = { path = "../../crates/evani-procedural-lib" }
+evani-look-basic = { path = "../../looks/evani-look-basic" }
+evani-look-stylizedpbr = { path = "../../looks/evani-look-stylizedpbr" }
+evani-look-photoreal = { path = "../../looks/evani-look-photoreal" }
+evani-fx = { path = "../../crates/evani-fx", default-features = false }
+evani-material-recipes = { path = "../../crates/evani-material-recipes" }
+# The app's `models` feature and the material library's nature module (2e59ed28 used them without listing them here).
+evani-gltf = { path = "../../crates/evani-gltf" }
+evani-material-nature = { path = "../../crates/evani-material-nature" }
+evani-kit-proc-field = { path = "kits/evani-kit-proc-field" }
+# Dev only (the app's `live` feature): the live control API. No hot patching:
+# a game outside the engine is rebuilt by Trunk (docs/LIVE_API.md 10.5).
+evani-live = { path = "../../crates/evani-live", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev.package."*"]
+opt-level = 1

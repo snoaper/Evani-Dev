@@ -6,6 +6,8 @@
 fn kit_surface(p: vec3<f32>, n: vec3<f32>, material: u32, nr: ptr<function, vec4<f32>>) -> vec4<f32> {
     // Before any branch: derivatives need uniform control flow.
     let fw = length(fwidth(p)) * 0.6;
+    rl_dx = dpdx(p);
+    rl_dy = dpdy(p);
     if ((material != MP_WORLD && material != MP_DECAL && material != MP_SKY) || arrayLength(&kit_data) < 8u) {
         return vec4<f32>(1.0);
     }

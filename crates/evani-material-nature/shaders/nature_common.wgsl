@@ -10,6 +10,7 @@
 //   6 thin blob (ellipsoid: ear, fruit, wax), 7 thin patch (thin box: leaf,
 //     paper), 8 lamp (ellipsoid shade lit from inside: lampshade, candle),
 //   9 leaf (thin box lit through with the foliage colour)
+//   10 glow (a lit shade's halo only, Lite and Low: a paper lantern)
 // Water and glass sit in front of what the depth shows (it is hidden from
 // the solid draw); foliage, grass and thin surfaces are the solid surface
 // the depth shows, with light added. Every surface gives a multiplier M for
@@ -80,7 +81,15 @@ struct Nature {
 // 11 leaf cells per metre       12 grass colour, strength
 // 13 grass power, spacing (m), variation, blade thickness (m)
 // 14 thin colour, strength      15 thin power, wrap, absorb (1/m), thickness (m)
-// 16 lamp colour, intensity     17 lamp absorb (1/m), shade thickness (m)
+// 16 lamp colour, intensity     17 lamp absorb (1/m), shade thickness (m),
+//    reach (m), pool strength
+// 18 swell direction (deg), swell, choppiness, flow speed (m/s)
+// 19 crest glow (sss) colour, strength
+// 20 whitecap amount, whitecap threshold, flow direction (deg)
+//    (rows 18-20: the ocean upgrade, every default off; see water_more)
+// 21 lace, swash, swash spacing (m of depth), caustics
+// 22 caustic scale (1/m), ripples, murk
+//    (rows 21-22: the coast upgrade, every default off; see coast_more)
 //@slot nature_mat
 
 fn mat(i: u32) -> vec4<f32> {
@@ -148,6 +157,136 @@ fn water_slope(p: vec2<f32>, t: f32) -> vec2<f32> {
     let n2 = vnoise(p * scale * 9.1 - vec2<f32>(t * speed * 0.23, -t * speed * 0.29));
     g = g + n1.yz * 0.18 + n2.yz * 0.07;
     return g * w.z;
+}
+
+// ---- the ocean upgrade (table rows 18-20) --------------------------------
+// Swell direction, choppiness (Gerstner steepness), whitecaps from wave
+// compression, a crest glow and river flow drift. Ideas from Ultra-Water
+// (Humpalumps, MIT: its crest subsurface tint, Jacobian foam and flow-map
+// drift) and GPU Gems ch. 1 (Gerstner normals); our own code, no FFT. Every
+// default is off, and with them off the water runs exactly the code it ran
+// before (`water_more` is false and `water_slope` is used unchanged).
+// Mirrored in Rust (water.rs `waves`) for the determinism test.
+
+// Whether any of the upgrade is on (a value the whole draw shares).
+fn water_more() -> bool {
+    return any(mat(18u) != vec4<f32>(0.0)) || mat(19u).w != 0.0 || mat(20u).x != 0.0;
+}
+
+// How far the flow has carried the surface (m) at sim time t: along
+// `flow_direction` (0 deg = +x, 90 = +z) at `flow_speed`.
+fn water_drift(t: f32) -> vec2<f32> {
+    let a = radians(mat(20u).z);
+    return vec2<f32>(cos(a), sin(a)) * (mat(18u).w * t);
+}
+
+// v turned by a radians (x towards z).
+fn turn2(v: vec2<f32>, a: f32) -> vec2<f32> {
+    let s = sin(a);
+    let c = cos(a);
+    return vec2<f32>(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
+// `water_slope` with the swell turned in, plus how high up the crests the
+// point is: (dh/dx, dh/dz, crest), crest -1 (every wave's trough at once)
+// to 1 (every crest at once), the wave compression that choppiness and
+// whitecaps read. The four directions turn by `swell_direction` and gather
+// round the first one by `swell` (a long swell instead of crossing seas).
+// p already has the flow drift taken off.
+fn water_waves(p: vec2<f32>, t: f32) -> vec3<f32> {
+    let w = mat(4u);
+    let sw = mat(18u);
+    let scale = max(w.x, 0.01);
+    let speed = w.y;
+    let dirs = array<vec2<f32>, 4>(
+        vec2<f32>(0.8, 0.6),
+        vec2<f32>(-0.39, 0.92),
+        vec2<f32>(0.97, -0.24),
+        vec2<f32>(-0.71, -0.7),
+    );
+    let freqs = array<f32, 4>(1.0, 1.73, 2.61, 3.9);
+    // A gathered swell's spread round its heading (radians).
+    let spread = array<f32, 4>(0.0, 0.38, -0.52, 0.85);
+    let turn = radians(sw.x);
+    var g = vec2<f32>(0.0);
+    var crest = 0.0;
+    for (var k = 0; k < 4; k = k + 1) {
+        var d = dirs[k];
+        if (sw.y > 0.0) {
+            d = normalize(mix(d, turn2(dirs[0], spread[k]), sw.y));
+        }
+        d = turn2(d, turn);
+        let f = freqs[k] * scale;
+        let ph = dot(d, p) * f + t * speed * sqrt(9.81 * f);
+        g = g + d * (cos(ph) * 0.55 / freqs[k]);
+        crest = crest + sin(ph) * 0.55 / freqs[k];
+    }
+    let n1 = vnoise(p * scale * 4.3 + vec2<f32>(t * speed * 0.31, t * speed * 0.17));
+    let n2 = vnoise(p * scale * 9.1 - vec2<f32>(t * speed * 0.23, -t * speed * 0.29));
+    g = g + n1.yz * 0.18 + n2.yz * 0.07;
+    // 1.21967 = 0.55 x (1 + 1/1.73 + 1/2.61 + 1/3.9), the crests' sum.
+    return vec3<f32>(g * w.z, crest / 1.21967);
+}
+
+// ---- the coast upgrade (table rows 21-22) --------------------------------
+// Clear coastal water (the Asset Studio shoreline, 2026-11-06): shore foam
+// broken into lace with holes, swash fronts along the bed's depth contours
+// running in to the beach, the sun's caustic net on a shallow bed, fine
+// ripples in other directions, and deep water that hides its bed (murk).
+// Our own code (cellular noise after Worley 1996). Every default is off:
+// until a cell of rows 21-22 is not 0 the water runs the code it ran before.
+
+fn coast_more() -> bool {
+    return any(mat(21u) != vec4<f32>(0.0)) || any(mat(22u) != vec4<f32>(0.0));
+}
+
+// Cellular noise at p (cell units): the distances to the nearest and the
+// second nearest jittered point; their difference is 0 on cell borders.
+fn cells2(p: vec2<f32>) -> vec2<f32> {
+    let i = vec2<i32>(floor(p));
+    let f = p - floor(p);
+    var d = vec2<f32>(8.0);
+    for (var y = -1; y <= 1; y = y + 1) {
+        for (var x = -1; x <= 1; x = x + 1) {
+            let c = i + vec2<i32>(x, y);
+            let e = length(vec2<f32>(f32(x) + hash2(c), f32(y) + hash2(c + vec2<i32>(17, 59))) - f);
+            d = select(vec2<f32>(d.x, min(d.y, e)), vec2<f32>(e, d.x), e < d.x);
+        }
+    }
+    return d;
+}
+
+// Foam lace at p (m): thin threads on the borders of slowly drifting cells
+// at two sizes, warped, with open holes between them (0..1).
+fn coast_lace(p: vec2<f32>, t: f32) -> f32 {
+    let w = vnoise(p * 1.3 + vec2<f32>(t * 0.05, 0.0)).x;
+    let a = cells2(p * 4.0 + vec2<f32>(w * 1.7, t * 0.08));
+    let b = cells2(p * 9.5 - vec2<f32>(t * 0.11, w * 2.3));
+    let la = 1.0 - smoothstep(0.05, 0.3, a.y - a.x);
+    let lb = 1.0 - smoothstep(0.03, 0.2, b.y - b.x);
+    return clamp(max(la, lb * 0.8) * (0.6 + w * 0.6), 0.0, 1.0);
+}
+
+// The sun's caustics on a bed at q (m), `k` cells per metre: a net of
+// bright lines where light gathers under the ripples, two drifting layers.
+fn coast_caustic(q: vec2<f32>, t: f32, k: f32) -> f32 {
+    // Warped so the cells' borders curve, the two layers at other sizes.
+    let w = vnoise(q * k * 0.3 + vec2<f32>(t * 0.07, -t * 0.05)).x;
+    let qw = q * k + vec2<f32>(vnoise(q * k * 0.55).x, vnoise(q * k * 0.55 + vec2<f32>(7.3, 1.9)).x) * 1.1;
+    let a = cells2(qw + vec2<f32>(w * 1.2 + t * 0.12, t * 0.05));
+    let b = cells2(qw * 1.37 + vec2<f32>(-t * 0.09, w * 1.5 + t * 0.07));
+    let ea = 1.0 - smoothstep(0.0, 0.1, a.y - a.x);
+    let eb = 1.0 - smoothstep(0.0, 0.1, b.y - b.x);
+    return (ea * ea * 0.8 + eb * eb * 0.5 + ea * eb * 1.2) * (0.25 + w * 1.1);
+}
+
+// Fine ripples (a slope): three noise octaves turned to other headings
+// than the waves, from `scale` (the wave scale) up.
+fn coast_ripples(p: vec2<f32>, t: f32, scale: f32) -> vec2<f32> {
+    let r1 = vnoise(turn2(p, 0.6) * scale * 3.1 + vec2<f32>(t * 0.6, 0.0)).yz;
+    let r2 = vnoise(turn2(p, 2.1) * scale * 6.7 - vec2<f32>(t * 0.9, t * 0.4)).yz;
+    let r3 = vnoise(turn2(p, 4.0) * scale * 14.3 + vec2<f32>(0.0, t * 1.3)).yz;
+    return turn2(r1, -0.6) * 0.3 + turn2(r2, -2.1) * 0.16 + turn2(r3, -4.0) * 0.08;
 }
 
 // ---- shading helpers ----------------------------------------------------
@@ -299,6 +438,13 @@ struct Px {
     ts: f32,
     ps: vec3<f32>,
     scene: bool,
+    // How far the scene's height changes from one pixel to the next (m):
+    // the coast upgrade's swash fades where its lines would crowd into
+    // stripes (a steep rock side under the surface). 0 where unknown.
+    gy: f32,
+    // How far the scene point moves across the ground from one pixel to
+    // the next (m): with `gy`, the bed's slope (whitecap_depth).
+    gx: f32,
 };
 
 fn water(s: Surf, px: Px, flat: bool) -> Hit {
@@ -341,28 +487,141 @@ fn water(s: Surf, px: Px, flat: bool) -> Hit {
     let w5 = mat(5u);
     // Waves fade with distance so far water doesn't sparkle.
     let fade = 1.0 / (1.0 + tw * px.rl * 0.03);
-    let g = water_slope(p.xz, u.time) * fade;
-    let n = normalize(vec3<f32>(-g.x, 1.0, -g.y));
+    // The ocean upgrade (off by default: then this is the old code path).
+    let more = water_more();
+    let oc = mat(18u);
+    var pf = p.xz;
+    var g: vec2<f32>;
+    var crest = 0.0;
+    var ny = 1.0;
+    if (more) {
+        pf = p.xz - water_drift(u.time);
+        let wv = water_waves(pf, u.time);
+        g = wv.xy * fade;
+        crest = wv.z;
+        // Choppiness, Gerstner style: the normal's up part shrinks on the
+        // crests and grows in the troughs (1 - Q sum w A sin), so crests read
+        // sharp and steep and troughs flat.
+        ny = max(1.0 - oc.z * 0.8 * crest * fade, 0.2);
+    } else {
+        g = water_slope(p.xz, u.time) * fade;
+    }
+    // The coast upgrade (off by default: then none of it runs).
+    let coast = coast_more();
+    let c21 = mat(21u);
+    let c22 = mat(22u);
+    if (coast) {
+        g = g + coast_ripples(pf, u.time, max(mat(4u).x, 0.01)) * (c22.y * fade);
+    }
+    let n = normalize(vec3<f32>(-g.x, ny, -g.y));
     let v = -px.rd;
     let f0 = mat(6u).x;
-    let fr = schlick(f0, max(dot(n, v), 0.0)) * w5.z;
+    // The Fresnel weight from a calmer normal than the waves' own: steep
+    // wave faces at a low view turned the whole pool into milky sky on High
+    // and Ultra while Lite and Low showed the bed (critic round 2 of
+    // material-view: the same water must read the same on every tier).
+    let nf = normalize(mix(vec3<f32>(0.0, 1.0, 0.0), n, 0.3));
+    let fr = schlick(f0, max(dot(nf, v), 0.0)) * w5.z;
     // Shoreline foam: where the view leaves the water within the foam
     // width (a bed or a wall right under the surface), broken up by moving
     // noise. The path along the view, not the depth straight down, so a
     // steep wall gets a thin line at the waterline and not a wide band.
     let fw = max(mat(3u).w, 0.001);
     let near = select(0.0, 1.0 - smoothstep(0.0, fw, path), px.scene);
-    let fn1 = vnoise(p.xz * 7.0 + vec2<f32>(u.time * 0.35, u.time * 0.2)).x;
-    let fn2 = vnoise(p.xz * 17.0 - vec2<f32>(u.time * 0.25, 0.0)).x;
-    let foam = clamp(near * (0.35 + fn1 * 0.9 + fn2 * 0.4) * w5.x - (1.0 - near) * 0.2, 0.0, 1.0);
+    let fn1 = vnoise(pf * 7.0 + vec2<f32>(u.time * 0.35, u.time * 0.2)).x;
+    let fn2 = vnoise(pf * 17.0 - vec2<f32>(u.time * 0.25, 0.0)).x;
+    var foam = clamp(near * (0.35 + fn1 * 0.9 + fn2 * 0.4) * w5.x - (1.0 - near) * 0.2, 0.0, 1.0);
+    let wc = mat(20u);
+    if (more && wc.x > 0.0) {
+        // Whitecaps where the waves pile up into crests (Ultra-Water foams
+        // where the Jacobian of its displacement drops; here the crest
+        // height the slope sum already has), steeper seas break sooner,
+        // in patches from one more noise sample, laced by the foam noise.
+        let start = 0.3 + wc.y * 0.55;
+        let blot = vnoise(pf * max(w4.x, 0.01) * 1.7 + vec2<f32>(u.time * w4.y * 0.05, 0.0)).x;
+        var c = crest + oc.z * 0.15 + (blot - 0.5) * 0.6;
+        // A river (whitecap_depth > 0): broken water only where the bed
+        // runs shallow and level (a riffle; not the shelving margin along
+        // every bank), breaking sooner there; calm over the pools and runs.
+        var reach = 1.0;
+        if (wc.w > 0.0) {
+            let dz = select(9.0, s.c.y - px.ps.y, px.scene);
+            let lvl = 1.0 - smoothstep(0.12, 0.35, px.gy / max(px.gx, 1e-4));
+            reach = (1.0 - smoothstep(wc.w * 0.45, wc.w, dz)) * lvl;
+            // Broken into runs some 10 m long with calm stretches between
+            // (a riffle breaks where its stones lie, not as one even strip
+            // of dashes down the whole margin).
+            reach = reach * smoothstep(0.38, 0.62, vnoise(pf * 0.1 + vec2<f32>(3.1, 7.3)).x);
+            c = c + reach * 0.3;
+        }
+        let edge = smoothstep(start, start + 0.1, c);
+        let lace = smoothstep(0.5, 1.15, fn1 * 0.7 + fn2 * 0.5 + edge * 0.3);
+        let cap = edge * lace * wc.x * reach;
+        foam = max(foam, clamp(cap, 0.0, 1.0));
+    }
+    var caus = 0.0;
+    if (coast) {
+        // Depth of the bed this pixel sees (m; deep where it sees none).
+        let dz = select(9.0, s.c.y - px.ps.y, px.scene);
+        // The shore band broken into lace: its threads and a thin lip
+        // right at the edge stay, the holes between them open.
+        let lace = coast_lace(pf, u.time);
+        let lip = select(0.0, 1.0 - smoothstep(0.0, fw * 0.2, path), px.scene);
+        foam = foam * mix(1.0, max(lace, lip), c21.x);
+        if (c21.y > 0.0) {
+            // Swash fronts: foam lines along the depth contours, every
+            // `swash_spacing` metres of depth, running in towards the
+            // beach, broken into stretches and lace, fading with depth.
+            let sp = max(c21.z, 0.005);
+            let ph = dz / sp + u.time * 0.1 + (fn1 - 0.5) * 0.6;
+            let line = 1.0 - smoothstep(0.04, 0.2, abs(fract(ph + 0.5) - 0.5));
+            let run = smoothstep(0.3, 0.6, vnoise(pf * 0.8 + vec2<f32>(u.time * 0.03, 3.7)).x);
+            let crowd = 1.0 - smoothstep(0.04 * sp, 0.14 * sp, px.gy);
+            let swash = line * run * crowd * (0.55 + 0.45 * lace) * exp(-dz / (sp * 2.2)) * step(sp * 0.6, dz);
+            foam = max(foam, clamp(swash * c21.y, 0.0, 1.0));
+        }
+        if (c21.w > 0.0 && px.scene) {
+            // Caustics, strongest a hand's depth down, gone in the deep.
+            caus = c21.w * coast_caustic(px.ps.xz, u.time, max(c22.x, 0.1)) * smoothstep(0.0, 0.1, dz) * exp(-dz / 0.8) * max(u.sun.y, 0.0);
+        }
+    }
     let ambient = mat(0u).rgb * sky_k() * 0.6 + u.sun_col * max(u.sun.y, 0.0) * 0.12;
+    // Foam is white lit by the sky and sun; it covers what lies under it
+    // only as far as that light shows it. At night its light is near black,
+    // and covering a lamp-lit wall at full strength drew dark smudges along
+    // the waterline (material-view critic round 13, debug-lamp4).
+    let foam_lit = ambient * 1.4 + u.sun_col * max(u.sun.y, 0.0) * 0.25;
+    foam = foam * clamp(dot(foam_lit, vec3<f32>(0.2126, 0.7152, 0.0722)) * 4.0, 0.0, 1.0);
     let avg_t = (trans.r + trans.g + trans.b) / 3.0;
-    let inscatter = mat(3u).rgb * ambient * (1.0 - avg_t);
+    // Body colour and tint as the flat path has them (below), so shallow
+    // water keeps its colour on every tier.
+    let inscatter = mat(3u).rgb * ambient * max(1.0 - avg_t, 0.35);
     let refl = sky(reflect(px.rd, n));
     let spec = glint(n, v, max(w5.w, 0.02), max(f0, 0.02)) * w4.w;
-    o.m = (1.0 - fr) * trans * (1.0 - foam);
-    o.a = fr * refl + spec * (1.0 - foam) + (1.0 - fr) * (1.0 - foam) * inscatter + foam * (ambient * 1.4 + u.sun_col * max(u.sun.y, 0.0) * 0.25);
-    o.off = screen_bend(n) * w5.y * min(path, 2.0) * 0.05;
+    o.m = (1.0 - fr) * max(trans * mix(vec3<f32>(1.0), deep, 0.4), deep * 0.5) * (1.0 - foam);
+    o.a = fr * refl + spec * (1.0 - foam) + (1.0 - fr) * (1.0 - foam) * inscatter + foam * foam_lit;
+    if (coast) {
+        // Murk: deep water hides its bed (0 = the floor at half the deep
+        // colour as before); caustics brighten the bed under the shallows.
+        o.m = (1.0 - fr) * max(trans * mix(vec3<f32>(1.0), deep, 0.4), deep * (0.5 - 0.5 * c22.z)) * (1.0 - foam) * (1.0 + caus);
+    }
+    let ss = mat(19u);
+    if (more && ss.w > 0.0) {
+        // Crest glow: sunlight through the thin top of a wave, strongest
+        // looking towards a low sun (Ultra-Water's crest subsurface idea).
+        let toward = pow(clamp(dot(px.rd, u.sun), 0.0, 1.0), 3.0);
+        let h = clamp(crest * fade * 1.6, 0.0, 1.0);
+        let lit = smoothstep(-0.05, 0.1, u.sun.y);
+        o.a = o.a + (1.0 - fr) * (1.0 - foam) * ss.rgb * u.sun_col * ((0.35 + 0.65 * toward) * h * h * ss.w * 0.35 * lit);
+    }
+    // The bend comes from the waves' tilt only (the normal less straight
+    // up): calm water bends nothing. Projected whole, a flat pool's up
+    // normal onto the camera's up axis bent every pixel up the screen by
+    // most of 0.05 x its path (9% of the frame at 2 m), so High and Ultra
+    // showed the basin's pale far wall all over the water instead of its
+    // bed (critic round 4 of material-view: milky water, bed hidden, while
+    // Medium and Low, which don't bend, showed the bed).
+    o.off = screen_bend(n - vec3<f32>(0.0, 1.0, 0.0)) * w5.y * min(path, 2.0) * 0.05;
     return o;
 }
 
@@ -528,9 +787,52 @@ fn glass(s: Surf, px: Px, flat: bool) -> Hit {
     return o;
 }
 
-// Foliage, thin blobs and lamps on the ellipsoid the depth shows.
-fn blob(s: Surf, px: Px, kind: i32) -> Hit {
+// A lamp's glow round its shade where there is no bloom (`flat`: Lite and
+// Low): the light a view ray passes close to on its way to what lies
+// behind the lamp, falling off over about the shade's own size. Critic round
+// 4 of material-view: on Low the lit shade was a flat cream disc, where
+// High and Ultra bloom it. High and Ultra are unchanged (their bloom glows).
+fn lamp_glow(s: Surf, px: Px, flat: bool) -> vec3<f32> {
+    let r = max(s.h.x, max(s.h.y, s.h.z));
+    let oc = s.c.xyz - u.eye;
+    let tc = dot(oc, px.rd);
+    // The lamp lies in front of what the pixel shows (or the pixel is sky).
+    let past = select(FAR_T, px.ts * px.rl, px.scene);
+    if (!flat || tc <= 0.0 || tc >= past || r <= 0.0) {
+        return vec3<f32>(0.0);
+    }
+    let dd = length(oc - px.rd * tc) / r;
+    let g = exp(-max(dd - 0.85, 0.0) * 2.2) * smoothstep(4.0, 1.0, dd);
+    return mat(16u).rgb * (0.35 * max(mat(16u).w, 0.0) * g);
+}
+
+// A glow (kind 10): the halo of a shade lit from inside whose lit face the
+// scene already draws (a paper lantern's paper), where there is no bloom
+// (Lite and Low), as `lamp_glow` gives a lamp; `h.w` is its strength against
+// the lamp's. No pool of light. Critic round 5 of material-view: the lantern
+// glowed on Ultra (bloom) and stood unlit on Low.
+fn glow_only(s: Surf, px: Px, flat: bool) -> Hit {
     var o = miss();
+    let gl = lamp_glow(s, px, flat) * max(s.h.w, 0.0);
+    if (dot(gl, gl) > 0.0) {
+        o.t = select(FAR_T * 0.5, px.ts, px.scene);
+        o.a = gl;
+    }
+    return o;
+}
+
+// Foliage, thin blobs and lamps on the ellipsoid the depth shows.
+fn blob(s: Surf, px: Px, kind: i32, flat: bool) -> Hit {
+    var o = miss();
+    if (kind == 8 && !px.scene) {
+        // A lamp seen against the sky still glows on Lite and Low.
+        let gl = lamp_glow(s, px, flat);
+        if (dot(gl, gl) > 0.0) {
+            o.t = FAR_T * 0.5;
+            o.a = gl;
+        }
+        return o;
+    }
     if (!px.scene) {
         return o;
     }
@@ -538,6 +840,35 @@ fn blob(s: Surf, px: Px, kind: i32) -> Hit {
     let q = rot_y(px.ps - s.c.xyz, -s.h.w) / h;
     let d = length(q);
     if (d > 1.06) {
+        // A lamp's pool of light: what lies within its reach is lit warm,
+        // fading to nothing at the edge (no normals in this pass, so every
+        // face near the lamp takes it). Multiplied in for what is lit
+        // already, added for what the night left dark. The same on every
+        // tier: no point-light budget.
+        let p17 = mat(17u);
+        if (kind == 8 && p17.z > 0.0) {
+            let dw = length(px.ps - s.c.xyz);
+            let f = 1.0 - clamp(dw / p17.z, 0.0, 1.0);
+            if (f > 0.0) {
+                // Against daylight a lamp's light is lost: it fades out as
+                // the sun grows brighter than the lamp's own pool.
+                let day = clamp(dot(u.sun_col, vec3<f32>(0.3, 0.55, 0.15)) * max(u.sun.y, 0.0) * 1.5, 0.0, 1.0);
+                // A soft edge (smoothstep), full near the lamp: the ground
+                // under a 1.5 m lamp sits well inside its reach and must
+                // read as lit, not as a faint tint.
+                let k = f * f * (3.0 - 2.0 * f) * p17.w * (1.0 - day);
+                let lc = mat(16u).rgb;
+                o.t = px.ts;
+                o.m = vec3<f32>(1.0) + lc * (0.6 * k);
+                o.a = lc * (0.3 * k * max(mat(16u).w, 0.0));
+            }
+            // The glow round the shade, over what lies behind it.
+            let gl = lamp_glow(s, px, flat);
+            if (dot(gl, gl) > 0.0) {
+                o.t = px.ts;
+                o.a = o.a + gl;
+            }
+        }
         return o;
     }
     o.t = px.ts;
@@ -642,13 +973,16 @@ fn surface(s: Surf, px: Px, flat: bool) -> Hit {
     if (kind <= 3) {
         return glass(s, px, flat);
     }
-    if (flat) {
-        return miss();
-    }
+    // Foliage, grass and thin surfaces draw on every tier (critic round 1:
+    // skipped on Lite and Low, leaves were their dark base colour and grass a
+    // bare slab); the flat draws multiply and add as the others do.
     if (kind == 5 || kind == 7 || kind == 9) {
         return region(s, px, kind);
     }
-    return blob(s, px, kind);
+    if (kind == 10) {
+        return glow_only(s, px, flat);
+    }
+    return blob(s, px, kind, flat);
 }
 
 // ---- the pixel ----------------------------------------------------------
@@ -660,6 +994,8 @@ struct Shade {
     // Nearest see-through surface (view-depth units), FAR_T if none.
     tnear: f32,
     hit: bool,
+    // Index in `u.s` of the surface `off` belongs to.
+    idx: u32,
 };
 
 fn pixel_ray(uv: vec2<f32>) -> vec3<f32> {
@@ -675,7 +1011,7 @@ fn scene_dist(z: f32) -> f32 {
     return 1.0 / max(u.inv0 + u.inv1 * z, 1e-12);
 }
 
-fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
+fn pixel(uv: vec2<f32>, z: f32) -> Px {
     var px: Px;
     px.ray = pixel_ray(uv);
     px.rl = length(px.ray);
@@ -683,10 +1019,29 @@ fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
     px.ts = scene_dist(z);
     px.scene = px.ts < FAR_T;
     px.ps = u.eye + px.ray * select(0.0, px.ts, px.scene);
+    return px;
+}
+
+// Refraction may only bend onto what is itself seen through surface i: the
+// pixel at uv (scene depth z) must have its own view ray cross that surface
+// before its scene point. Being behind the surface is not enough: past a
+// basin's far rim the bend lands on the lawn behind the basin, which is
+// behind the water too, and painted a pale wedge of lawn into a night pool
+// on Ultra (material-view round 4).
+fn seen_through(i: u32, uv: vec2<f32>, z: f32) -> bool {
+    return surface(u.s[i], pixel(uv, z), true).t > 0.0;
+}
+
+fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
+    var px = pixel(uv, z);
+    // Uniform control flow here (both fragment entries call shade first).
+    px.gy = fwidth(px.ps.y);
+    px.gx = length(fwidth(px.ps.xz));
     var ts: array<f32, 5>;
     var ms: array<vec3<f32>, 5>;
     var adds: array<vec3<f32>, 5>;
     var offs: array<vec2<f32>, 5>;
+    var ids: array<u32, 5>;
     let count = min(i32(u.count + 0.5), 5);
     var n = 0;
     for (var i = 0; i < count; i = i + 1) {
@@ -696,6 +1051,7 @@ fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
             ms[n] = h.m;
             adds[n] = h.a;
             offs[n] = h.off;
+            ids[n] = u32(i);
             n = n + 1;
         }
     }
@@ -705,6 +1061,7 @@ fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
     out.off = vec2<f32>(0.0);
     out.tnear = FAR_T;
     out.hit = n > 0;
+    out.idx = 0u;
     // Back to front: the farthest left first.
     var done = 0u;
     for (var k = 0; k < n; k = k + 1) {
@@ -722,6 +1079,7 @@ fn shade(uv: vec2<f32>, z: f32, flat: bool) -> Shade {
         if (bt < px.ts * 0.9999) {
             out.tnear = bt;
             out.off = offs[best];
+            out.idx = ids[best];
         }
     }
     return out;

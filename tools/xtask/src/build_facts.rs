@@ -70,12 +70,13 @@ pub struct Inputs<'a> {
 /// The statement as pretty JSON (keys in alphabetical order, one trailing newline).
 pub fn facts_json(i: &Inputs) -> String {
     let m = i.manifest;
-    let mut modules: Vec<&str> = Vec::new();
-    for (on, name) in [(m.net, "net"), (m.xr, "xr"), (m.models, "models"), (m.anim, "anim"), (m.ui, "ui"), (m.nature.is_some(), "nature"), (m.proc.is_some(), "proc")] {
+    let mut modules: Vec<String> = Vec::new();
+    for (on, name) in [(m.net, "net"), (m.xr, "xr"), (m.models, "models"), (m.anim, "anim"), (m.ui, "ui"), (m.grass, "grass"), (m.nature.is_some(), "nature"), (m.proc.is_some(), "proc"), (m.procedural.is_some(), "procedural")] {
         if on {
-            modules.push(name);
+            modules.push(name.to_string());
         }
     }
+    modules.extend(m.material_families.iter().map(|f| format!("material-{f}")));
     let mut input = vec!["keyboard", "mouse and touch (pointer)", "gamepad"];
     if i.touch {
         input.push("on-screen touch buttons");
